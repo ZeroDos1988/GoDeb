@@ -393,7 +393,7 @@
     "siteLabel": "Standort (GoDeb-Server hinter diesem Hub, z. B. die Heim-VM)",
     "siteHint": "Nur das Tunnelnetz, kein DNS, Keepalive 25. Handy und Laptop erreichen die Web-UI des Standorts über diesen Hub.",
     "siteBadge": "Standort",
-    "siteNext": "Die Datei {{name}}.conf auf den Standort kopieren und dort „godeb setup --join“ ausführen oder sie unter WireGuard einfügen.",
+    "siteNext": "Die Datei {{name}}.conf wird heruntergeladen. Auf dem Standort im Assistenten „Mit Hub verbinden“ wählen und sie dort hochladen (oder „godeb setup --join“).",
     "peerRoleTitle": "Peer eines Hubs",
     "peerRoleText": "Dieser Server hängt mit der Adresse {{address}} am Hub {{hub}}. Neue Clients und Standorte legst du auf dem Hub an.",
     "joinTitle": "Mit einem Hub verbinden",
@@ -630,7 +630,7 @@
     "tunnelAddress": "Tunnel-Adresse",
     "wgPort": "WireGuard-Port (UDP)",
     "joinFile": "Client-Datei des Hubs",
-    "joinHint": "Inhalt von /etc/wireguard/clients/<name>.conf vom Hub einfügen.",
+    "joinHint": "Datei vom Hub hochladen (WireGuard → Standort anlegen lädt sie herunter) oder den Inhalt von /etc/wireguard/clients/<name>.conf einfügen.",
     "hubDone": "WireGuard-Server läuft.",
     "qrAlt": "QR-Code des ersten Clients",
     "qrHint": "Mit der GoDeb-WireGuard-App scannen. Der Code enthält den privaten Schlüssel des Clients.",
@@ -729,5 +729,12 @@
       "reset2fa": "2FA zurücksetzen",
       "site": "Standort anlegen"
     }
+  },
+  "upload": {
+    "choose": "Datei hochladen (.conf)",
+    "loaded": "{{name}} geladen",
+    "orPaste": "oder den Inhalt unten einfügen",
+    "tooLarge": "Die Datei ist zu groß für eine WireGuard-Konfiguration.",
+    "notWireGuard": "Das ist keine WireGuard-Datei ([Interface] und [Peer] fehlen)."
   }
 }

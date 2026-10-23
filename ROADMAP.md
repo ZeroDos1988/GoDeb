@@ -122,6 +122,12 @@ Ziel: auf einen Blick sehen, ob der Server gesund ist, ob der Traffic normal aus
 - [ ] **Cron-Aufgaben**: geplante Aufgaben anzeigen und verwalten (gab es im alten Prototyp aus PR #1 als eigene Seite).
 - [ ] **Datenbanken**: Datenbankserver installieren (z. B. MariaDB, PostgreSQL), Datenbanken und Benutzer anlegen, dazu ein eingebauter Admin-Client zum Ansehen von Tabellen und Daten. Zugangsdaten mit `security.Seal`, Datenbankports nie öffentlich.
 
+## Phase 8 – Hub und Standorte enger koppeln (Ideen 23.10.)
+
+- [x] **Beitritt per Datei** (23.10.): Standort anlegen lädt die `.conf` herunter, der Assistent der Heim-VM nimmt sie per Upload.
+- [ ] **Gekoppelte Verwaltung**: Hub und Standort vertrauen einander (gegenseitig signierte Anfragen über den Tunnel, kein offener Port). Auf der Heim-VM eine Weiterleitung anlegen, und der Hub legt DNAT und ufw-Freigabe selbst an; Spielserver-Installation auf der Heim-VM schlägt die Weiterleitung am Hub automatisch vor.
+- [ ] **Netzwerk-Scanner**: Hosts im Heimnetz bzw. Tunnel finden (ARP/Ping), offene Ports prüfen (nur TCP-Connect und bekannte UDP-Abfragen wie Steam A2S, kein aggressives Scannen), bekannte Dienste erkennen (z. B. „Enshrouded auf 192.168.1.40, 15636–15637/udp“) und per Klick „über den Hub erreichbar machen“ (Weiterleitung Hub → Standort → Zielhost). Nur auf eigenen Netzen, mit Hinweis.
+
 ## Entscheidungen
 
 Festgehalten, damit sie nicht wieder neu diskutiert werden.

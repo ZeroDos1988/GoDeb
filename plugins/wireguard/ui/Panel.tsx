@@ -1,3 +1,4 @@
+import { ConfigUpload } from "@/components/ConfigUpload.tsx";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DataTable, PanelFrame } from "@/components/PanelFrame.tsx";
@@ -211,6 +212,8 @@ export default function Panel() {
                 );
                 if (result.peer.site) {
                   setNotice((prev) => `${prev} ${t("wg.siteNext", { name: result.peer.name })}`);
+                  // The site needs exactly this file: offer it right away.
+                  void download(result.peer);
                 }
                 query.reload();
               }}
@@ -579,6 +582,9 @@ function JoinCard({ onJoined }: { onJoined: () => void }) {
     >
       <h2 className="text-sm font-semibold">{t("wg.joinTitle")}</h2>
       <p className="mt-1 text-sm text-white/60">{t("wg.joinText")}</p>
+      <div className="mt-3">
+        <ConfigUpload onLoad={setConfig} />
+      </div>
       <textarea
         value={config}
         onChange={(event) => setConfig(event.target.value)}

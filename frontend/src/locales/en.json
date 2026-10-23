@@ -393,7 +393,7 @@
     "siteLabel": "Site (GoDeb server behind this hub, e.g. the home VM)",
     "siteHint": "Tunnel network only, no DNS, keepalive 25. Phone and laptop reach the site's web UI through this hub.",
     "siteBadge": "Site",
-    "siteNext": "Copy {{name}}.conf to the site and run “godeb setup --join” there, or paste it under WireGuard.",
+    "siteNext": "The file {{name}}.conf is being downloaded. On the site, choose \"Join a hub\" in the wizard and upload it there (or use \"godeb setup --join\").",
     "peerRoleTitle": "Peer of a hub",
     "peerRoleText": "This server is connected to hub {{hub}} with address {{address}}. Create new clients and sites on the hub.",
     "joinTitle": "Connect to a hub",
@@ -630,7 +630,7 @@
     "tunnelAddress": "Tunnel address",
     "wgPort": "WireGuard port (UDP)",
     "joinFile": "Client file from the hub",
-    "joinHint": "Paste /etc/wireguard/clients/<name>.conf from the hub.",
+    "joinHint": "Upload the file from the hub (WireGuard → add a site downloads it) or paste the content of /etc/wireguard/clients/<name>.conf.",
     "hubDone": "WireGuard server is running.",
     "qrAlt": "QR code of the first client",
     "qrHint": "Scan with the GoDeb WireGuard app. The code contains the client's private key.",
@@ -729,5 +729,12 @@
       "reset2fa": "Reset 2FA",
       "site": "Add a site"
     }
+  },
+  "upload": {
+    "choose": "Upload file (.conf)",
+    "loaded": "{{name}} loaded",
+    "orPaste": "or paste the content below",
+    "tooLarge": "The file is too large for a WireGuard configuration.",
+    "notWireGuard": "This is not a WireGuard file ([Interface] and [Peer] are missing)."
   }
 }

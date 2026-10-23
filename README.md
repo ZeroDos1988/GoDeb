@@ -60,13 +60,14 @@ Ein neues Spiel ist eine `Game`-Beschreibung in `plugins/steam/`, kein eigenes P
 
 ## Installation
 
-Voraussetzung: Debian 13, root, eine Netzwerkverbindung. Das Paket gibt es unter [Releases](https://github.com/ZeroDos1988/GoDeb/releases) oder als CI-Artefakt `godeb-deb`.
+Voraussetzung: Debian 13 (amd64), root, eine Netzwerkverbindung. Das Paket gibt es unter [Releases](https://github.com/ZeroDos1988/GoDeb/releases); die Release-Seite nennt Version und Prüfsumme.
 
 ```bash
-apt install --no-install-recommends ./godeb_*_amd64.deb
+wget https://github.com/ZeroDos1988/GoDeb/releases/download/v0.2.2/godeb_0.2.2_amd64.deb
+apt install --no-install-recommends ./godeb_0.2.2_amd64.deb
 ```
 
-Am Ende der Installation steht ein Link zur Ersteinrichtung. Später lässt er sich jederzeit wieder abrufen:
+Am Ende der Installation steht in einem Kasten der Link zur Ersteinrichtung. Später lässt er sich jederzeit wieder abrufen:
 
 ```bash
 godeb setup-url
@@ -80,6 +81,9 @@ Ein frisches GoDeb richtet nichts von selbst ein. Bis zum Abschluss öffnet es e
 2. **2FA** einrichten (QR-Code in einer Authenticator-App scannen)
 3. **Rolle** wählen: WireGuard-Hub, Peer eines vorhandenen Hubs oder eigenständig
 4. **Erreichbarkeit** festlegen: nur im Tunnel, zusätzlich per HTTPS im LAN, oder nur lokal
+5. **Übersicht**: wie der Server jetzt eingerichtet ist (Adresse der Oberfläche im Tunnel, Tunnel, Firewall), zum Drucken oder als PDF. Später: Startseite → Einrichtungsübersicht oder `godeb summary`
+
+Für eine Heim-VM als Peer: auf dem Hub unter WireGuard einen Peer mit „Standort“ anlegen, die `.conf` wird heruntergeladen; im Assistenten der Heim-VM „Mit Hub verbinden“ wählen und die Datei hochladen.
 
 Danach schließt sich der Assistent, und ufw lässt nur noch SSH, WireGuard (auf dem Hub) und die gewählten Zugänge durch.
 

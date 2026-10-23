@@ -122,7 +122,7 @@ Zwei Installationen mit **demselben GoDeb-Paket**. Sie unterscheiden sich nur in
    godeb site add heim-vm --address 10.8.0.2
    ```
 
-   Alternativ in der Web-UI: WireGuard → Neuer Peer → „Standort“ anhaken. Beides läuft über `wireguard.CreatePeer`. Die Client-Datei bekommt nur das Tunnelnetz, kein DNS und Keepalive 25. Der Hub schaltet IP-Forwarding ein und erlaubt Tunnel-Clients den Zugriff auf `10.8.0.2:8080/tcp`.
+   Alternativ in der Web-UI: WireGuard → Neuer Peer → „Standort“ anhaken; die Client-Datei `heim-vm.conf` wird dann direkt heruntergeladen. Beides läuft über `wireguard.CreatePeer`. Die Client-Datei bekommt nur das Tunnelnetz, kein DNS und Keepalive 25. Der Hub schaltet IP-Forwarding ein und erlaubt Tunnel-Clients den Zugriff auf `10.8.0.2:8080/tcp`.
 3. **Heim-VM:** Paket installieren, die Datei `/etc/wireguard/clients/heim-vm.conf` vom VPS holen und beitreten:
 
    ```sh
@@ -131,7 +131,7 @@ Zwei Installationen mit **demselben GoDeb-Paket**. Sie unterscheiden sich nur in
    rm /root/heim-vm.conf
    ```
 
-   Oder im Browser: auf der Heim-VM `godeb setup-url` aufrufen, den Link im Heimnetz öffnen, Administrator und 2FA anlegen, „Mit Hub verbinden“ wählen und den Inhalt der Datei einfügen, dann „Heimnetz und Tunnel“ und den Trusted Endpoint. Beides schreibt `wg0.conf` als Peer, startet den Tunnel, wartet auf den Handshake und richtet ufw ein: SSH, `8080/tcp` auf `wg0`, HTTPS `8443/tcp` nur aus dem LAN, kein offener WireGuard-Port.
+   Oder im Browser: auf der Heim-VM `godeb setup-url` aufrufen, den Link im Heimnetz öffnen, Administrator und 2FA anlegen, „Mit Hub verbinden“ wählen und die heruntergeladene Datei hochladen (oder ihren Inhalt einfügen), dann „Heimnetz und Tunnel“ und den Trusted Endpoint. Beides schreibt `wg0.conf` als Peer, startet den Tunnel, wartet auf den Handshake und richtet ufw ein: SSH, `8080/tcp` auf `wg0`, HTTPS `8443/tcp` nur aus dem LAN, kein offener WireGuard-Port.
 4. **Enshrouded auf der Heim-VM:** In der Web-UI (`http://10.8.0.2:8080`, vom Handy über den Hub) „Spielserver“ → Enshrouded → „Server installieren“. Die Ports öffnen sich nur auf `wg0`, und die Ansicht zeigt die Adresse, unter der Spieler sich verbinden.
 5. **Portweiterleitung auf dem VPS:** Plugin „Portweiterleitung“, Vorlage Enshrouded, Ziel `10.8.0.2`, „Weiterleiten“. Danach im Spiel `<vps-ip>:15637`.
 6. **Handy für Auto-Disconnect:** Das Handy-Profil vom Setup des VPS ist älter als der Trusted Endpoint der Heim-VM. Auf dem VPS `godeb site sync` ausführen (oder WireGuard → Trusted Endpoint → „Client-Dateien aktualisieren“) und den QR-Code in der GoDeb-WireGuard-App neu scannen. Neue Clients bekommen Endpoint und Schlüssel automatisch.
@@ -204,25 +204,19 @@ Für einen Testserver. Was vor dem produktiven Einsatz noch fehlt, steht unter �
 - Image **Debian 13**, eigenen SSH-Schlüssel hinterlegen.
 - Eine Hetzner-Cloud-Firewall ist optional. Wenn sie aktiv ist, muss sie eingehend `22/tcp` und `51820/udp` erlauben. Port `8080` bleibt dort zu.
 
-**Paket bauen und kopieren** (auf dem Entwicklungsrechner, im Repository):
-
-```sh
-./scripts/build-deb.sh
-scp godeb_*_amd64.deb root@<server-ip>:/root/
-```
-
-Die CI legt dasselbe Paket bei jedem Push als Artefakt `godeb-deb` ab, bei einem Tag `vX.Y.Z` zusätzlich als GitHub-Release.
-
-**Auf dem Server** (`ssh root@<server-ip>`):
+**Auf dem Server** (`ssh root@<server-ip>`), Version und Prüfsumme stehen auf der [Release-Seite](https://github.com/ZeroDos1988/GoDeb/releases):
 
 ```sh
 apt update && apt full-upgrade -y
-apt install -y --no-install-recommends ./godeb_*_amd64.deb
+wget https://github.com/ZeroDos1988/GoDeb/releases/download/v0.2.2/godeb_0.2.2_amd64.deb
+apt install -y --no-install-recommends ./godeb_0.2.2_amd64.deb
 ```
+
+Selbst gebaut geht auch: `./scripts/build-deb.sh` im Repository, dann `scp godeb_*_amd64.deb root@<server-ip>:/root/`. Die CI legt das Paket bei jedem Push als Artefakt `godeb-deb` ab, bei einem Tag `vX.Y.Z` als GitHub-Release.
 
 `--no-install-recommends` lässt Postfix weg; das braucht nur das Mail-Gateway, und seine Installation fragt interaktiv. Am Ende steht der Link zur Ersteinrichtung (`godeb setup-url`).
 
-**Im Browser:** den Link öffnen, Fingerprint prüfen, dann Administrator, 2FA, „WireGuard-Server“ (erster Client als QR-Code: mit der GoDeb-WireGuard-App scannen) und „Nur über WireGuard“. Nach dem Abschluss ist die Oberfläche nur noch über den Tunnel erreichbar: Tunnel verbinden, `http://10.8.0.1:8080` öffnen. Ohne Browser: `godeb setup --role hub --endpoint <server-ip> --access tunnel`.
+**Im Browser:** den Link öffnen, Fingerprint prüfen, dann Administrator, 2FA, „WireGuard-Server“ (erster Client als QR-Code: mit der GoDeb-WireGuard-App scannen) und „Nur über WireGuard“. Die Übersicht am Ende drucken oder als PDF speichern. Nach dem Abschluss ist die Oberfläche nur noch über den Tunnel erreichbar: Tunnel verbinden, die Adresse aus der Übersicht öffnen (meist `http://10.8.0.1:8080`). Ohne Browser: `godeb setup --role hub --endpoint <server-ip> --access tunnel`.
 
 **Prüfen** (auf dem Server):
 

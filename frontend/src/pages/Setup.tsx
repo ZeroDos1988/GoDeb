@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { ConfigUpload } from "@/components/ConfigUpload.tsx";
 import { SetupSummary, type SetupSummaryData } from "@/components/SetupSummary.tsx";
 import { api } from "@/lib/api.ts";
 import { useGet } from "@/lib/useAsync.ts";
@@ -237,6 +238,9 @@ function RoleStep({ info, role, setRole, onNext }: { info: SetupInfo; role: Role
       ) : null}
       {!configured && role === "peer" && !joined ? (
         <div className="mt-4">
+          <div className="mb-3">
+            <ConfigUpload onLoad={setConfig} />
+          </div>
           <Field label={t("setup.joinFile")} hint={t("setup.joinHint")}>
             <textarea value={config} onChange={(e) => setConfig(e.target.value)} rows={8} spellCheck={false} className={`${input} font-mono text-xs`} />
           </Field>
