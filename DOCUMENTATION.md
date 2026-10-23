@@ -134,7 +134,7 @@ Zwei Installationen mit **demselben GoDeb-Paket**. Sie unterscheiden sich nur in
    Oder im Browser: auf der Heim-VM `godeb setup-url` aufrufen, den Link im Heimnetz öffnen, Administrator und 2FA anlegen, „Mit Hub verbinden“ wählen und die heruntergeladene Datei hochladen (oder ihren Inhalt einfügen), dann „Heimnetz und Tunnel“ und den Trusted Endpoint. Beides schreibt `wg0.conf` als Peer, startet den Tunnel, wartet auf den Handshake und richtet ufw ein: SSH, `8080/tcp` auf `wg0`, HTTPS `8443/tcp` nur aus dem LAN, kein offener WireGuard-Port.
 4. **Enshrouded auf der Heim-VM:** In der Web-UI (`http://10.8.0.2:8080`, vom Handy über den Hub) „Spielserver“ → Enshrouded → „Server installieren“. Die Ports öffnen sich nur auf `wg0`, und die Ansicht zeigt die Adresse, unter der Spieler sich verbinden.
 5. **Portweiterleitung auf dem VPS:** Plugin „Portweiterleitung“, Vorlage Enshrouded, Ziel `10.8.0.2`, „Weiterleiten“. Danach im Spiel `<vps-ip>:15637`.
-6. **Handy für Auto-Disconnect:** Das Handy-Profil vom Setup des VPS ist älter als der Trusted Endpoint der Heim-VM. Auf dem VPS `godeb site sync` ausführen (oder WireGuard → Trusted Endpoint → „Client-Dateien aktualisieren“) und den QR-Code in der GoDeb-WireGuard-App neu scannen. Neue Clients bekommen Endpoint und Schlüssel automatisch.
+6. **Handy für Auto-Disconnect:** Das Handy-Profil vom Setup des VPS ist älter als der Trusted Endpoint der Heim-VM. Auf dem VPS `godeb site sync` ausführen (oder WireGuard → Trusted Endpoint → „Client-Dateien aktualisieren“) und den QR-Code in der GoDeb-Tunnel-App neu scannen. Neue Clients bekommen Endpoint und Schlüssel automatisch.
 
 Die beim Beitritt eingefügte Datei wird streng geprüft: genau ein `[Interface]` und ein `[Peer]`, nur die Schlüssel `PrivateKey`, `Address` (eine /32), `MTU`, `PublicKey`, `PresharedKey`, `Endpoint`, `AllowedIPs` und `PersistentKeepalive`. `AllowedIPs` darf nur das Tunnelnetz enthalten. `PreUp`/`PostUp`/`PreDown`/`PostDown`, `Table` und `SaveConfig` werden abgelehnt, weil `wg-quick` sie als root ausführt bzw. das Routing umstellt. `DNS` wird weggelassen. GoDeb schreibt die Datei aus den geprüften Werten neu, nie die eingefügten Zeilen.
 
@@ -216,7 +216,7 @@ Selbst gebaut geht auch: `./scripts/build-deb.sh` im Repository, dann `scp godeb
 
 `--no-install-recommends` lässt Postfix weg; das braucht nur das Mail-Gateway, und seine Installation fragt interaktiv. Am Ende steht der Link zur Ersteinrichtung (`godeb setup-url`).
 
-**Im Browser:** den Link öffnen, Fingerprint prüfen, dann Administrator, 2FA, „WireGuard-Server“ (erster Client als QR-Code: mit der GoDeb-WireGuard-App scannen) und „Nur über WireGuard“. Die Übersicht am Ende drucken oder als PDF speichern. Nach dem Abschluss ist die Oberfläche nur noch über den Tunnel erreichbar: Tunnel verbinden, die Adresse aus der Übersicht öffnen (meist `http://10.8.0.1:8080`). Ohne Browser: `godeb setup --role hub --endpoint <server-ip> --access tunnel`.
+**Im Browser:** den Link öffnen, Fingerprint prüfen, dann Administrator, 2FA, „WireGuard-Server“ (erster Client als QR-Code: mit der GoDeb-Tunnel-App scannen) und „Nur über WireGuard“. Die Übersicht am Ende drucken oder als PDF speichern. Nach dem Abschluss ist die Oberfläche nur noch über den Tunnel erreichbar: Tunnel verbinden, die Adresse aus der Übersicht öffnen (meist `http://10.8.0.1:8080`). Ohne Browser: `godeb setup --role hub --endpoint <server-ip> --access tunnel`.
 
 **Prüfen** (auf dem Server):
 
@@ -337,7 +337,7 @@ Rollen: Ein Hub hat `ListenPort` und Clients als Peers. Ein Peer-Host (Zeile `# 
 
 ### Trusted Endpoint
 
-Damit die GoDeb-WireGuard-App den Tunnel im Heim-WLAN abschaltet und außerhalb wieder einschaltet. Die App fragt den Heimserver über das WLAN an, am Tunnel vorbei, und schickt eine Zufallszahl mit. Der Server signiert sie mit seinem Schlüssel `/etc/godeb/trust.key` (ECDSA P-256, `0600`). Die App vertraut dem Netz nur, wenn die Signatur zu dem Schlüssel passt, der in ihrer Tunnel-Konfiguration gepinnt ist. Ein fremdes WLAN kann das nicht nachmachen, auch wenn es unter derselben Adresse antwortet. Die frühere Prüfung (`/api/trusted`, nur ein Header) ist deshalb entfernt.
+Damit die GoDeb-Tunnel-App den Tunnel im Heim-WLAN abschaltet und außerhalb wieder einschaltet. Die App fragt den Heimserver über das WLAN an, am Tunnel vorbei, und schickt eine Zufallszahl mit. Der Server signiert sie mit seinem Schlüssel `/etc/godeb/trust.key` (ECDSA P-256, `0600`). Die App vertraut dem Netz nur, wenn die Signatur zu dem Schlüssel passt, der in ihrer Tunnel-Konfiguration gepinnt ist. Ein fremdes WLAN kann das nicht nachmachen, auch wenn es unter derselben Adresse antwortet. Die frühere Prüfung (`/api/trusted`, nur ein Header) ist deshalb entfernt.
 
 - **Listener:** eigener HTTP-Server nur an der LAN-Adresse (z. B. `192.168.1.50:8787`) mit genau einer Route, `GET /godeb-trust?nonce=…`. Die Web-UI bleibt nur im Tunnel erreichbar. Höchstens 8 gleichzeitige Signaturen, kurze Timeouts.
 - **Firewall:** `ufw allow in on <lan-if> from <lan-netz> to <lan-ip> port 8787 proto tcp`.

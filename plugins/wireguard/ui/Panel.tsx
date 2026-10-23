@@ -90,7 +90,7 @@ type TrustStatus = {
 
 const peersPath = "/api/plugins/wireguard/peers";
 const androidPath = "/api/plugins/wireguard/android";
-const androidApkDiskPath = "/etc/godeb/android/godeb-wireguard.apk";
+const androidApkDiskPath = "/etc/godeb/android/godeb-tunnel.apk";
 
 const buttonClass =
   "rounded-2xl border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white transition-all duration-200 ease-in-out enabled:hover:bg-white/10 disabled:opacity-50";
@@ -120,7 +120,7 @@ export default function Panel() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = android.data.filename || "godeb-wireguard.apk";
+      link.download = android.data.filename || "godeb-tunnel.apk";
       link.click();
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (err: unknown) {

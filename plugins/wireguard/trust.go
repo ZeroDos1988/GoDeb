@@ -28,7 +28,7 @@ import (
 	"godeb/backend/core"
 )
 
-// The trusted endpoint lets the GoDeb WireGuard app notice that the phone is
+// The trusted endpoint lets the GoDeb Tunnel app notice that the phone is
 // on the home network and switch the tunnel off there. The phone sends a
 // random nonce over Wi-Fi (outside the tunnel); this host signs it with its
 // trust key. The app only trusts a signature that verifies against the key

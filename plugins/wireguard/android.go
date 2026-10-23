@@ -12,12 +12,26 @@ import (
 
 const (
 	androidDir      = "/etc/godeb/android"
-	androidAPKName  = "godeb-wireguard.apk"
+	androidAPKName  = "godeb-tunnel.apk"
 	androidVersion  = "version.txt"
 	androidAPKPath  = androidDir + "/" + androidAPKName
 	androidVerPath  = androidDir + "/" + androidVersion
-	defaultAPKLabel = "godeb-wireguard.apk"
+	defaultAPKLabel = "godeb-tunnel.apk"
+	// legacyAPKPath is the file name before the app was renamed to GoDeb
+	// Tunnel; servers set up earlier still serve it.
+	legacyAPKPath = androidDir + "/godeb-wireguard.apk"
 )
+
+// apkPath returns the APK to serve: the current name, else the old one.
+func apkPath() string {
+	if _, err := os.Stat(androidAPKPath); err == nil {
+		return androidAPKPath
+	}
+	if _, err := os.Stat(legacyAPKPath); err == nil {
+		return legacyAPKPath
+	}
+	return androidAPKPath
+}
 
 type androidClientInfo struct {
 	Available    bool   `json:"available"`
@@ -39,14 +53,15 @@ func handleAndroidInfo(w http.ResponseWriter, r *http.Request) {
 		Filename:     defaultAPKLabel,
 		DownloadPath: "/api/plugins/wireguard/android/apk",
 	}
-	st, err := os.Stat(androidAPKPath)
+	path := apkPath()
+	st, err := os.Stat(path)
 	if err != nil {
-		info.Detail = "Keine APK unter " + androidAPKPath + ". Signed Release-APK dort ablegen."
+		info.Detail = "Keine APK unter " + androidAPKPath + ". Signierte Release-APK von github.com/ZeroDos1988/godeb-tunnel-android dort ablegen."
 		core.WriteJSON(w, http.StatusOK, info)
 		return
 	}
 	if st.IsDir() {
-		info.Detail = androidAPKPath + " ist ein Verzeichnis"
+		info.Detail = path + " ist ein Verzeichnis"
 		core.WriteJSON(w, http.StatusOK, info)
 		return
 	}
@@ -60,7 +75,7 @@ func handleAndroidInfo(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleAndroidAPK(w http.ResponseWriter, r *http.Request) {
-	f, err := os.Open(androidAPKPath)
+	f, err := os.Open(apkPath())
 	if err != nil {
 		if os.IsNotExist(err) {
 			core.WriteError(w, http.StatusNotFound, "Android-APK nicht vorhanden")

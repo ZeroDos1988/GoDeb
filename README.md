@@ -169,11 +169,11 @@ Regeln für Beiträge (Sicherheit, Stil, Commits) stehen in [CLAUDE.md](CLAUDE.m
 
 WireGuard-Clients mit GoDeb-Erweiterungen (Trusted Endpoint, Auto-Disconnect):
 
-- godeb-wireguard-android: die signierte APK liefert GoDeb selbst unter `/api/plugins/wireguard/android/apk` aus
-- godeb-wireguard-windows
-- godeb-wireguard-arch
+- [godeb-tunnel-android](https://github.com/ZeroDos1988/godeb-tunnel-android): APK unter Releases; GoDeb liefert sie auch selbst unter `/api/plugins/wireguard/android/apk` aus, wenn sie unter `/etc/godeb/android/godeb-tunnel.apk` liegt
+- [godeb-tunnel-arch](https://github.com/ZeroDos1988/godeb-tunnel-arch)
+- Windows: noch nicht öffentlich
 
-Die Repositories der Apps sind noch nicht öffentlich.
+Die Apps hießen früher „GoDeb WireGuard“. Die Markenrichtlinie von WireGuard erlaubt den Namen nicht in Produktnamen. „WireGuard“ ist eine eingetragene Marke von Jason A. Donenfeld; GoDeb ist ein unabhängiges Projekt und nutzt die WireGuard-Werkzeuge von Debian.
 
 ## Weiterlesen
 
