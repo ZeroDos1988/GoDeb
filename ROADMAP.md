@@ -60,7 +60,7 @@ Eine Testinstallation auf einem Hetzner-VPS ist ab 20.10. möglich. Die Anleitun
 - [x] ~~**Backups**~~ (entschieden 21.10.): nicht Aufgabe von GoDeb. Proxmox (Heim-VM) und Hetzner (VPS) sichern die ganze Maschine; vor größeren Änderungen einen Snapshot ziehen.
 - [ ] VPS-Spezifika: SSH nur per Schlüssel und unattended-upgrades prüft bzw. installiert das Setup noch nicht (steht bisher nur in der Anleitung).
 - [ ] Paket auch für `arm64` (Hetzner CAX).
-- [ ] **Eigenes APT-Repo** (Idee 22.10.): signiertes Repo auf GitHub Pages, gefüllt vom Release-Job; das Paket bringt `sources`-Eintrag und Schlüssel mit, danach kommt GoDeb mit `apt upgrade`. Zurückgestellt (22.10.): `GoDeb` ist privat, apt braucht aber eine öffentliche Quelle (eigenes öffentliches Repo `godeb-apt` oder GoDeb öffentlich). Der Schlüssel liegt bereits vor (`~/.config/godeb-apt`: Hauptschlüssel nur zum Zertifizieren, 10 Jahre; Signier-Subkey für die CI, 2 Jahre).
+- [ ] **Eigenes APT-Repo** (Idee 22.10.): signiertes Repo auf GitHub Pages, gefüllt vom Release-Job; das Paket bringt `sources`-Eintrag und Schlüssel mit, danach kommt GoDeb mit `apt upgrade`. Seit 23.10. möglich, weil `GoDeb` öffentlich ist (Pages kostenlos). Schlüssel liegt bereit (`~/.config/godeb-apt`, Signier-Subkey für die CI).
 
 ## Phase 3b – Standortverbindung VPS ↔ Heim-VM (umgesetzt 20.10.)
 
@@ -132,4 +132,5 @@ Festgehalten, damit sie nicht wieder neu diskutiert werden.
 - **Spielserver nur über das Plugin `steam`** (20.10.): ein neues Spiel ist eine `Game`-Beschreibung, kein eigenes Plugin.
 - **Weboberfläche ohne root, root-Agent mit eigener 2FA** (22.10.) statt sudoers-Allowlist.
 - **Ein Repository** (21.10.): Plugins bleiben in `GoDeb`, keine Aufteilung in einzelne Repos oder eine GitHub-Organisation. Die Apps haben eigene Repos (`godeb-wireguard-android`, `-windows`, `-arch`).
+- **Öffentlich unter GPL-3.0** (23.10.): neues Repo `ZeroDos1988/GoDeb` mit frischer Historie ab v0.2.1, nur unter dem Namen ZeroDos1988 (noreply-Adresse). Die Entwicklungsgeschichte bis dahin liegt im privaten Archiv `GoDeb-private`. `main` ist gegen Löschen und Force-Push geschützt, `v*`-Tags darf nur der Admin setzen; Lücken über Private Vulnerability Reporting.
 - **Releases per Git-Tag** (22.10., ergänzt 23.10.): Vorabversionen bis zum Test auf echten Servern. Neue Funktionen erhöhen die mittlere Stelle (`v0.2.0`: Logging und Überwachung), Fixes nach einem Servertest die letzte (`v0.2.x`); apt erkennt jede als Update. Die Installationsanleitung steht im Text des Releases.
