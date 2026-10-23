@@ -1,0 +1,7 @@
+{
+  "id": "logs",
+  "name": "Protokoll",
+  "description": "Log der Weboberfläche und des Agenten: Aktionen, Befehle, Anmeldungen",
+  "icon": "log",
+  "order": 90
+}

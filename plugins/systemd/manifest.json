@@ -1,0 +1,7 @@
+{
+  "id": "systemd",
+  "name": "Systemd",
+  "description": "Dienste auflisten, starten und stoppen",
+  "icon": "cogs",
+  "order": 30
+}

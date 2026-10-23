@@ -1,0 +1,6 @@
+{
+  "id": "mailgateway",
+  "name": "Mail-Gateway",
+  "apt_dependencies": ["postfix", "opendkim", "opendkim-tools", "pflogsumm"],
+  "systemd_services": ["postfix.service", "opendkim.service"]
+}

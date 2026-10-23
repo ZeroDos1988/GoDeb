@@ -1,0 +1,7 @@
+{
+  "id": "certbot",
+  "name": "Certbot",
+  "description": "Zertifikate unter /etc/letsencrypt",
+  "icon": "certificate",
+  "order": 40
+}

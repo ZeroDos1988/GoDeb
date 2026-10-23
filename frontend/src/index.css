@@ -1,0 +1,93 @@
+@import "tailwindcss";
+@source "../../plugins";
+
+:root {
+  --color-primary: #a80030;
+  --color-bg: #f3efe6;
+  --color-text: #1c1915;
+  --color-accent: #246b45;
+  --color-surface: #fffdf8;
+  --color-border: #e4dccf;
+  --color-muted-fg: #6f675e;
+  --color-sidebar-bg: #1c1915;
+  --gd-sidebar-fg: #f3efe6;
+  color-scheme: light;
+}
+
+@theme inline {
+  --font-sans: "IBM Plex Sans", "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --color-ink: var(--color-text);
+  --color-paper: var(--color-bg);
+  --color-card: var(--color-surface);
+  --color-line: var(--color-border);
+  --color-debian: var(--color-primary);
+  --color-moss: var(--color-accent);
+  --color-amber: #8a5a00;
+  --color-muted: var(--color-muted-fg);
+  --color-sidebar: var(--color-sidebar-bg);
+  --color-sidebar-fg: var(--gd-sidebar-fg);
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(1200px 500px at 10% -10%, color-mix(in srgb, var(--color-primary) 28%, transparent), transparent 60%),
+    var(--color-paper);
+  color: var(--color-ink);
+}
+
+[dir="rtl"] body {
+  text-align: start;
+}
+
+.gd-table tbody tr {
+  transition: background-color 200ms ease-in-out;
+}
+
+.gd-table tbody tr:nth-child(even) {
+  background: rgb(255 255 255 / 0.03);
+}
+
+.gd-table tbody tr:hover {
+  background: rgb(255 255 255 / 0.05);
+}
+
+::selection {
+  background: var(--color-debian);
+  color: white;
+}
+
+/* The setup overview prints on its own, dark glass turned into ink on
+   paper, so "Save as PDF" gives a clean document. */
+@media print {
+  body:has(.gd-print) * {
+    visibility: hidden;
+  }
+  .gd-print,
+  .gd-print * {
+    visibility: visible;
+    color: #000 !important;
+    background: transparent !important;
+    border-color: #bbb !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+  }
+  .gd-print {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+  }
+  .gd-print-block {
+    break-inside: avoid;
+  }
+  .gd-noprint {
+    display: none !important;
+  }
+}

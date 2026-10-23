@@ -1,0 +1,6 @@
+{
+  "id": "portforward",
+  "name": "Portweiterleitung",
+  "apt_dependencies": ["nftables", "ufw"],
+  "systemd_services": ["godeb-portforward.service"]
+}

@@ -1,0 +1,7 @@
+{
+  "id": "fail2ban",
+  "name": "Fail2ban",
+  "description": "Aktive Jails, gesperrte IPs und Entsperren",
+  "icon": "lock",
+  "order": 25
+}

@@ -1,0 +1,7 @@
+{
+  "id": "portforward",
+  "name": "Portweiterleitung",
+  "description": "Öffentliche Ports des Hubs an Standorte im Tunnel weiterleiten",
+  "icon": "forward",
+  "order": 55
+}

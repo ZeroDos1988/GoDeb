@@ -1,0 +1,7 @@
+{
+  "id": "ufw",
+  "name": "UFW",
+  "description": "Firewall-Status und Regeln",
+  "icon": "shield",
+  "order": 20
+}

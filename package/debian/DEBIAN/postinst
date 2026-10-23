@@ -1,0 +1,68 @@
+#!/bin/sh
+set -e
+
+if ! getent group godeb >/dev/null; then
+	addgroup --system godeb
+fi
+
+if ! getent passwd godeb >/dev/null; then
+	adduser --system --ingroup godeb --home /var/lib/godeb --no-create-home --shell /usr/sbin/nologin godeb
+fi
+
+install -d -o godeb -g godeb -m 0700 /var/lib/godeb
+chmod 0755 /usr/bin/godeb
+
+install -d -m 0700 /etc/wireguard /etc/wireguard/clients
+install -d -m 0700 /etc/godeb
+if [ ! -e /etc/godeb/smtp.json ]; then
+	(umask 077 && cat >/etc/godeb/smtp.json) <<'EOF'
+{
+  "host": "smtp.example.org",
+  "port": 587,
+  "user": "godeb@example.org",
+  "pass": "",
+  "from": "GoDeb <godeb@example.org>",
+  "security": "starttls"
+}
+EOF
+fi
+
+# Since the split into web process (user godeb) and root agent, the web
+# process keeps its files in /var/lib/godeb: accounts and sessions (a copy of
+# the database), master key, login keys and the setup files. /etc/godeb stays
+# root-only with what the agent needs (plugin data in godeb.db, WireGuard
+# trust key, port forwarding, mail). Copies, so a downgrade still works.
+if [ -e /etc/godeb/godeb.db ] && [ ! -e /var/lib/godeb/godeb.db ]; then
+	cp -p /etc/godeb/godeb.db /var/lib/godeb/godeb.db
+	[ ! -e /etc/godeb/master.key ] || [ -e /var/lib/godeb/master.key ] || cp -p /etc/godeb/master.key /var/lib/godeb/master.key
+fi
+for f in auth setup.json setup-token access.json tls; do
+	if [ -e "/etc/godeb/$f" ] && [ ! -e "/var/lib/godeb/$f" ]; then
+		cp -a "/etc/godeb/$f" "/var/lib/godeb/$f"
+	fi
+done
+chown -R godeb:godeb /var/lib/godeb
+chmod 0700 /var/lib/godeb
+
+install -d -o godeb -g adm -m 0750 /var/log/godeb
+[ -e /var/log/godeb/auth.log ] || install -o godeb -g adm -m 0640 /dev/null /var/log/godeb/auth.log
+chown godeb:adm /var/log/godeb/auth.log
+
+if ! /usr/share/godeb/scripts/setup-fail2ban.sh; then
+	echo "godeb: fail2ban-Einrichtung fehlgeschlagen; später erneut: /usr/share/godeb/scripts/setup-fail2ban.sh" >&2
+fi
+
+if command -v systemctl >/dev/null 2>&1; then
+	systemctl daemon-reload || true
+	systemctl enable godeb-agent.service godeb.service || true
+	systemctl restart godeb-agent.service || true
+	systemctl restart godeb.service || true
+fi
+
+# Fresh installs: print the link to the web wizard (one-time token, only shown
+# to root here) in a framed block. Configured servers print the overview with
+# the addresses of the web UI.
+sleep 2
+/usr/bin/godeb setup-url 2>/dev/null || true
+
+exit 0

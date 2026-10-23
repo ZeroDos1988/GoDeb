@@ -1,0 +1,15 @@
+package main
+
+import (
+	_ "godeb/plugins/apt"
+	_ "godeb/plugins/certbot"
+	_ "godeb/plugins/fail2ban"
+	_ "godeb/plugins/logs"
+	_ "godeb/plugins/mailgateway/backend"
+	_ "godeb/plugins/monitor"
+	_ "godeb/plugins/portforward"
+	_ "godeb/plugins/steam"
+	_ "godeb/plugins/systemd"
+	_ "godeb/plugins/ufw"
+	_ "godeb/plugins/wireguard"
+)

@@ -1,0 +1,16 @@
+Package: godeb
+Version: 0.1.0
+Section: admin
+Priority: optional
+Architecture: amd64
+Maintainer: ZeroDos1988 <336650567+ZeroDos1988@users.noreply.github.com>
+Homepage: https://github.com/ZeroDos1988/GoDeb
+Depends: libc6, adduser, systemd, ufw, certbot, wireguard, wireguard-tools, qrencode, fail2ban
+Recommends: postfix, opendkim, opendkim-tools, pflogsumm
+Description: Modular Debian server administration UI
+ GoDeb is a local web interface for APT, UFW, Fail2ban, systemd, Certbot,
+ WireGuard and an optional Postfix/OpenDKIM mail relay, with mandatory TOTP
+ login and optional Microsoft 365 or Google sign-in.
+ Accounts, theme preferences, OIDC mappings, WireGuard address assignments
+ and mail-relay metadata are stored in an embedded SQLite file. Runtime state
+ still comes from the operating system.

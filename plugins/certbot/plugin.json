@@ -1,0 +1,6 @@
+{
+  "id": "certbot",
+  "name": "Certbot",
+  "apt_dependencies": ["certbot"],
+  "systemd_services": ["certbot.timer"]
+}

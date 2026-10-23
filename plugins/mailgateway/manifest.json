@@ -1,0 +1,7 @@
+{
+  "id": "mailgateway",
+  "name": "Mail-Gateway",
+  "description": "Postfix-Relay über WireGuard, OpenDKIM und Queue",
+  "icon": "mail",
+  "order": 35
+}

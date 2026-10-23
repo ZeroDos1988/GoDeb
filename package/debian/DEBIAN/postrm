@@ -1,0 +1,33 @@
+#!/bin/sh
+set -e
+
+if command -v systemctl >/dev/null 2>&1; then
+	if [ "$1" = "remove" ] || [ "$1" = "purge" ]; then
+		systemctl disable --now godeb.service godeb-agent.service >/dev/null 2>&1 || true
+	fi
+	systemctl daemon-reload >/dev/null 2>&1 || true
+fi
+
+if [ "$1" = "remove" ] || [ "$1" = "purge" ]; then
+	rm -f /etc/fail2ban/jail.d/godeb.local /etc/fail2ban/jail.d/godeb-sshd.local /etc/fail2ban/filter.d/godeb.conf
+	# Traffic counters of the monitor (counters only, no rules that filter).
+	if command -v nft >/dev/null 2>&1; then
+		nft delete table inet godeb_acct >/dev/null 2>&1 || true
+	fi
+	if command -v systemctl >/dev/null 2>&1; then
+		systemctl try-restart fail2ban.service >/dev/null 2>&1 || true
+	fi
+fi
+
+if [ "$1" = "purge" ]; then
+	rm -rf /var/lib/godeb /etc/godeb /var/log/godeb /var/lib/godeb-agent
+	# /etc/wireguard/clients holds client private keys that belong to wg0.conf; it is kept.
+	if getent passwd godeb >/dev/null; then
+		deluser --system godeb >/dev/null 2>&1 || userdel godeb >/dev/null 2>&1 || true
+	fi
+	if getent group godeb >/dev/null; then
+		delgroup --system godeb >/dev/null 2>&1 || groupdel godeb >/dev/null 2>&1 || true
+	fi
+fi
+
+exit 0
