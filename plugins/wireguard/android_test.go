@@ -11,8 +11,8 @@ import (
 
 func TestHandleAndroidInfoMissing(t *testing.T) {
 	// Ensure default path is missing in the test environment.
-	if _, err := os.Stat(androidAPKPath); err == nil {
-		t.Skip("APK already present on this host")
+	if _, err := os.Stat(apkPath()); err == nil {
+		t.Skip("APK (current or legacy name) already present on this host")
 	}
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/api/plugins/wireguard/android", nil)
