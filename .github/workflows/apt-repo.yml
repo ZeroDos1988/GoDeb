@@ -1,0 +1,65 @@
+name: APT-Repo
+
+# Rebuilds the signed APT repository on GitHub Pages from all published
+# releases. Called by the release job in ci.yml; can be started by hand to
+# republish (e.g. after deleting a release).
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    # Same sq/sqv/apt as on the servers.
+    container: debian:trixie
+    steps:
+      - name: Werkzeuge
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends apt-utils ca-certificates gh git sq sqv
+
+      - uses: actions/checkout@v4
+
+      - name: Pakete aus den Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir debs
+          gh release list --repo "$GITHUB_REPOSITORY" --limit 1000 --exclude-drafts --json tagName --jq '.[].tagName' |
+            while read -r tag; do
+              gh release download "$tag" --repo "$GITHUB_REPOSITORY" --pattern 'godeb_*_amd64.deb' --dir debs
+            done
+          ls -l debs
+
+      - name: Repo bauen und signieren
+        env:
+          APT_SIGNING_KEY: ${{ secrets.APT_SIGNING_KEY }}
+        run: |
+          key="$RUNNER_TEMP/signing.pgp"
+          (umask 077; printf '%s\n' "$APT_SIGNING_KEY" >"$key")
+          ./scripts/build-apt-repo.sh debs site "$key"
+          rm -f "$key"
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

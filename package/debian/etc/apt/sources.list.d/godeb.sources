@@ -1,0 +1,6 @@
+Types: deb
+URIs: https://zerodos1988.github.io/GoDeb
+Suites: trixie
+Components: main
+Architectures: amd64
+Signed-By: /usr/share/keyrings/godeb-archive-keyring.asc

@@ -1,1 +1,2 @@
 /etc/logrotate.d/godeb
+/etc/apt/sources.list.d/godeb.sources
