@@ -1,6 +1,24 @@
 # Fahrplan
 
-Stand: 22.10.2026. Reihenfolge = Priorität. `[x]` erledigt, `[ ]` offen. Neue Ideen kommen hierher (passende Phase oder Phase 7), getroffene Entscheidungen unten unter „Entscheidungen“.
+Stand: 24.10.2026. Reihenfolge = Priorität. `[x]` erledigt, `[ ]` offen. Neue Ideen kommen hierher (passende Phase oder Phase 7), getroffene Entscheidungen unten unter „Entscheidungen“.
+
+## Aktueller Stand (Übergabe 24.10.)
+
+- **Veröffentlicht** (alle öffentlich, nur unter ZeroDos1988):
+  - `ZeroDos1988/GoDeb`: GPL-3.0, Release **v0.2.2** (Vorabversion); auf `main` seither: App-Umbenennung, `golang.org/x/crypto` 0.58.0, Roadmap.
+  - `ZeroDos1988/godeb-tunnel-android`: Apache-2.0, Release **1.1.0** mit signierter `godeb-tunnel.apk`.
+  - `ZeroDos1988/godeb-tunnel-arch`: GPL-3.0, Release **1.0.1**.
+  - Privat bleibt nur `godeb-wireguard-windows`.
+- **Lokal:**
+  - Repos unter `~/Projects/` (`GoDeb`, `godeb-tunnel-android`, `godeb-tunnel-arch`, `godeb-wireguard-windows`).
+  - Alte Historien (mit Klarnamen, nicht veröffentlichen) und ein Export der alten GitHub-Releases unter `~/Projects/Archiv/`.
+- **Auf den Servern läuft** v0.2.0 bzw. v0.2.1. VPS-Installation per Assistent funktioniert; die Heim-VM per Datei-Upload (v0.2.2) ist noch nicht getestet.
+- **Nächste Schritte, in dieser Reihenfolge:**
+  1. Servertest von v0.2.2 auf VPS und Heim-VM: Beitritt per Datei, Übersicht drucken, Überwachung (nftables-Zähler, Steam-Abfrage, Standorte), Alarme.
+  2. Danach v0.2.3 mit der App-Umbenennung; auf dem Server die APK als `/etc/godeb/android/godeb-tunnel.apk` ablegen.
+  3. Phase 8: Heim-VM als Gateway (Route im Router) und optional Ausgang ins Internet über den Hub.
+  4. Windows-Client umbenennen (ProductName, Installer, Dienste) und veröffentlichen.
+  5. APT-Repo über GitHub Pages (Schlüssel liegt bereit).
 
 ## Leitplanken für alle Phasen
 
@@ -97,7 +115,10 @@ Ziel: auf einen Blick sehen, ob der Server gesund ist, ob der Traffic normal aus
 - [ ] Auf den echten Servern prüfen: Zähler-Tabelle `inet godeb_acct` neben ufw und `godeb_portforward`, Steam-Query von Enshrouded, Standort-Abfrage Hub → Heim-VM, Schwellen der Grundlinie nach ein paar Wochen.
 - [ ] Push direkt in die GoDeb-App statt ntfy (braucht einen Push-Dienst).
 
-## Phase 5 – WireGuard-Clients (Android, Windows, Arch)
+## Phase 5 – GoDeb-Tunnel-Clients (Android, Windows, Arch)
+
+- [x] **Umbenannt in „GoDeb Tunnel“** (23.10.): Die Markenrichtlinie von WireGuard verbietet „WireGuard“ im Produktnamen. Android und Arch sind öffentlich; App-ID `de.godeb.wireguard` und Signierschlüssel bleiben (Updates). GoDeb liefert `godeb-tunnel.apk` aus und nimmt sonst die alte `godeb-wireguard.apk`.
+- [ ] **Windows umbenennen und veröffentlichen**: ProductName „WireGuard“, Installer, Dienstnamen und Texte ersetzen, auf Windows testen, Repo wie Android/Arch bereinigen (Commit mit Klarnamen umschreiben) und als `godeb-tunnel-windows` veröffentlichen. Den vorgebauten `wireguard.dll` (WireGuard-NT) unverändert lassen; seine Lizenz erlaubt die Weitergabe nur so.
 
 - [x] Challenge-Response statt reinem HTTP-Header (20.10.): Die App schickt eine Nonce, die Heim-VM signiert sie (ECDSA P-256 statt Ed25519, weil Android P-256 ohne Zusatzbibliothek prüft). Der Public Key steht als `# GoDeb-Trusted-Key:` in der Client-Konfiguration. Die alte Header-Prüfung `/api/trusted` ist entfernt, ebenso die Subnetz-Suche in der App.
 - [x] Auto-Disconnect sicher: Ohne gepinnten Schlüssel bleibt es aus, mit Schlüssel wird es beim Import automatisch eingeschaltet.
