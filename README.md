@@ -60,12 +60,16 @@ Ein neues Spiel ist eine `Game`-Beschreibung in `plugins/steam/`, kein eigenes P
 
 ## Installation
 
-Voraussetzung: Debian 13 (amd64), root, eine Netzwerkverbindung. Das Paket gibt es unter [Releases](https://github.com/ZeroDos1988/GoDeb/releases); die Release-Seite nennt Version und Prüfsumme.
+Voraussetzung: Debian 13 (amd64), root, eine Netzwerkverbindung. GoDeb kommt aus einem eigenen, signierten APT-Repo auf GitHub Pages:
 
 ```bash
-wget https://github.com/ZeroDos1988/GoDeb/releases/download/v0.2.2/godeb_0.2.2_amd64.deb
-apt install --no-install-recommends ./godeb_0.2.2_amd64.deb
+wget -O /usr/share/keyrings/godeb-archive-keyring.asc https://zerodos1988.github.io/GoDeb/godeb-archive-keyring.asc
+wget -O /etc/apt/sources.list.d/godeb.sources https://zerodos1988.github.io/GoDeb/godeb.sources
+apt update
+apt install --no-install-recommends godeb
 ```
+
+Der Schlüssel hat den Fingerprint `85BB 4B5E C4EB BC47 DCD1  6D32 FF4E 70E4 D1A7 EBB9` (prüfen mit `sq inspect /usr/share/keyrings/godeb-archive-keyring.asc`). Ab dann kommt jede neue Version mit `apt update && apt upgrade`. Ohne Repo geht es weiter mit dem `.deb` aus den [Releases](https://github.com/ZeroDos1988/GoDeb/releases): `apt install --no-install-recommends ./godeb_*_amd64.deb`. Ab Version 0.2.3 bringt das Paket Repo-Eintrag und Schlüssel selbst mit.
 
 Am Ende der Installation steht in einem Kasten der Link zur Ersteinrichtung. Später lässt er sich jederzeit wieder abrufen:
 
@@ -99,7 +103,7 @@ Die vollständige Anleitung für VPS und Heim-VM, inklusive Portweiterleitung un
 
 ### Updates und Backups
 
-Jeder Build trägt eine Version aus dem Git-Tag (`0.1.0` oder `0.1.0+git42.abc1234`), apt erkennt neuere Pakete als Update. Die Version steht in der Seitenleiste, in `godeb version` und in `/api/health`.
+Jeder Build trägt eine Version aus dem Git-Tag (`0.1.0` oder `0.1.0+git42.abc1234`), apt erkennt neuere Pakete als Update. Mit dem APT-Repo reicht `apt update && apt upgrade`. Die Version steht in der Seitenleiste, in `godeb version` und in `/api/health`.
 
 Backups macht GoDeb bewusst nicht selbst. Dafür sind die Snapshots der Plattform da (Proxmox zu Hause, Hetzner-Backups auf dem VPS).
 

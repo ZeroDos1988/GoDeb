@@ -204,15 +204,17 @@ Für einen Testserver. Was vor dem produktiven Einsatz noch fehlt, steht unter �
 - Image **Debian 13**, eigenen SSH-Schlüssel hinterlegen.
 - Eine Hetzner-Cloud-Firewall ist optional. Wenn sie aktiv ist, muss sie eingehend `22/tcp` und `51820/udp` erlauben. Port `8080` bleibt dort zu.
 
-**Auf dem Server** (`ssh root@<server-ip>`), Version und Prüfsumme stehen auf der [Release-Seite](https://github.com/ZeroDos1988/GoDeb/releases):
+**Auf dem Server** (`ssh root@<server-ip>`), aus dem APT-Repo (siehe „APT-Repo“):
 
 ```sh
 apt update && apt full-upgrade -y
-wget https://github.com/ZeroDos1988/GoDeb/releases/download/v0.2.2/godeb_0.2.2_amd64.deb
-apt install -y --no-install-recommends ./godeb_0.2.2_amd64.deb
+wget -O /usr/share/keyrings/godeb-archive-keyring.asc https://zerodos1988.github.io/GoDeb/godeb-archive-keyring.asc
+wget -O /etc/apt/sources.list.d/godeb.sources https://zerodos1988.github.io/GoDeb/godeb.sources
+apt update
+apt install -y --no-install-recommends godeb
 ```
 
-Selbst gebaut geht auch: `./scripts/build-deb.sh` im Repository, dann `scp godeb_*_amd64.deb root@<server-ip>:/root/`. Die CI legt das Paket bei jedem Push als Artefakt `godeb-deb` ab, bei einem Tag `vX.Y.Z` als GitHub-Release.
+Oder ein einzelnes Paket von der [Release-Seite](https://github.com/ZeroDos1988/GoDeb/releases) mit `apt install --no-install-recommends ./godeb_*_amd64.deb`. Selbst gebaut geht auch: `./scripts/build-deb.sh` im Repository, dann `scp godeb_*_amd64.deb root@<server-ip>:/root/`. Die CI legt das Paket bei jedem Push als Artefakt `godeb-deb` ab, bei einem Tag `vX.Y.Z` als GitHub-Release.
 
 `--no-install-recommends` lässt Postfix weg; das braucht nur das Mail-Gateway, und seine Installation fragt interaktiv. Am Ende steht der Link zur Ersteinrichtung (`godeb setup-url`).
 
@@ -247,7 +249,7 @@ Lokal getestet sind Download und Konfiguration, noch nicht der Start unter Wine 
 apt install -y unattended-upgrades
 ```
 
-**Update**: neues Paket kopieren und `apt install --no-install-recommends ./godeb_*_amd64.deb`. Jeder Build hat eine höhere Version (siehe „Versionen und Updates“), apt erkennt ihn als Update. **Entfernen**: `apt purge godeb`. `/etc/wireguard` und `/etc/godeb` bleiben dabei liegen.
+**Update**: `apt update && apt upgrade` (aus dem APT-Repo), sonst neues Paket kopieren und `apt install --no-install-recommends ./godeb_*_amd64.deb`. `unattended-upgrades` spielt GoDeb nicht von selbst ein, nur Debians Sicherheitsupdates. Jeder Build hat eine höhere Version (siehe „Versionen und Updates“), apt erkennt ihn als Update. **Entfernen**: `apt purge godeb`. `/etc/wireguard` und `/etc/godeb` bleiben dabei liegen.
 
 **Backups** macht nicht GoDeb, sondern die Plattform: auf Hetzner die Backups bzw. Snapshots des VPS, zu Hause Proxmox für die VM. Beide sichern die ganze Maschine mit `/etc/godeb`, `/etc/wireguard` und den Spielständen. Vor größeren Änderungen einen Snapshot ziehen.
 
@@ -560,6 +562,14 @@ ls -l /run/godeb-agent/agent.sock  # srw-rw---- root godeb
 ```sh
 git tag v0.2.0 && git push origin v0.2.0   # CI baut und veröffentlicht das .deb
 ```
+
+### APT-Repo
+
+Das Repo liegt auf GitHub Pages unter `https://zerodos1988.github.io/GoDeb` (Suite `trixie`, Komponente `main`, nur `amd64`). Nach jedem Release baut der Workflow `apt-repo.yml` es aus allen veröffentlichten Releases neu (`scripts/build-apt-repo.sh`: `apt-ftparchive`, signiert mit `sq`, vor dem Hochladen mit `sqv` gegen den mitgelieferten Schlüssel geprüft). Von Hand neu veröffentlichen: Actions → „APT-Repo“ → „Run workflow“. Vorabversionen landen mit im Repo; ein gelöschtes Release verschwindet beim nächsten Lauf.
+
+- **Paket:** Es bringt `/etc/apt/sources.list.d/godeb.sources` (Conffile) und `/usr/share/keyrings/godeb-archive-keyring.asc` mit. Die Dateien auf der Pages-Seite sind dieselben, wer sie vorher von Hand anlegt, bekommt beim Installieren keine Rückfrage.
+- **Schlüssel:** Primärschlüssel `85BB 4B5E C4EB BC47 DCD1  6D32 FF4E 70E4 D1A7 EBB9` (nur Zertifizierung, bis 2036), Signier-Unterschlüssel `C59E 5F9F EE98 E052 817E  B9AC B93E E13B A71E 8187` (bis 22.10.2028). Die CI hat nur den Unterschlüssel (Secret `APT_SIGNING_KEY`). Vor Ablauf den Unterschlüssel offline verlängern oder ersetzen und die neue Fassung von `package/apt/godeb-archive-keyring.asc` mit einem Release ausliefern.
+- **Lokal bauen:** `scripts/build-apt-repo.sh <verzeichnis-mit-debs> <ausgabe> <schlüsseldatei>`.
 
 ### Plugins abschalten
 

@@ -18,7 +18,7 @@ Stand: 24.10.2026. Reihenfolge = Priorität. `[x]` erledigt, `[ ]` offen. Neue I
   2. Danach v0.2.3 mit der App-Umbenennung; auf dem Server die APK als `/etc/godeb/android/godeb-tunnel.apk` ablegen.
   3. Phase 8: Heim-VM als Gateway (Route im Router) und optional Ausgang ins Internet über den Hub.
   4. Windows-Client umbenennen (ProductName, Installer, Dienste) und veröffentlichen.
-  5. APT-Repo über GitHub Pages (Schlüssel liegt bereit).
+  5. ~~APT-Repo über GitHub Pages~~ (24.10. umgesetzt, Paket bringt Quelle und Schlüssel ab v0.2.3 mit).
 
 ## Leitplanken für alle Phasen
 
@@ -78,7 +78,7 @@ Eine Testinstallation auf einem Hetzner-VPS ist ab 20.10. möglich. Die Anleitun
 - [x] ~~**Backups**~~ (entschieden 21.10.): nicht Aufgabe von GoDeb. Proxmox (Heim-VM) und Hetzner (VPS) sichern die ganze Maschine; vor größeren Änderungen einen Snapshot ziehen.
 - [ ] VPS-Spezifika: SSH nur per Schlüssel und unattended-upgrades prüft bzw. installiert das Setup noch nicht (steht bisher nur in der Anleitung).
 - [ ] Paket auch für `arm64` (Hetzner CAX).
-- [ ] **Eigenes APT-Repo** (Idee 22.10.): signiertes Repo auf GitHub Pages, gefüllt vom Release-Job; das Paket bringt `sources`-Eintrag und Schlüssel mit, danach kommt GoDeb mit `apt upgrade`. Seit 23.10. möglich, weil `GoDeb` öffentlich ist (Pages kostenlos). Schlüssel liegt bereit (`~/.config/godeb-apt`, Signier-Subkey für die CI).
+- [x] **Eigenes APT-Repo** (24.10.): signiertes Repo auf GitHub Pages (`zerodos1988.github.io/GoDeb`, Suite `trixie`), nach jedem Release aus allen Releases neu gebaut (`apt-repo.yml`). Das Paket bringt `godeb.sources` und Schlüssel mit, danach kommt GoDeb mit `apt upgrade`. Die CI hat nur den Signier-Unterschlüssel (bis 2028).
 
 ## Phase 3b – Standortverbindung VPS ↔ Heim-VM (umgesetzt 20.10.)
 
