@@ -171,7 +171,7 @@ export function Login2FA({ onAuthenticated }: { onAuthenticated: (username: stri
             {t("nav.appearance")}
           </button>
           <span>
-            {t("login.lostAccess")} <code className="font-mono">godeb 2fa reset</code>
+            {t("login.lostAccess")} <code className="font-mono">sudo godeb 2fa reset</code>
           </span>
         </div>
         {themeOpen ? <ThemeSettings onClose={() => setThemeOpen(false)} /> : null}

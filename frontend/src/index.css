@@ -64,30 +64,28 @@ body {
   color: white;
 }
 
-/* The setup overview prints on its own, dark glass turned into ink on
-   paper, so "Save as PDF" gives a clean document. */
+/* Printing: a PrintSheet (components/Print.tsx) replaces the whole app with
+   a plain black-on-white sheet. Without a sheet the page prints as is. */
+.gd-sheet {
+  display: none;
+}
 @media print {
-  body:has(.gd-print) * {
-    visibility: hidden;
+  @page {
+    margin: 16mm 14mm;
   }
-  .gd-print,
-  .gd-print * {
-    visibility: visible;
-    color: #000 !important;
-    background: transparent !important;
-    border-color: #bbb !important;
-    box-shadow: none !important;
-    backdrop-filter: none !important;
+  body:has(> .gd-sheet) {
+    background: #fff !important;
   }
-  .gd-print {
-    position: absolute;
-    inset: 0 auto auto 0;
-    width: 100%;
-  }
-  .gd-print-block {
-    break-inside: avoid;
-  }
-  .gd-noprint {
+  body:has(> .gd-sheet) > :not(.gd-sheet) {
     display: none !important;
+  }
+  .gd-sheet {
+    display: block;
+    color: #000;
+    font-size: 10.5pt;
+    line-height: 1.4;
+  }
+  .gd-sheet-block {
+    break-inside: avoid;
   }
 }

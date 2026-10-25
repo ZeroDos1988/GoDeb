@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { PrintSheet, SheetHeader } from "@/components/Print.tsx";
 import { authApi, type Enrollment } from "@/lib/auth.ts";
+import { copyText } from "@/lib/clipboard.ts";
 
 type Props = {
   onComplete: (username: string) => void;
@@ -91,6 +93,9 @@ export function TwoFAEnrollment({ onComplete, onCancel }: Props) {
             </>
           ) : (
             <>
+              <PrintSheet>
+                <BackupSheet enrollment={enrollment} />
+              </PrintSheet>
               <ol className="space-y-6 text-sm">
                 <li>
                   <p className="font-medium">{t("enroll.scan")}</p>
@@ -173,18 +178,39 @@ export function TwoFAEnrollment({ onComplete, onCancel }: Props) {
   );
 }
 
-async function copyText(text: string) {
-  if (navigator.clipboard && window.isSecureContext) {
-    await navigator.clipboard.writeText(text);
-    return;
+// BackupSheet is the printed page with the backup codes: account, server
+// and date, so a sheet in a drawer still says what it is for. The TOTP
+// secret is not printed.
+function BackupSheet({ enrollment }: { enrollment: Enrollment }) {
+  const { t, i18n } = useTranslation();
+  const account = accountOf(enrollment.otpauth_url);
+  return (
+    <>
+      <SheetHeader
+        title={t("enroll.sheetTitle")}
+        subtitle={t("enroll.sheetFor", { account, host: window.location.hostname, date: new Date().toLocaleString(i18n.language) })}
+      />
+      <p className="mb-4">{t("enroll.sheetText")}</p>
+      <ol className="grid grid-cols-2 gap-x-8 gap-y-2 font-mono text-[1.3em]">
+        {enrollment.backup_codes.map((backup, i) => (
+          <li key={backup} className="flex gap-3 border-b border-neutral-300 py-1.5">
+            <span className="w-6 text-right text-neutral-500">{i + 1}.</span>
+            <span className="tracking-wider">{backup}</span>
+            <span className="ms-auto font-sans text-neutral-400">☐</span>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-6 text-neutral-600">{t("enroll.sheetKeep")}</p>
+    </>
+  );
+}
+
+// accountOf reads "user" from otpauth://totp/GoDeb:user?secret=…
+function accountOf(otpauth: string): string {
+  try {
+    const label = decodeURIComponent(new URL(otpauth).pathname.replace(/^\/+(totp\/)?/, ""));
+    return label.includes(":") ? label.slice(label.indexOf(":") + 1) : label;
+  } catch {
+    return "";
   }
-  const area = document.createElement("textarea");
-  area.value = text;
-  area.setAttribute("readonly", "");
-  area.style.position = "fixed";
-  area.style.opacity = "0";
-  document.body.appendChild(area);
-  area.select();
-  document.execCommand("copy");
-  area.remove();
 }

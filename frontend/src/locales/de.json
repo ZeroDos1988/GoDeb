@@ -438,7 +438,11 @@
     "codeLabel": "6-stelliger Code",
     "activate": "Aktivieren",
     "failed": "Einrichtung fehlgeschlagen",
-    "badCode": "Code ungültig"
+    "badCode": "Code ungültig",
+    "sheetTitle": "Backup-Codes für die Anmeldung",
+    "sheetFor": "Konto {{account}} auf {{host}} · erstellt {{date}}",
+    "sheetText": "Jeder Code ersetzt genau einmal den Code aus der Authenticator-App, z. B. wenn das Handy verloren ist. Benutzte Codes abhaken.",
+    "sheetKeep": "Sicher und getrennt vom Handy aufbewahren. Neue Codes gibt es nur mit einer neuen 2FA-Einrichtung."
   },
   "mailgw": {
     "title": "Mail-Gateway",
@@ -691,7 +695,7 @@
       "missing": "nicht installiert"
     },
     "noRules": "Keine Regeln.",
-    "commands": "Nützliche Befehle (als root)",
+    "commands": "Nützliche Befehle (mit sudo)",
     "noSecrets": "Diese Übersicht enthält keine Passwörter, Tokens oder privaten Schlüssel. Die WireGuard-Clientdateien liegen auf dem Server unter /etc/wireguard/clients.",
     "roles": {
       "hub": "WireGuard-Hub (Server)",

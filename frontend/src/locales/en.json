@@ -438,7 +438,11 @@
     "codeLabel": "6-digit code",
     "activate": "Activate",
     "failed": "Setup failed",
-    "badCode": "Invalid code"
+    "badCode": "Invalid code",
+    "sheetTitle": "Backup codes for signing in",
+    "sheetFor": "Account {{account}} on {{host}} · created {{date}}",
+    "sheetText": "Each code replaces the code from the authenticator app exactly once, e.g. when the phone is lost. Tick off used codes.",
+    "sheetKeep": "Keep safe and apart from the phone. New codes only come with a new 2FA setup."
   },
   "mailgw": {
     "title": "Mail gateway",
@@ -691,7 +695,7 @@
       "missing": "not installed"
     },
     "noRules": "No rules.",
-    "commands": "Useful commands (as root)",
+    "commands": "Useful commands (with sudo)",
     "noSecrets": "This overview contains no passwords, tokens or private keys. The WireGuard client files are on the server in /etc/wireguard/clients.",
     "roles": {
       "hub": "WireGuard hub (server)",
