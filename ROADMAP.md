@@ -14,7 +14,7 @@ Stand: 24.10.2026. Reihenfolge = Priorität. `[x]` erledigt, `[ ]` offen. Neue I
   - Alte Historien (mit Klarnamen, nicht veröffentlichen) und ein Export der alten GitHub-Releases unter `~/Projects/Archiv/`.
 - **Auf den Servern:** Der Hetzner-VPS ist am 25.10. frisch aus dem APT-Repo mit v0.2.3 installiert. Rückmeldung: Installation lief; die gedruckte Übersicht war leer (behoben, siehe unten); weitere Clients und der Standort sollen gleich im Assistenten entstehen (umgesetzt, siehe Phase 8).
 - **Nächste Schritte, in dieser Reihenfolge:**
-  1. Servertest von v0.2.5 (veröffentlicht 25.10.) auf VPS und Heim-VM: Benutzermenü und Sprache, Standort per Code, Übersicht und Backup-Codes drucken, Überwachung, Alarme.
+  1. Servertest von v0.2.6 (veröffentlicht 25.10.) auf VPS und Heim-VM: automatische Updates und Selbst-Update über „Alle aktualisieren“, Benutzermenü und Sprache, Standort per Code, Übersicht und Backup-Codes drucken, Überwachung, Alarme.
   2. Auf dem Server die APK als `/etc/godeb/android/godeb-tunnel.apk` ablegen.
   3. Phase 8: Heim-VM als Gateway (Route im Router) und optional Ausgang ins Internet über den Hub.
   4. Windows-Client umbenennen (ProductName, Installer, Dienste) und veröffentlichen.
