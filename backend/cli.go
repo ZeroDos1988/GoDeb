@@ -27,6 +27,9 @@ const usage = `Aufruf:
   godeb site sync                Auf dem Hub: Weiterleitungen und Trusted Endpoints der Standorte abgleichen
   godeb trust enable [--address IP] [--port 8787] | disable | show
                                  Trusted Endpoint im Heimnetz (Auto-Disconnect der App)
+  godeb apt-run check|security|upgrade
+                                 Paketlisten prüfen, Sicherheitsupdates oder alle Updates installieren
+                                 (läuft sonst automatisch als godeb-apt.service)
   godeb user passwd <benutzer>   Benutzer anlegen oder Passwort setzen
   godeb 2fa reset <benutzer>     2FA zurücksetzen (Notfall, per SSH mit sudo)
   godeb sessions revoke <benutzer>  Alle Web-Sitzungen des Benutzers beenden
@@ -49,6 +52,8 @@ func runCLI(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return runTrust(args[1:], stdout, stderr)
 	case len(args) >= 1 && args[0] == "site":
 		return runSite(args[1:], stdout, stderr)
+	case len(args) >= 1 && args[0] == "apt-run":
+		return runAptRun(args[1:], stdout, stderr)
 	case len(args) == 3 && args[0] == "2fa" && args[1] == "reset":
 		return reset2FA(args[2], stdout, stderr)
 	case len(args) == 3 && args[0] == "sessions" && args[1] == "revoke":

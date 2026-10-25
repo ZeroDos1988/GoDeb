@@ -12,6 +12,9 @@ type Package struct {
 	Version string `json:"version"`
 	Arch    string `json:"arch"`
 	From    string `json:"from"`
+	// Security is set when the candidate comes from a security suite
+	// (e.g. trixie-security).
+	Security bool `json:"security"`
 }
 
 var aptLine = regexp.MustCompile(`^([a-z0-9][a-z0-9+.-]*)/(\S+)\s+(\S+)\s+(\S+)\s+\[upgradable from:\s*([^\]]+)\]\s*$`)
@@ -34,12 +37,24 @@ func ParseUpgradable(out string) []Package {
 			continue
 		}
 		packages = append(packages, Package{
-			Name:    match[1],
-			Suite:   match[2],
-			Version: match[3],
-			Arch:    match[4],
-			From:    strings.TrimSpace(match[5]),
+			Name:     match[1],
+			Suite:    match[2],
+			Version:  match[3],
+			Arch:     match[4],
+			From:     strings.TrimSpace(match[5]),
+			Security: securitySuite(match[2]),
 		})
 	}
 	return packages
+}
+
+// securitySuite reports whether one of the comma-separated suites apt
+// lists for the candidate is a security suite.
+func securitySuite(suites string) bool {
+	for _, s := range strings.Split(suites, ",") {
+		if strings.HasSuffix(s, "-security") {
+			return true
+		}
+	}
+	return false
 }

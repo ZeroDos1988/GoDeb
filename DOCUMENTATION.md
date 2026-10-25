@@ -246,13 +246,9 @@ Das lohnt sich vor allem bei wiederholten Tests im Heimnetz. Ein Hetzner-Server 
 
 Lokal getestet sind Download und Konfiguration, noch nicht der Start unter Wine ohne X-Server. Startet der Dienst nicht: `sudo journalctl -u godeb-steam-enshrouded -e`.
 
-**SSH und Updates**: `sudo sshd -T | grep -E 'passwordauthentication|permitrootlogin'` muss `passwordauthentication no` und `permitrootlogin without-password` zeigen. Steht dort `yes`, in `/etc/ssh/sshd_config.d/10-godeb.conf` `PasswordAuthentication no` eintragen und `sudo systemctl reload ssh` ausführen, aber erst, nachdem die Anmeldung per Schlüssel funktioniert hat. Sicherheitsupdates installiert der Server selbst nach:
+**SSH und Updates**: `sudo sshd -T | grep -E 'passwordauthentication|permitrootlogin'` muss `passwordauthentication no` und `permitrootlogin without-password` zeigen. Steht dort `yes`, in `/etc/ssh/sshd_config.d/10-godeb.conf` `PasswordAuthentication no` eintragen und `sudo systemctl reload ssh` ausführen, aber erst, nachdem die Anmeldung per Schlüssel funktioniert hat. Sicherheitsupdates spielt GoDeb selbst ein (Plugin APT, siehe „Updates“); `unattended-upgrades` ist dafür nicht nötig.
 
-```sh
-sudo apt install -y unattended-upgrades
-```
-
-**Update**: `sudo apt update && sudo apt upgrade` (aus dem APT-Repo), sonst neues Paket kopieren und `sudo apt install --no-install-recommends ./godeb_*_amd64.deb`. `unattended-upgrades` spielt GoDeb nicht von selbst ein, nur Debians Sicherheitsupdates. Jeder Build hat eine höhere Version (siehe „Versionen und Updates“), apt erkennt ihn als Update. **Entfernen**: `sudo apt purge godeb`. `/etc/wireguard` und `/etc/godeb` bleiben dabei liegen.
+**Update**: im Plugin APT „Alle aktualisieren“ oder `sudo apt update && sudo apt upgrade` (aus dem APT-Repo), sonst neues Paket kopieren und `sudo apt install --no-install-recommends ./godeb_*_amd64.deb`. Automatisch kommen nur Sicherheitsupdates, GoDeb selbst nie. Jeder Build hat eine höhere Version (siehe „Versionen und Updates“), apt erkennt ihn als Update. **Entfernen**: `sudo apt purge godeb`. `/etc/wireguard` und `/etc/godeb` bleiben dabei liegen.
 
 **Backups** macht nicht GoDeb, sondern die Plattform: auf Hetzner die Backups bzw. Snapshots des VPS, zu Hause Proxmox für die VM. Beide sichern die ganze Maschine mit `/etc/godeb`, `/etc/wireguard` und den Spielständen. Vor größeren Änderungen einen Snapshot ziehen.
 
@@ -329,7 +325,7 @@ Jedes Plugin hat ein `manifest.json` (`id`, `name`, `description`, `icon`, `orde
 
 | Plugin | Laufzeit | Metadaten |
 | --- | --- | --- |
-| APT | `apt list --upgradable` | keine |
+| APT | `apt list --upgradable`, `godeb-apt.service` (`apt-get`) | `/etc/godeb/apt.json` (Automatik), Log und Status in `/var/lib/godeb-agent/apt/` |
 | UFW | `ufw status`, `ufw --force` | keine |
 | systemd | `systemctl` | keine |
 | Certbot | `/etc/letsencrypt/live` | keine; private Schlüssel werden nicht gelesen |
@@ -463,7 +459,11 @@ Alle außer `status` antworten nach dem Abschluss mit `410`.
 
 | Methode | Pfad |
 | --- | --- |
-| GET | `/api/plugins/apt/upgradable` |
+| GET | `/api/plugins/apt/upgradable` (Pakete mit `security`, Automatik, letzter Lauf mit Log) |
+| POST | `/api/plugins/apt/check` (prüfen; mit Automatik für Sicherheitsupdates wie `security`) |
+| POST | `/api/plugins/apt/security` (prüfen und Sicherheitsupdates installieren) |
+| POST | `/api/plugins/apt/upgrade` (alles aktualisieren, frischer 2FA-Code) |
+| POST | `/api/plugins/apt/settings` (`autoCheck`, `interval` 5–1440 Minuten, `autoSecurity`) |
 | GET | `/api/plugins/ufw/status` |
 | POST | `/api/plugins/ufw/rules` |
 | GET | `/api/plugins/systemd/services` |
@@ -573,6 +573,12 @@ ls -l /run/godeb-agent/agent.sock  # srw-rw---- root godeb
 ```sh
 git tag v0.2.0 && git push origin v0.2.0   # CI baut und veröffentlicht das .deb
 ```
+
+### Updates (Plugin APT)
+
+Der Agent sucht standardmäßig alle 10 Minuten nach neuen Paketen (`apt-get update`) und installiert danach ausstehende **Sicherheitsupdates** selbst. Als Sicherheitsupdate gilt ein Paket, dessen neue Version aus einer Sicherheitsquelle kommt (`trixie-security` in `apt list --upgradable`); installiert wird es mit `apt-get install --only-upgrade`. Alles andere, auch GoDeb selbst, bleibt beim Knopf „Alle aktualisieren“ (`apt-get --with-new-pkgs upgrade`, geänderte Konfigurationsdateien bleiben erhalten, frischer 2FA-Code). Intervall (5–1440 Minuten) und beide Automatiken lassen sich im Plugin abschalten; sie stehen in `/etc/godeb/apt.json`. Ein neuer Kernel wird installiert, aber nicht neu gebootet.
+
+Jeder Lauf ist die eigene Unit `godeb-apt.service` (`systemd-run`, führt `godeb apt-run check|security|upgrade` aus), nie ein Kindprozess des Agenten. Aktualisiert sich GoDeb selbst, startet `postinst` den Agenten neu; ein Kindprozess würde dabei mitten in `dpkg` abgebrochen. Die Unit läuft weiter, schreibt Log und Ergebnis nach `/var/lib/godeb-agent/apt/` (nur root), und die Oberfläche zeigt beides nach dem Neustart wieder an. Es läuft immer nur ein Lauf; hält gerade Debians eigener `apt-daily` die Sperre, wartet `apt-get` bis zu fünf Minuten. Von Hand: `sudo godeb apt-run security`.
 
 ### APT-Repo
 

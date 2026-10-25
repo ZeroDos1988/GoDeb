@@ -49,6 +49,7 @@ var criticalExact = map[string]bool{
 	"/api/plugins/wireguard/peers": true, // a new peer is a new way into the network
 	"/api/plugins/wireguard/join":  true, // replaces how this host reaches the tunnel
 	"/api/plugins/wireguard/trust": true, // decides where phones switch their tunnel off
+	"/api/plugins/apt/upgrade":     true, // installs every pending update, GoDeb included
 }
 
 // noStepUp lists state-changing routes that skip the second factor.

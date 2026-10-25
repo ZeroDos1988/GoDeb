@@ -46,7 +46,7 @@ Jedes Plugin lässt sich im Plugin-Manager abschalten. Es verschwindet dann aus 
 
 | Plugin | Was es tut |
 | --- | --- |
-| **APT** | Aktualisierbare Pakete anzeigen und einspielen |
+| **APT** | Alle 10 Minuten nach Updates suchen, Sicherheitsupdates automatisch einspielen, alles andere per Knopf (GoDeb inklusive) |
 | **UFW** | Firewall-Status, Regeln anlegen und löschen |
 | **Fail2ban** | Jails, gesperrte IPs, Entsperren |
 | **Systemd** | Dienste auflisten, starten, stoppen, neu starten |
@@ -105,7 +105,7 @@ Die vollständige Anleitung für VPS und Heim-VM, inklusive Portweiterleitung un
 
 ### Updates und Backups
 
-Jeder Build trägt eine Version aus dem Git-Tag (`0.1.0` oder `0.1.0+git42.abc1234`), apt erkennt neuere Pakete als Update. Mit dem APT-Repo reicht `sudo apt update && sudo apt upgrade`. Die Version steht im Benutzermenü oben rechts, in `godeb version` und in `/api/health`.
+Jeder Build trägt eine Version aus dem Git-Tag (`0.1.0` oder `0.1.0+git42.abc1234`), apt erkennt neuere Pakete als Update. Mit dem APT-Repo reicht „Alle aktualisieren“ im Plugin APT oder `sudo apt update && sudo apt upgrade`. Die Version steht im Benutzermenü oben rechts, in `godeb version` und in `/api/health`.
 
 Backups macht GoDeb bewusst nicht selbst. Dafür sind die Snapshots der Plattform da (Proxmox zu Hause, Hetzner-Backups auf dem VPS).
 
