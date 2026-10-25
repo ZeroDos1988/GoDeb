@@ -22,6 +22,7 @@ func TestRouted(t *testing.T) {
 		"/api/plugin-manager/x/off":  true,
 		"/api/plugin-managerx":       false,
 		"/api/setup/finish":          true,
+		"/api/setup/client":          true,
 		"/api/setup/admin":           false,
 		"/api/setup/status":          false,
 		"/api/auth/login":            false,

@@ -2,20 +2,20 @@
 
 Stand: 24.10.2026. Reihenfolge = Priorität. `[x]` erledigt, `[ ]` offen. Neue Ideen kommen hierher (passende Phase oder Phase 7), getroffene Entscheidungen unten unter „Entscheidungen“.
 
-## Aktueller Stand (Übergabe 24.10.)
+## Aktueller Stand (25.10.)
 
 - **Veröffentlicht** (alle öffentlich, nur unter ZeroDos1988):
-  - `ZeroDos1988/GoDeb`: GPL-3.0, Release **v0.2.2** (Vorabversion); auf `main` seither: App-Umbenennung, `golang.org/x/crypto` 0.58.0, Roadmap.
+  - `ZeroDos1988/GoDeb`: GPL-3.0, Release **v0.2.3** (Vorabversion, 25.10.), das erste aus dem APT-Repo `https://zerodos1988.github.io/GoDeb`.
   - `ZeroDos1988/godeb-tunnel-android`: Apache-2.0, Release **1.1.0** mit signierter `godeb-tunnel.apk`.
   - `ZeroDos1988/godeb-tunnel-arch`: GPL-3.0, Release **1.0.1**.
   - Privat bleibt nur `godeb-wireguard-windows`.
 - **Lokal:**
   - Repos unter `~/Projects/` (`GoDeb`, `godeb-tunnel-android`, `godeb-tunnel-arch`, `godeb-wireguard-windows`).
   - Alte Historien (mit Klarnamen, nicht veröffentlichen) und ein Export der alten GitHub-Releases unter `~/Projects/Archiv/`.
-- **Auf den Servern läuft** v0.2.0 bzw. v0.2.1. VPS-Installation per Assistent funktioniert; die Heim-VM per Datei-Upload (v0.2.2) ist noch nicht getestet.
+- **Auf den Servern:** Der Hetzner-VPS ist am 25.10. frisch aus dem APT-Repo mit v0.2.3 installiert. Rückmeldung: Installation lief; die gedruckte Übersicht war leer (behoben, siehe unten); weitere Clients und der Standort sollen gleich im Assistenten entstehen (umgesetzt, siehe Phase 8).
 - **Nächste Schritte, in dieser Reihenfolge:**
-  1. Servertest von v0.2.2 auf VPS und Heim-VM: Beitritt per Datei, Übersicht drucken, Überwachung (nftables-Zähler, Steam-Abfrage, Standorte), Alarme.
-  2. Danach v0.2.3 mit der App-Umbenennung; auf dem Server die APK als `/etc/godeb/android/godeb-tunnel.apk` ablegen.
+  1. Release v0.2.4 mit Beitrittscode, „+“ im Assistenten und Druckbögen; dann Servertest auf VPS und Heim-VM: Standort per Code, Übersicht und Backup-Codes drucken, Überwachung, Alarme.
+  2. Auf dem Server die APK als `/etc/godeb/android/godeb-tunnel.apk` ablegen.
   3. Phase 8: Heim-VM als Gateway (Route im Router) und optional Ausgang ins Internet über den Hub.
   4. Windows-Client umbenennen (ProductName, Installer, Dienste) und veröffentlichen.
   5. ~~APT-Repo über GitHub Pages~~ (24.10. umgesetzt, Paket bringt Quelle und Schlüssel ab v0.2.3 mit).
@@ -146,6 +146,8 @@ Ziel: auf einen Blick sehen, ob der Server gesund ist, ob der Traffic normal aus
 ## Phase 8 – Hub und Standorte enger koppeln (Ideen 23.10.)
 
 - [x] **Beitritt per Datei** (23.10.): Standort anlegen lädt die `.conf` herunter, der Assistent der Heim-VM nimmt sie per Upload.
+- [x] **Weitere Clients und Standorte im Assistenten, Beitritt per Code** (Wunsch und Umsetzung 25.10.): Auf dem Hub legt „+“ beliebig viele Handys/Laptops (QR und Datei) und GoDeb-Server zu Hause (Beitrittscode) an; `godeb setup` fragt dasselbe ab. Der Beitrittscode ist die Client-Datei als eine Zeile (`godeb-join:` + base64url) und wird in „Mit Hub verbinden“ oder `godeb setup --join -` eingefügt. Der erste Standort bekommt `10.8.0.2`, Geräte lassen die Adresse dafür frei.
+- [x] **Druckansichten** (25.10.): Übersicht und Backup-Codes drucken als eigener Bogen (`PrintSheet`), statt der Glas-Oberfläche. Vorher kamen leere Seiten heraus, und beim 2FA-Druck stand der TOTP-Schlüssel mit auf dem Papier.
 - [ ] **Gekoppelte Verwaltung**: Hub und Standort vertrauen einander (gegenseitig signierte Anfragen über den Tunnel, kein offener Port). Auf der Heim-VM eine Weiterleitung anlegen, und der Hub legt DNAT und ufw-Freigabe selbst an; Spielserver-Installation auf der Heim-VM schlägt die Weiterleitung am Hub automatisch vor.
 - [ ] **Netzwerk-Scanner**: Hosts im Heimnetz bzw. Tunnel finden (ARP/Ping), offene Ports prüfen (nur TCP-Connect und bekannte UDP-Abfragen wie Steam A2S, kein aggressives Scannen), bekannte Dienste erkennen (z. B. „Enshrouded auf 192.168.1.40, 15636–15637/udp“) und per Klick „über den Hub erreichbar machen“ (Weiterleitung Hub → Standort → Zielhost). Nur auf eigenen Netzen, mit Hinweis.
 - [ ] **Heim-VM als Gateway ins Tunnelnetz** (Wunsch 23.10.): Geräte im Heimnetz erreichen den Hub und alle Tunnel-Adressen (z. B. `http://10.8.0.1:8080`) ohne eigenen WireGuard-Client. Im Router wird eine statische Route `10.8.0.0/24 → <LAN-IP der Heim-VM>` eingetragen; GoDeb auf der Heim-VM schaltet IP-Forwarding ein, erlaubt Weiterleitung LAN → `wg0` (eigene nftables-Tabelle wie bei `portforward`, mit SNAT auf die Tunnel-Adresse der Heim-VM, damit der Hub ohne Rückroute antwortet) und erweitert das Tunnelnetz in den AllowedIPs bei Bedarf. Die Übersicht nennt die genaue Route für den Router (FRITZ!Box: Heimnetz → Netzwerk → Statische IPv4-Routen).
@@ -162,4 +164,5 @@ Festgehalten, damit sie nicht wieder neu diskutiert werden.
 - **Weboberfläche ohne root, root-Agent mit eigener 2FA** (22.10.) statt sudoers-Allowlist.
 - **Ein Repository** (21.10.): Plugins bleiben in `GoDeb`, keine Aufteilung in einzelne Repos oder eine GitHub-Organisation. Die Apps haben eigene Repos: `godeb-tunnel-android` (Apache-2.0) und `godeb-tunnel-arch` (GPL-3.0), öffentlich seit 23.10.; Windows (`godeb-wireguard-windows`) bleibt privat, bis der Produktname im Installer und in der Oberfläche umgebaut ist. Umbenannt von „GoDeb WireGuard“ wegen der Markenrichtlinie von WireGuard.
 - **Öffentlich unter GPL-3.0** (23.10.): neues Repo `ZeroDos1988/GoDeb` mit frischer Historie ab v0.2.1, nur unter dem Namen ZeroDos1988 (noreply-Adresse). Die Entwicklungsgeschichte bis dahin liegt im privaten Archiv `GoDeb-private`. `main` ist gegen Löschen und Force-Push geschützt, `v*`-Tags darf nur der Admin setzen; Lücken über Private Vulnerability Reporting.
+- **Beitrittscode statt Kopplungsdienst** (25.10.): Der Code enthält die Client-Datei selbst. Ein kurzer Code, mit dem die Heim-VM ihre Datei beim Hub abholt, bräuchte einen öffentlich erreichbaren Endpunkt am Hub; das widerspricht „nur über den Tunnel“. Der lange Code wird kopiert, nicht abgetippt.
 - **Releases per Git-Tag** (22.10., ergänzt 23.10.): Vorabversionen bis zum Test auf echten Servern. Neue Funktionen erhöhen die mittlere Stelle (`v0.2.0`: Logging und Überwachung), Fixes nach einem Servertest die letzte (`v0.2.x`); apt erkennt jede als Update. Die Installationsanleitung steht im Text des Releases.

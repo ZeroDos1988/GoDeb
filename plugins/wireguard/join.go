@@ -182,6 +182,10 @@ func renderPeerConfig(jc joinConfig) string {
 // starts the tunnel with StartTunnel. `godeb setup --join` and the web UI
 // both use this function.
 func JoinHub(ctx context.Context, content string) (JoinResult, error) {
+	content, err := decodeJoinInput(content)
+	if err != nil {
+		return JoinResult{}, reject(http.StatusBadRequest, err.Error())
+	}
 	jc, notes, err := parseJoinConfig(content)
 	if err != nil {
 		return JoinResult{}, reject(http.StatusBadRequest, err.Error())

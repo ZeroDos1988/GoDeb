@@ -319,10 +319,7 @@ func CreatePeer(ctx context.Context, req PeerRequest) (PeerResult, error) {
 		}
 	}
 
-	address, err := NextFreeIP(cfg.Interface.Addresses, used)
-	if strings.TrimSpace(req.Address) != "" {
-		address, err = checkAddress(req.Address, cfg.Interface.Addresses, used)
-	}
+	address, err := clientAddress(req, cfg.Interface.Addresses, used, len(sites(clients)) > 0)
 	if err != nil {
 		return PeerResult{}, reject(http.StatusConflict, err.Error())
 	}
@@ -459,6 +456,17 @@ func handleClientConfig(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	_, _ = w.Write(data)
+}
+
+// handleJoinCode returns the client file as join code, for pasting into
+// "Mit Hub verbinden" on a site. Like the file it holds the private key.
+func handleJoinCode(w http.ResponseWriter, r *http.Request) {
+	_, data, ok := readClient(w, r)
+	if !ok {
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	core.WriteJSON(w, http.StatusOK, map[string]string{"code": JoinCode(string(data))})
 }
 
 func handleQR(w http.ResponseWriter, r *http.Request) {

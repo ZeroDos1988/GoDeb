@@ -52,7 +52,7 @@ func runSetup(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	fs.StringVar(&opt.Endpoint, "endpoint", "", "öffentlicher Host oder IP, unter dem Clients den Server erreichen")
 	fs.StringVar(&opt.Client, "client", "admin-handy", "Name des ersten Clients")
 	fs.IntVar(&opt.SSHPort, "ssh-port", 0, "SSH-Port, der in ufw offen bleibt (0 = erkennen)")
-	fs.StringVar(&opt.Join, "join", "", "Client-Datei eines GoDeb-Hubs: diesen Server als Peer anbinden statt eigenen WireGuard-Server anlegen")
+	fs.StringVar(&opt.Join, "join", "", "Client-Datei oder Beitrittscode eines GoDeb-Hubs (- liest von stdin): diesen Server als Peer anbinden statt eigenen WireGuard-Server anlegen")
 	fs.StringVar(&opt.Role, "role", "", "hub (WireGuard-Server), peer (an einen Hub anbinden, mit --join) oder none")
 	fs.StringVar(&opt.Access, "access", "", "Erreichbarkeit der Web-UI: tunnel, lan (HTTPS im Heimnetz) oder local")
 	fs.StringVar(&opt.LAN, "lan-address", "", "LAN-Adresse für --access lan (Standard: Adresse der Default-Route)")
@@ -200,18 +200,11 @@ func (s *setup) join(ctx context.Context) error {
 		fmt.Fprintf(s.out, "  %s ist bereits Peer des Hubs %s (Adresse %s), wird nicht verändert.\n",
 			wireguard.ConfigPath(), s.peer.Hub, s.peer.Address)
 	} else {
-		info, err := os.Stat(s.opt.Join)
+		content, err := s.joinInput()
 		if err != nil {
 			return err
 		}
-		if !info.Mode().IsRegular() || info.Size() > 64<<10 {
-			return fmt.Errorf("%s ist keine Client-Datei", s.opt.Join)
-		}
-		content, err := os.ReadFile(s.opt.Join)
-		if err != nil {
-			return err
-		}
-		res, err := wireguard.JoinHub(ctx, string(content))
+		res, err := wireguard.JoinHub(ctx, content)
 		if err != nil {
 			return err
 		}
@@ -219,7 +212,9 @@ func (s *setup) join(ctx context.Context) error {
 			fmt.Fprintf(s.out, "  Hinweis: %s\n", note)
 		}
 		fmt.Fprintf(s.out, "  %s geschrieben: Adresse %s, Hub %s\n", wireguard.ConfigPath(), res.Address, res.Hub)
-		fmt.Fprintf(s.out, "  Die Client-Datei %s enthält den privaten Schlüssel; danach löschen.\n", s.opt.Join)
+		if s.opt.Join != "-" {
+			fmt.Fprintf(s.out, "  Die Client-Datei %s enthält den privaten Schlüssel; danach löschen.\n", s.opt.Join)
+		}
 		s.peer = wireguard.RoleInfo{Role: wireguard.RolePeer, Hub: res.Hub, Address: res.Address}
 	}
 	if err := s.enableTunnel(ctx); err != nil {
@@ -231,6 +226,42 @@ func (s *setup) join(ctx context.Context) error {
 		fmt.Fprintln(s.out, "  Noch kein Handshake mit dem Hub. Prüfen: Port 51820/udp am Hub offen, Peer dort angelegt, `wg show` auf beiden Seiten.")
 	}
 	return nil
+}
+
+// joinInput reads the client file or join code from --join; "-" reads a
+// pasted join code (or file) from stdin up to an empty line or EOF.
+func (s *setup) joinInput() (string, error) {
+	if s.opt.Join == "-" {
+		fmt.Fprintln(s.out, "  Beitrittscode einfügen und Enter drücken (eine Client-Datei mit Strg+D abschließen):")
+		var b strings.Builder
+		for b.Len() <= 64<<10 {
+			line, err := s.in.ReadString('\n')
+			blank := strings.TrimSpace(line) == ""
+			// A code ends at the first empty line; a file has empty lines
+			// between its sections and ends at EOF.
+			code := strings.HasPrefix(strings.ToLower(strings.TrimSpace(b.String())), wireguard.JoinCodePrefix)
+			if blank && code {
+				break
+			}
+			b.WriteString(line)
+			if err != nil || wireguard.CompleteJoinCode(b.String()) {
+				break
+			}
+		}
+		if strings.TrimSpace(b.String()) == "" {
+			return "", errors.New("nichts eingefügt")
+		}
+		return b.String(), nil
+	}
+	info, err := os.Stat(s.opt.Join)
+	if err != nil {
+		return "", err
+	}
+	if !info.Mode().IsRegular() || info.Size() > 64<<10 {
+		return "", fmt.Errorf("%s ist keine Client-Datei", s.opt.Join)
+	}
+	content, err := os.ReadFile(s.opt.Join)
+	return string(content), err
 }
 
 // trust offers the signed trusted endpoint on the LAN address, so the GoDeb
@@ -384,8 +415,9 @@ func (s *setup) sshPorts(ctx context.Context) []int {
 	return core.SSHPorts(ctx)
 }
 
+// client creates the first client and, on request, more devices and sites
+// through firstrun.AddClient, the same function as the "+" in the wizard.
 func (s *setup) client(ctx context.Context, prefix netip.Prefix) error {
-	name := s.ask("Name des ersten Clients", s.opt.Client)
 	endpoint := s.opt.Endpoint
 	if endpoint == "" {
 		endpoint = s.ask("Öffentlicher Host oder IP dieses Servers (DynDNS, VPS-IP)", detectHost())
@@ -396,33 +428,53 @@ func (s *setup) client(ctx context.Context, prefix netip.Prefix) error {
 	if _, _, err := net.SplitHostPort(endpoint); err != nil {
 		endpoint = net.JoinHostPort(endpoint, strconv.Itoa(s.opt.Port))
 	}
-	res, err := wireguard.CreatePeer(ctx, wireguard.PeerRequest{
-		Name:       name,
-		Endpoint:   endpoint,
-		AllowedIPs: prefix.Masked().String(),
-	})
-	var reqErr *wireguard.RequestError
-	if errors.As(err, &reqErr) && reqErr.Status == 409 {
-		fmt.Fprintf(s.out, "  %s: %s. Neue Clients in der Web-UI anlegen.\n", name, reqErr.Msg)
-		s.finish(prefix)
-		return nil
+	name := s.ask("Name des ersten Clients", s.opt.Client)
+	site := false
+	for name != "" {
+		res, err := firstrun.AddClient(ctx, firstrun.ClientSpec{Name: name, Site: site, Endpoint: endpoint})
+		var reqErr *wireguard.RequestError
+		switch {
+		case errors.As(err, &reqErr) && reqErr.Status == 409:
+			fmt.Fprintf(s.out, "  %s: %s\n", name, reqErr.Msg)
+		case err != nil:
+			return err
+		default:
+			s.printClient(ctx, res, prefix)
+		}
+		if s.opt.Yes {
+			break
+		}
+		name = s.ask("Weiteres Gerät oder weiteren GoDeb-Server anlegen? Name (leer = fertig)", "")
+		if name != "" {
+			answer := strings.ToLower(s.ask("Ist "+name+" ein GoDeb-Server, z. B. die Heim-VM? (j/N)", "n"))
+			site = strings.HasPrefix(answer, "j") || strings.HasPrefix(answer, "y")
+		}
 	}
-	if err != nil {
-		return err
-	}
-	fmt.Fprintf(s.out, "  %s erhält %s (nur das Tunnelnetz %s, kein Volltunnel).\n",
-		name, strings.Join(res.Peer.AllowedIPs, ", "), prefix.Masked())
+	s.finish(prefix)
+	return nil
+}
+
+// printClient shows how to set up a new client: QR code for devices, join
+// code for GoDeb sites.
+func (s *setup) printClient(ctx context.Context, res firstrun.ClientResult, prefix netip.Prefix) {
+	file := "/etc/wireguard/clients/" + res.Name + ".conf"
 	if res.Detail != "" {
 		fmt.Fprintf(s.out, "  Hinweis: %s\n", res.Detail)
 	}
-	qr := core.RunInput(ctx, res.ClientConfig, "qrencode", "-t", "ansiutf8", "-m", "2")
-	if qr.Err == nil {
-		fmt.Fprintln(s.out, "\n  Mit der WireGuard-App scannen:")
+	if res.Site {
+		fmt.Fprintf(s.out, "  Standort %s erhält %s. Auf diesem GoDeb-Server im Assistenten „Mit Hub verbinden“ wählen\n", res.Name, res.Address)
+		fmt.Fprintln(s.out, "  und diesen Beitrittscode einfügen (oder `sudo godeb setup --join -` und den Code einfügen).")
+		fmt.Fprintln(s.out, "  Er enthält den privaten Schlüssel des Standorts:")
+		fmt.Fprintf(s.out, "\n%s\n\n", res.Code)
+		fmt.Fprintf(s.out, "  Datei: %s\n", file)
+		return
+	}
+	fmt.Fprintf(s.out, "  %s erhält %s (nur das Tunnelnetz %s, kein Volltunnel).\n", res.Name, res.Address, prefix.Masked())
+	if qr := core.RunInput(ctx, res.Config, "qrencode", "-t", "ansiutf8", "-m", "2"); qr.Err == nil {
+		fmt.Fprintln(s.out, "\n  Mit der GoDeb-Tunnel-App scannen:")
 		fmt.Fprintln(s.out, qr.Stdout)
 	}
-	fmt.Fprintf(s.out, "  Datei: /etc/wireguard/clients/%s.conf (auch als QR in der Web-UI)\n", name)
-	s.finish(prefix)
-	return nil
+	fmt.Fprintf(s.out, "  Datei: %s (auch als QR in der Web-UI)\n", file)
 }
 
 func (s *setup) finish(prefix netip.Prefix) {

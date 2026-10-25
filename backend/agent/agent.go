@@ -51,6 +51,7 @@ func WebUser() string {
 var privilegedSetup = map[string]bool{
 	"/api/setup/info":    true,
 	"/api/setup/hub":     true,
+	"/api/setup/client":  true,
 	"/api/setup/join":    true,
 	"/api/setup/finish":  true,
 	"/api/setup/summary": true,

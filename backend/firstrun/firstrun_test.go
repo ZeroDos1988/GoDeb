@@ -165,3 +165,18 @@ func TestCertificate(t *testing.T) {
 		t.Fatalf("key mode %v", info.Mode())
 	}
 }
+
+func TestHubEndpoint(t *testing.T) {
+	for in, want := range map[string]string{
+		"":                    "",
+		" 203.0.113.7 ":       "203.0.113.7:51820",
+		"vpn.example.org":     "vpn.example.org:51820",
+		"203.0.113.7:4500":    "203.0.113.7:4500",
+		"2001:db8::1":         "[2001:db8::1]:51820",
+		"[2001:db8::1]:51820": "[2001:db8::1]:51820",
+	} {
+		if got := hubEndpoint(in, 51820); got != want {
+			t.Errorf("hubEndpoint(%q) = %q, want %q", in, got, want)
+		}
+	}
+}

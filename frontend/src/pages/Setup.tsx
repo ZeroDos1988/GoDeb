@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfigUpload } from "@/components/ConfigUpload.tsx";
 import { SetupSummary, type SetupSummaryData } from "@/components/SetupSummary.tsx";
+import { TunnelClients, type ClientResult } from "@/components/TunnelClients.tsx";
 import { api } from "@/lib/api.ts";
 import { useGet } from "@/lib/useAsync.ts";
 
@@ -20,7 +21,7 @@ type SetupInfo = {
   fingerprint: string;
 };
 
-type HubResult = { publicKey?: string; client?: string; qr?: string; detail?: string };
+type HubResult = { publicKey?: string; endpoint: string; first?: ClientResult };
 type JoinResult = { address: string; hub: string; notes: string[]; handshake?: boolean; detail?: string };
 type FinishResult = { ok: boolean; log: string[]; access: { mode: string; address?: string; port?: number }; summary?: SetupSummaryData };
 
@@ -169,14 +170,18 @@ function RoleStep({ info, role, setRole, onNext }: { info: SetupInfo; role: Role
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [hub, setHub] = useState<HubResult | null>(null);
+  const [clients, setClients] = useState<ClientResult[]>([]);
   const [joined, setJoined] = useState<JoinResult | null>(null);
+  const isHub = hub !== null || info.role.role === "hub";
 
   async function apply() {
     setBusy(true);
     setError("");
     try {
       if (role === "hub") {
-        setHub(await api<HubResult>("/api/setup/hub", { method: "POST", body: JSON.stringify({ endpoint, address, port, client }) }));
+        const res = await api<HubResult>("/api/setup/hub", { method: "POST", body: JSON.stringify({ endpoint, address, port, client }) });
+        setHub(res);
+        setClients(res.first ? [res.first] : []);
       } else if (role === "peer") {
         setJoined(await api<JoinResult>("/api/setup/join", { method: "POST", body: JSON.stringify({ config }) }));
       } else {
@@ -203,7 +208,7 @@ function RoleStep({ info, role, setRole, onNext }: { info: SetupInfo; role: Role
         <p className="mt-4 rounded-2xl border border-emerald-300/20 bg-emerald-400/5 px-3 py-2 text-sm">
           {t("setup.roleExisting", { role: info.role.role === "hub" ? t("setup.roleHub") : t("setup.rolePeer") })}
         </p>
-      ) : (
+      ) : hub || joined ? null : (
         <div className="mt-4 grid gap-3 md:grid-cols-3">
           {options.map((o) => (
             <button
@@ -242,22 +247,14 @@ function RoleStep({ info, role, setRole, onNext }: { info: SetupInfo; role: Role
             <ConfigUpload onLoad={setConfig} />
           </div>
           <Field label={t("setup.joinFile")} hint={t("setup.joinHint")}>
-            <textarea value={config} onChange={(e) => setConfig(e.target.value)} rows={8} spellCheck={false} className={`${input} font-mono text-xs`} />
+            <textarea value={config} onChange={(e) => setConfig(e.target.value)} rows={8} spellCheck={false} placeholder={t("setup.joinPlaceholder")} className={`${input} font-mono text-xs break-all`} />
           </Field>
         </div>
       ) : null}
 
-      {hub ? (
-        <div className="mt-4 space-y-3 text-sm">
-          <p className="text-emerald-300">{t("setup.hubDone")}</p>
-          {hub.qr ? (
-            <>
-              <img src={hub.qr} alt={t("setup.qrAlt")} className="mx-auto w-64 max-w-full rounded-2xl bg-white p-2 [image-rendering:pixelated]" />
-              <p className="text-xs text-white/60">{t("setup.qrHint")}</p>
-            </>
-          ) : null}
-          {hub.detail ? <p className="text-xs text-amber-200">{hub.detail}</p> : null}
-        </div>
+      {hub ? <p className="mt-4 text-sm text-emerald-300">{t("setup.hubDone")}</p> : null}
+      {isHub ? (
+        <TunnelClients endpoint={hub?.endpoint ?? ""} clients={clients} onAdded={(c) => setClients((prev) => [...prev, c])} />
       ) : null}
       {joined ? (
         <div className="mt-4 space-y-1 text-sm">
@@ -407,7 +404,7 @@ function DoneStep({ result, info, onDone }: { result: FinishResult | null; info:
           <SetupSummary data={result.summary} />
         </div>
       ) : null}
-      <div className="gd-noprint mt-5">
+      <div className="mt-5">
         <button type="button" className={primary} onClick={onDone}>{t("setup.toDashboard")}</button>
       </div>
     </SetupFrame>

@@ -1,4 +1,5 @@
 import { ConfigUpload } from "@/components/ConfigUpload.tsx";
+import { JoinCodeBox } from "@/components/TunnelClients.tsx";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DataTable, PanelFrame } from "@/components/PanelFrame.tsx";
@@ -104,6 +105,7 @@ export default function Panel() {
   const android = useGet<AndroidClient>(androidPath);
   const [qrPeer, setQrPeer] = useState<WgPeer | null>(null);
   const [mailPeer, setMailPeer] = useState<WgPeer | null>(null);
+  const [codePeer, setCodePeer] = useState<WgPeer | null>(null);
   const [notice, setNotice] = useState("");
   const [actionError, setActionError] = useState("");
   const info = query.data?.interface;
@@ -211,9 +213,8 @@ export default function Panel() {
                     : t("wg.created", { name: result.peer.name, detail: result.detail ?? "" }),
                 );
                 if (result.peer.site) {
-                  setNotice((prev) => `${prev} ${t("wg.siteNext", { name: result.peer.name })}`);
-                  // The site needs exactly this file: offer it right away.
-                  void download(result.peer);
+                  // The site needs exactly this code (or file): show it right away.
+                  setCodePeer(result.peer);
                 }
                 query.reload();
               }}
@@ -254,14 +255,15 @@ export default function Panel() {
                     >
                       .conf
                     </button>
-                    <button
-                      type="button"
-                      disabled={!peer.hasClient}
-                      onClick={() => setQrPeer(peer)}
-                      className={linkClass}
-                    >
-                      QR
-                    </button>
+                    {peer.site ? (
+                      <button type="button" disabled={!peer.hasClient} onClick={() => setCodePeer(peer)} className={linkClass}>
+                        {t("wg.codeAction")}
+                      </button>
+                    ) : (
+                      <button type="button" disabled={!peer.hasClient} onClick={() => setQrPeer(peer)} className={linkClass}>
+                        QR
+                      </button>
+                    )}
                     <button
                       type="button"
                       disabled={!peer.hasClient}
@@ -277,6 +279,7 @@ export default function Panel() {
           )}
 
           {qrPeer?.id ? <QrModal peer={qrPeer} onClose={() => setQrPeer(null)} /> : null}
+          {codePeer?.id ? <CodeModal peer={codePeer} onClose={() => setCodePeer(null)} /> : null}
           {mailPeer?.id ? (
             <EmailModal
               peer={mailPeer}
@@ -590,7 +593,7 @@ function JoinCard({ onJoined }: { onJoined: () => void }) {
         onChange={(event) => setConfig(event.target.value)}
         rows={8}
         spellCheck={false}
-        placeholder={"[Interface]\nPrivateKey = …\nAddress = 10.8.0.2/32\n\n[Peer]\n…"}
+        placeholder={t("setup.joinPlaceholder")}
         className={`${inputClass} mt-3 min-h-40`}
       />
       <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -654,6 +657,43 @@ function QrModal({ peer, onClose }: { peer: WgPeer; onClose: () => void }) {
           <p className="mt-3 text-center text-xs text-white/60">{t("wg.qrHint")}</p>
         </>
       ) : null}
+    </Modal>
+  );
+}
+
+// CodeModal shows the join code of a site, to paste into "Mit Hub
+// verbinden" on that GoDeb host.
+function CodeModal({ peer, onClose }: { peer: WgPeer; onClose: () => void }) {
+  const { t } = useTranslation();
+  const [code, setCode] = useState("");
+  const [config, setConfig] = useState("");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    const base = `${peersPath}/${encodeURIComponent(peer.id ?? "")}`;
+    Promise.all([api<{ code: string }>(`${base}/code`), apiBlob(`${base}/config`).then((b) => b.text())])
+      .then(([res, text]) => {
+        if (!cancelled) {
+          setCode(res.code);
+          setConfig(text);
+        }
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : t("wg.downloadFailed"));
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [peer.id]);
+
+  return (
+    <Modal title={t("wg.codeTitle", { name: peer.name ?? peer.id })} onClose={onClose}>
+      {error ? <p className="text-sm text-rose-300">{error}</p> : null}
+      {!error && !code ? <p className="text-sm text-white/60">{t("common.loading")}</p> : null}
+      {code ? <JoinCodeBox code={code} filename={`${peer.id}.conf`} config={config} /> : null}
     </Modal>
   );
 }

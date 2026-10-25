@@ -64,6 +64,7 @@ func TestStepUpLevels(t *testing.T) {
 		{"GET", "/api/plugins/ufw/status", stepUpNone},
 		{"GET", "/api/plugins/wireguard/peers/laptop/config", stepUpWindow},
 		{"GET", "/api/plugins/wireguard/peers/laptop/qr", stepUpWindow},
+		{"GET", "/api/plugins/wireguard/peers/heim-vm/code", stepUpWindow},
 		{"POST", "/api/user/settings", stepUpNone},
 		{"POST", "/api/plugin-manager/scan", stepUpNone},
 		{"POST", "/api/plugins/fail2ban/unban", stepUpWindow},

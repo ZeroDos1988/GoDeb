@@ -209,6 +209,36 @@ func checkAddress(raw string, serverAddrs, used []string) (netip.Addr, error) {
 	return addr, nil
 }
 
+// clientAddress picks the tunnel address of a new peer. The host right after
+// the hub (10.8.0.2) is meant for the first site, the address the guides and
+// the port forwarding template use: sites take it when free, devices leave
+// it alone until a site exists or nothing else is free.
+func clientAddress(req PeerRequest, serverAddrs, used []string, haveSite bool) (netip.Addr, error) {
+	if strings.TrimSpace(req.Address) != "" {
+		return checkAddress(req.Address, serverAddrs, used)
+	}
+	preferred, err := siteAddress(serverAddrs, used)
+	switch {
+	case err != nil:
+	case req.Site:
+		return preferred, nil
+	case !haveSite:
+		if addr, err := NextFreeIP(serverAddrs, append(used[:len(used):len(used)], preferred.String())); err == nil {
+			return addr, nil
+		}
+	}
+	return NextFreeIP(serverAddrs, used)
+}
+
+// siteAddress returns the host right after the hub address if it is free.
+func siteAddress(serverAddrs, used []string) (netip.Addr, error) {
+	_, server, err := serverPrefix(serverAddrs)
+	if err != nil {
+		return netip.Addr{}, err
+	}
+	return checkAddress(server.Next().String(), serverAddrs, used)
+}
+
 func serverPrefix(serverAddrs []string) (netip.Prefix, netip.Addr, error) {
 	for _, raw := range serverAddrs {
 		prefix, err := netip.ParsePrefix(strings.TrimSpace(raw))

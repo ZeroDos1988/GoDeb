@@ -2,6 +2,7 @@ package wireguard
 
 import (
 	"context"
+	"net/netip"
 	"strconv"
 
 	"godeb/backend/core"
@@ -66,11 +67,40 @@ func Sites() ([]Client, error) {
 	if err != nil {
 		return nil, err
 	}
+	return sites(clients), nil
+}
+
+func sites(clients []Client) []Client {
 	out := []Client{}
 	for _, c := range clients {
 		if c.Site {
 			out = append(out, c)
 		}
 	}
-	return out, nil
+	return out
+}
+
+// DefaultEndpoint is the server endpoint written into an existing client
+// file, so a new client gets the same public address as the others.
+func DefaultEndpoint() string {
+	clients, err := LoadClients()
+	if err != nil {
+		return ""
+	}
+	for _, c := range clients {
+		if c.Endpoint != "" {
+			return c.Endpoint
+		}
+	}
+	return ""
+}
+
+// TunnelPrefix is the tunnel network of this hub from wg0.conf.
+func TunnelPrefix() (netip.Prefix, error) {
+	data, err := core.ReadAdminFile(configPath)
+	if err != nil {
+		return netip.Prefix{}, err
+	}
+	prefix, _, err := serverPrefix(ParseConfig(string(data)).Interface.Addresses)
+	return prefix, err
 }

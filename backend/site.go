@@ -50,7 +50,7 @@ func runSite(args []string, stdout, stderr io.Writer) int {
 func siteAdd(ctx context.Context, name string, args []string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("site add", flag.ContinueOnError)
 	fs.SetOutput(stderr)
-	address := fs.String("address", "10.8.0.2", "feste Tunnel-Adresse des Standorts (leer = nächste freie)")
+	address := fs.String("address", "", "feste Tunnel-Adresse des Standorts (leer = 10.8.0.2, sonst die nächste freie)")
 	endpoint := fs.String("endpoint", "", "öffentlicher Host oder IP dieses Hubs (Standard: Adresse der Default-Route)")
 	if err := fs.Parse(args); err != nil {
 		return 2
@@ -90,17 +90,17 @@ func siteAdd(ctx context.Context, name string, args []string, stdout, stderr io.
 	if res.Detail != "" {
 		fmt.Fprintf(stdout, "Hinweis: %s\n", res.Detail)
 	}
-	file := "/etc/wireguard/clients/" + name + ".conf"
 	fmt.Fprintf(stdout, `
-Weiter auf dem Standort (Heim-VM), GoDeb dort installiert:
-  1. Auf dem Hub eine Kopie ins eigene Home legen (enthält den privaten
-     Schlüssel des Standorts):
-       sudo install -m 600 -o "$USER" %s ~/
-  2. Auf dem Standort holen, auf dem Hub löschen und beitreten:
-       scp <benutzer>@<hub>:%[2]s.conf ~/ && ssh <benutzer>@<hub> rm %[2]s.conf
-       sudo godeb setup --join ~/%[2]s.conf && rm ~/%[2]s.conf
-  3. Web-UI des Standorts vom Handy über den Hub: http://%[3]s:8080
-`, file, name, stripMask(addr))
+Weiter auf dem Standort (Heim-VM), GoDeb dort installiert. Der Beitrittscode
+enthält den privaten Schlüssel des Standorts, nur dort einfügen:
+
+%s
+
+  Im Browser: Assistent des Standorts → „Mit Hub verbinden“ → Code einfügen.
+  Im Terminal: sudo godeb setup --join -   (Code einfügen, Enter)
+  Datei statt Code: /etc/wireguard/clients/%s.conf
+  Web-UI des Standorts vom Handy über den Hub: http://%s:8080
+`, wireguard.JoinCode(res.ClientConfig), name, stripMask(addr))
 	return 0
 }
 

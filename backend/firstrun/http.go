@@ -41,6 +41,7 @@ func MountPublic(mux *http.ServeMux) {
 func MountPrivileged(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/setup/info", onlyDuringSetup(handleInfo))
 	mux.HandleFunc("POST /api/setup/hub", onlyDuringSetup(handleHub))
+	mux.HandleFunc("POST /api/setup/client", onlyDuringSetup(handleClient))
 	mux.HandleFunc("POST /api/setup/join", onlyDuringSetup(handleJoin))
 	mux.HandleFunc("POST /api/setup/finish", onlyDuringSetup(handleFinish))
 	// The overview stays available after the setup (login required).
@@ -148,10 +149,32 @@ type HubSpec struct {
 
 // HubResult is the hub plus the first client.
 type HubResult struct {
-	PublicKey string `json:"publicKey"`
-	Client    string `json:"client,omitempty"`
-	QR        string `json:"qr,omitempty"` // data URL of the client configuration
-	Detail    string `json:"detail,omitempty"`
+	PublicKey string        `json:"publicKey"`
+	Endpoint  string        `json:"endpoint"`
+	First     *ClientResult `json:"first,omitempty"`
+}
+
+// ClientSpec is one more tunnel client created in the wizard on a hub: a
+// device (phone, laptop) or a site, i.e. another GoDeb host such as the
+// home VM.
+type ClientSpec struct {
+	Name     string `json:"name"`
+	Site     bool   `json:"site"`
+	Address  string `json:"address"`  // empty: next free (sites prefer 10.8.0.2)
+	Endpoint string `json:"endpoint"` // public host or host:port of this hub
+}
+
+// ClientResult carries everything the admin needs to set up the client:
+// the file, a QR code for phones and, for sites, the join code to paste on
+// the other GoDeb. All of it contains the client's private key.
+type ClientResult struct {
+	Name    string `json:"name"`
+	Site    bool   `json:"site"`
+	Address string `json:"address"`
+	Config  string `json:"config"`
+	QR      string `json:"qr,omitempty"` // data URL
+	Code    string `json:"code,omitempty"`
+	Detail  string `json:"detail,omitempty"`
 }
 
 // CreateHub writes wg0.conf as server (unless it exists), starts the tunnel
@@ -182,22 +205,86 @@ func CreateHub(ctx context.Context, spec HubSpec) (HubResult, error) {
 	if err := wireguard.StartTunnel(ctx); err != nil {
 		return res, err
 	}
+	res.Endpoint = hubEndpoint(spec.Endpoint, spec.Port)
 	if strings.TrimSpace(spec.Client) == "" {
 		return res, nil
 	}
-	endpoint := strings.TrimSpace(spec.Endpoint)
-	if _, _, err := net.SplitHostPort(endpoint); err != nil {
-		endpoint = net.JoinHostPort(endpoint, strconv.Itoa(spec.Port))
-	}
-	peer, err := wireguard.CreatePeer(ctx, wireguard.PeerRequest{Name: spec.Client, Endpoint: endpoint, AllowedIPs: prefix.Masked().String()})
+	first, err := AddClient(ctx, ClientSpec{Name: spec.Client, Endpoint: res.Endpoint})
 	if err != nil {
 		return res, err
 	}
-	res.Client, res.Detail = spec.Client, peer.Detail
-	if png, err := wireguard.RenderQR(ctx, []byte(peer.ClientConfig)); err == nil {
+	res.First = &first
+	return res, nil
+}
+
+// hubEndpoint adds the WireGuard port to a bare host or IP.
+func hubEndpoint(host string, port int) string {
+	host = strings.TrimSpace(host)
+	if host == "" {
+		return ""
+	}
+	if _, _, err := net.SplitHostPort(host); err == nil {
+		return host
+	}
+	return net.JoinHostPort(host, strconv.Itoa(port))
+}
+
+// AddClient creates one more client on this hub through
+// wireguard.CreatePeer, the same function as the WireGuard view and
+// `godeb site add`. Devices get the tunnel network only, like the first
+// client; sites are created with Site set.
+func AddClient(ctx context.Context, spec ClientSpec) (ClientResult, error) {
+	var res ClientResult
+	role, err := wireguard.CurrentRole()
+	if err != nil {
+		return res, err
+	}
+	if role.Role != wireguard.RoleHub {
+		return res, errors.New("Weitere Clients gibt es nur auf einem WireGuard-Server")
+	}
+	endpoint := hubEndpoint(spec.Endpoint, listenPort())
+	if endpoint == "" {
+		endpoint = wireguard.DefaultEndpoint()
+	}
+	if endpoint == "" {
+		return res, errors.New("Öffentliche Adresse des Servers fehlt")
+	}
+	req := wireguard.PeerRequest{Name: spec.Name, Endpoint: endpoint, Address: spec.Address, Site: spec.Site}
+	if !spec.Site {
+		prefix, err := wireguard.TunnelPrefix()
+		if err != nil {
+			return res, err
+		}
+		req.AllowedIPs = prefix.Masked().String()
+	}
+	peer, err := wireguard.CreatePeer(ctx, req)
+	if err != nil {
+		return res, err
+	}
+	res = ClientResult{Name: peer.Peer.Name, Site: spec.Site, Config: peer.ClientConfig, Detail: peer.Detail}
+	if len(peer.Peer.AllowedIPs) > 0 {
+		res.Address = strings.TrimSuffix(peer.Peer.AllowedIPs[0], "/32")
+	}
+	if spec.Site {
+		res.Code = wireguard.JoinCode(peer.ClientConfig)
+	} else if png, err := wireguard.RenderQR(ctx, []byte(peer.ClientConfig)); err == nil {
 		res.QR = "data:image/png;base64," + base64.StdEncoding.EncodeToString(png)
 	}
 	return res, nil
+}
+
+func handleClient(w http.ResponseWriter, r *http.Request) {
+	var spec ClientSpec
+	if !core.DecodeJSON(w, r, &spec) {
+		return
+	}
+	res, err := AddClient(r.Context(), spec)
+	if err != nil {
+		writeErr(w, err)
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	core.WriteJSON(w, http.StatusOK, res)
 }
 
 func handleHub(w http.ResponseWriter, r *http.Request) {

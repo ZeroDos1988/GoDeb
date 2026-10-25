@@ -51,7 +51,7 @@ Jedes Plugin lässt sich im Plugin-Manager abschalten. Es verschwindet dann aus 
 | **Fail2ban** | Jails, gesperrte IPs, Entsperren |
 | **Systemd** | Dienste auflisten, starten, stoppen, neu starten |
 | **Certbot** | Let's-Encrypt-Zertifikate unter `/etc/letsencrypt` |
-| **WireGuard** | Hub oder Peer, Clients mit QR-Code, Standorte (`godeb site add`), Trusted Endpoint |
+| **WireGuard** | Hub oder Peer, Clients mit QR-Code, Standorte per Beitrittscode, Trusted Endpoint |
 | **Portweiterleitung** | Öffentliche Ports des Hubs an Standorte im Tunnel weiterleiten (eigene nftables-Tabelle) |
 | **Spielserver** | Dedizierte Server über SteamCMD, ein Konto und eine systemd-Unit pro Spiel. Als erstes Spiel: Enshrouded |
 | **Mail-Gateway** | Postfix-Relay über WireGuard mit OpenDKIM, Queue und Statistik |
@@ -85,11 +85,11 @@ Ein frisches GoDeb richtet nichts von selbst ein. Bis zum Abschluss öffnet es e
 
 1. **Admin-Konto** mit Passwort anlegen
 2. **2FA** einrichten (QR-Code in einer Authenticator-App scannen)
-3. **Rolle** wählen: WireGuard-Hub, Peer eines vorhandenen Hubs oder eigenständig
+3. **Rolle** wählen: WireGuard-Hub, Peer eines vorhandenen Hubs oder eigenständig. Auf dem Hub kommen mit „+“ beliebig viele Handys, Laptops (QR-Code und Datei) und GoDeb-Server zu Hause (Beitrittscode) dazu
 4. **Erreichbarkeit** festlegen: nur im Tunnel, zusätzlich per HTTPS im LAN, oder nur lokal
 5. **Übersicht**: wie der Server jetzt eingerichtet ist (Adresse der Oberfläche im Tunnel, Tunnel, Firewall), zum Drucken oder als PDF. Später: Startseite → Einrichtungsübersicht oder `sudo godeb summary`
 
-Für eine Heim-VM als Peer: auf dem Hub unter WireGuard einen Peer mit „Standort“ anlegen, die `.conf` wird heruntergeladen; im Assistenten der Heim-VM „Mit Hub verbinden“ wählen und die Datei hochladen.
+Für eine Heim-VM als Peer: im Assistenten des Hubs mit „+“ einen „GoDeb-Server zu Hause“ anlegen (später: WireGuard → Neuer Peer → „Standort“). Der Hub zeigt einen Beitrittscode; im Assistenten der Heim-VM „Mit Hub verbinden“ wählen und ihn einfügen. Die Heim-VM verbindet sich dann direkt.
 
 Danach schließt sich der Assistent, und ufw lässt nur noch SSH, WireGuard (auf dem Hub) und die gewählten Zugänge durch.
 
@@ -97,8 +97,8 @@ Ohne Browser geht dasselbe auf der Kommandozeile, mit denselben Funktionen im Hi
 
 ```bash
 sudo godeb setup --role hub --access tunnel            # VPS
-sudo godeb site add heim-vm --address 10.8.0.2         # auf dem Hub: Standort anlegen
-sudo godeb setup --join ~/heim-vm.conf --access lan    # auf der Heim-VM
+sudo godeb site add heim-vm                            # auf dem Hub: Standort anlegen, zeigt den Beitrittscode
+sudo godeb setup --join - --access lan                 # auf der Heim-VM: Beitrittscode einfügen
 ```
 
 Die vollständige Anleitung für VPS und Heim-VM, inklusive Portweiterleitung und Spielserver, steht in [DOCUMENTATION.md](DOCUMENTATION.md#zielbild-vps-und-heim-vm).

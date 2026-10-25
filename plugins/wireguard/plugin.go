@@ -19,6 +19,7 @@ func Mount(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/plugins/wireguard/peers", handleCreate)
 	mux.HandleFunc("GET /api/plugins/wireguard/peers/{id}/config", handleClientConfig)
 	mux.HandleFunc("GET /api/plugins/wireguard/peers/{id}/qr", handleQR)
+	mux.HandleFunc("GET /api/plugins/wireguard/peers/{id}/code", handleJoinCode)
 	mux.HandleFunc("POST /api/plugins/wireguard/peers/{id}/send-email", handleSendEmail)
 	mux.HandleFunc("POST /api/plugins/wireguard/join", handleJoin)
 	mux.HandleFunc("GET /api/plugins/wireguard/trust", handleTrustStatus)

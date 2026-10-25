@@ -36,7 +36,7 @@ Browser --wg0 10.8.0.1:8080 / 127.0.0.1:8080-->  godeb.service  (Benutzer godeb,
 
 Die Weboberfläche ist der Teil, der mit dem Netz spricht. Sie läuft als `godeb` mit `ProtectSystem=strict`, ohne Capabilities und mit Systemaufruf-Filter (`systemd-analyze security`: 1.3). Alles, was das System ändert, erledigt `godeb-agent.service` (root). Der Agent hat keinen Netzwerk-Listener, nur den Unix-Socket. Er nimmt dort nur Verbindungen von root und `godeb` an (`SO_PEERCRED`).
 
-- **Weitergeleitet** werden `/api/plugins/*`, `/api/plugin-manager*` und die Setup-Schritte `info`, `hub`, `join`, `finish`. Die Weboberfläche prüft vorher die Sitzung und schickt Benutzer und einen Hash der Sitzungs-ID mit, nie das Cookie.
+- **Weitergeleitet** werden `/api/plugins/*`, `/api/plugin-manager*` und die Setup-Schritte `info`, `hub`, `client`, `join`, `finish`, `summary`. Die Weboberfläche prüft vorher die Sitzung und schickt Benutzer und einen Hash der Sitzungs-ID mit, nie das Cookie.
 - **2FA beim Agenten (Weg 2+):** TOTP-Geheimnisse und Backup-Codes liegen nur in der Agent-Datenbank, versiegelt mit `/etc/godeb/master.key`. Die Weboberfläche fragt Status, Einrichtung und Codes beim Agenten an. Für weitergeleitete Anfragen prüft der Agent den Code im Header `X-GoDeb-TOTP` selbst, mit eigenem Fenster pro Sitzung, fünf Fehlversuchen pro Sitzung und einer Sperre nach zehn falschen Codes pro Benutzer in 15 Minuten.
 - **Neue 2FA-Einrichtungen** nimmt der Agent über den Socket nur für das erste Konto an oder wenn root sie freigegeben hat (`godeb user passwd`, `godeb 2fa reset`). Einen Reset über den Socket gibt es nicht.
 - **Folge:** Eine kompromittierte Weboberfläche kann lesen, aber ohne aktuellen Code des Admins nichts am System ändern, keine eigenen Konten mit 2FA ausstatten und keine Schlüssel stehlen. Auch der Trusted-Endpoint-Schlüssel bleibt beim Agenten; die Weboberfläche lässt nur signieren.
@@ -116,25 +116,24 @@ Zwei Installationen mit **demselben GoDeb-Paket**. Sie unterscheiden sich nur in
 ### Einrichtung Schritt für Schritt
 
 1. **VPS (Hub)** installieren wie unter „Installation auf einem Hetzner-VPS“: im Assistenten „WireGuard-Server“ und „Nur über WireGuard“. Das Handy wird der erste Client.
-2. **Standort auf dem VPS anlegen:**
+2. **Standort auf dem VPS anlegen.** Am einfachsten gleich im Assistenten des VPS: nach dem ersten Handy „+ Weiteres Gerät oder GoDeb-Server“ → „GoDeb-Server zu Hause“, Name `heim-vm`. Später geht das unter WireGuard → Neuer Peer → „Standort“ oder auf der Kommandozeile:
 
    ```sh
-   sudo godeb site add heim-vm --address 10.8.0.2
-   sudo install -m 600 -o "$USER" /etc/wireguard/clients/heim-vm.conf ~/
+   sudo godeb site add heim-vm
    ```
 
-   Der zweite Befehl legt eine Kopie der Client-Datei ins eigene Home, damit `scp` sie ohne root holen kann (`/etc/wireguard` gehört root). Alternativ in der Web-UI: WireGuard → Neuer Peer → „Standort“ anhaken; die Client-Datei `heim-vm.conf` wird dann direkt heruntergeladen. Beides läuft über `wireguard.CreatePeer`. Die Client-Datei bekommt nur das Tunnelnetz, kein DNS und Keepalive 25. Der Hub schaltet IP-Forwarding ein und erlaubt Tunnel-Clients den Zugriff auf `10.8.0.2:8080/tcp`.
-3. **Heim-VM:** Paket installieren, die Kopie vom VPS holen, dort löschen und beitreten (die Datei enthält den privaten Schlüssel des Standorts):
+   Alle drei Wege zeigen einen **Beitrittscode** (`godeb-join:…`, eine Zeile). Er ist die Client-Datei selbst, base64url-kodiert, damit sie sich zwischen zwei Browsern oder Terminals kopieren lässt. Wie die Datei enthält er den privaten Schlüssel des Standorts: nur auf der Heim-VM einfügen, nicht per Chat oder Mail weitergeben. In der WireGuard-Ansicht zeigt „Code“ beim Standort ihn erneut (mit 2FA wie `.conf` und QR). Alles läuft über `wireguard.CreatePeer`. Die Client-Datei bekommt nur das Tunnelnetz, kein DNS und Keepalive 25. Der Hub schaltet IP-Forwarding ein und erlaubt Tunnel-Clients den Zugriff auf `<standort>:8080/tcp`.
+
+   **Adresse:** Der erste Standort bekommt `10.8.0.2`. Handys und Laptops lassen diese Adresse dafür frei, solange es keinen Standort gibt. Auf Hubs, deren erstes Handy noch `10.8.0.2` hat, bekommt der Standort die nächste freie Adresse; Assistent, Ausgabe und Übersicht zeigen sie an. Mit `--address` bzw. dem Feld „Adresse im Tunnel“ lässt sie sich festlegen.
+3. **Heim-VM:** Paket installieren, `sudo godeb setup-url` aufrufen, den Link im Heimnetz öffnen, Administrator und 2FA anlegen, „Mit Hub verbinden“ wählen und den Beitrittscode einfügen (oder die Datei hochladen), dann „Heimnetz und Tunnel“ und den Trusted Endpoint. Ohne Browser:
 
    ```sh
-   scp <benutzer>@<vps-ip>:heim-vm.conf ~/ && ssh <benutzer>@<vps-ip> rm heim-vm.conf
-   sudo godeb setup --join ~/heim-vm.conf
-   rm ~/heim-vm.conf
+   sudo godeb setup --join - --access lan   # Beitrittscode einfügen, Enter
    ```
 
-   Oder im Browser: auf der Heim-VM `sudo godeb setup-url` aufrufen, den Link im Heimnetz öffnen, Administrator und 2FA anlegen, „Mit Hub verbinden“ wählen und die heruntergeladene Datei hochladen (oder ihren Inhalt einfügen), dann „Heimnetz und Tunnel“ und den Trusted Endpoint. Beides schreibt `wg0.conf` als Peer, startet den Tunnel, wartet auf den Handshake und richtet ufw ein: SSH, `8080/tcp` auf `wg0`, HTTPS `8443/tcp` nur aus dem LAN, kein offener WireGuard-Port.
+   Beides schreibt `wg0.conf` als Peer, startet den Tunnel, wartet auf den Handshake und richtet ufw ein: SSH, `8080/tcp` auf `wg0`, HTTPS `8443/tcp` nur aus dem LAN, kein offener WireGuard-Port. `--join` nimmt auch eine Datei (Client-Datei oder Code).
 4. **Enshrouded auf der Heim-VM:** In der Web-UI (`http://10.8.0.2:8080`, vom Handy über den Hub) „Spielserver“ → Enshrouded → „Server installieren“. Die Ports öffnen sich nur auf `wg0`, und die Ansicht zeigt die Adresse, unter der Spieler sich verbinden.
-5. **Portweiterleitung auf dem VPS:** Plugin „Portweiterleitung“, Vorlage Enshrouded, Ziel `10.8.0.2`, „Weiterleiten“. Danach im Spiel `<vps-ip>:15637`.
+5. **Portweiterleitung auf dem VPS:** Plugin „Portweiterleitung“, Vorlage Enshrouded, Ziel `heim-vm` (`10.8.0.2`), „Weiterleiten“. Danach im Spiel `<vps-ip>:15637`.
 6. **Handy für Auto-Disconnect:** Das Handy-Profil vom Setup des VPS ist älter als der Trusted Endpoint der Heim-VM. Auf dem VPS `sudo godeb site sync` ausführen (oder WireGuard → Trusted Endpoint → „Client-Dateien aktualisieren“) und den QR-Code in der GoDeb-Tunnel-App neu scannen. Neue Clients bekommen Endpoint und Schlüssel automatisch.
 
 Die beim Beitritt eingefügte Datei wird streng geprüft: genau ein `[Interface]` und ein `[Peer]`, nur die Schlüssel `PrivateKey`, `Address` (eine /32), `MTU`, `PublicKey`, `PresharedKey`, `Endpoint`, `AllowedIPs` und `PersistentKeepalive`. `AllowedIPs` darf nur das Tunnelnetz enthalten. `PreUp`/`PostUp`/`PreDown`/`PostDown`, `Table` und `SaveConfig` werden abgelehnt, weil `wg-quick` sie als root ausführt bzw. das Routing umstellt. `DNS` wird weggelassen. GoDeb schreibt die Datei aus den geprüften Werten neu, nie die eingefügten Zeilen.
@@ -145,7 +144,7 @@ Die beim Beitritt eingefügte Datei wird streng geprüft: genau ein `[Interface]
 
 Nach `sudo apt install` steht der Link zur Einrichtung in einem Kasten am Ende der Ausgabe (`sudo godeb setup-url` zeigt ihn erneut). Ist die Einrichtung schon abgeschlossen, zeigt dieselbe Stelle die Übersicht.
 
-**Übersicht:** Der letzte Schritt des Assistenten zeigt, wie der Server eingerichtet ist: Adressen der Weboberfläche (Tunnel mit IP, Heimnetz, SSH-Notzugang), Rolle, Tunnel-Adresse und -Netz, Endpoint, Standorte und Clients, Trusted Endpoint, SSH-Port und Firewall-Regeln. „Drucken / als PDF speichern“ druckt nur diese Übersicht, hell auf Papier. Später: Startseite → „Einrichtungsübersicht“ (`GET /api/setup/summary`, mit Login) oder `sudo godeb summary`. Sie enthält keine Passwörter, Tokens oder privaten Schlüssel.
+**Übersicht:** Der letzte Schritt des Assistenten zeigt, wie der Server eingerichtet ist: Adressen der Weboberfläche (Tunnel mit IP, Heimnetz, SSH-Notzugang), Rolle, Tunnel-Adresse und -Netz, Endpoint, Standorte und Clients, Trusted Endpoint, SSH-Port und Firewall-Regeln. „Drucken / als PDF speichern“ (oder Strg+P) druckt nur diese Übersicht als schlichten Bogen, schwarz auf weiß. Später: Startseite → „Einrichtungsübersicht“ (`GET /api/setup/summary`, mit Login) oder `sudo godeb summary`. Sie enthält keine Passwörter, Tokens oder privaten Schlüssel.
 
 Ein frisch installiertes GoDeb richtet nichts von selbst ein. Alle Plugins sind dabei; was davon genutzt wird, entscheidet die Einrichtung (und später der Plugin-Manager). Es entsteht insbesondere kein WireGuard-Server, solange man ihn nicht wählt.
 
@@ -167,10 +166,10 @@ Zertifikat (selbstsigniert), SHA-256-Fingerprint:
 Bis die Einrichtung abgeschlossen ist, lauscht GoDeb zusätzlich auf `0.0.0.0:8443` (`GODEB_SETUP_ADDR`) per HTTPS mit einem selbstsignierten Zertifikat (`/var/lib/godeb/tls/`). Der Browser warnt beim ersten Aufruf; der Fingerprint in den Zertifikatsdetails muss mit der Ausgabe übereinstimmen.
 
 1. **Administrator:** Benutzername und Passwort. Dafür ist der Einmal-Token aus dem Link nötig (`/var/lib/godeb/setup-token`, `0600`). Wer den Server zufällig zuerst im Netz findet, kann ihn also nicht übernehmen. Ein zweiter „erster“ Administrator wird abgelehnt.
-2. **2FA:** die normale Anmeldung mit Einrichtung von TOTP und Backup-Codes.
+2. **2FA:** die normale Anmeldung mit Einrichtung von TOTP und Backup-Codes. „Drucken“ gibt nur die Backup-Codes mit Konto, Server und Datum aus, nie den TOTP-Schlüssel.
 3. **WireGuard:**
-   - **WireGuard-Server** (VPS): `wg0.conf` mit `10.8.0.1/24` und `51820/udp`, dazu ein erster Client als QR-Code.
-   - **Mit Hub verbinden** (Heim-VM): Client-Datei des VPS einfügen (siehe „Zielbild“).
+   - **WireGuard-Server** (VPS): `wg0.conf` mit `10.8.0.1/24` und `51820/udp`, dazu ein erster Client als QR-Code. Mit „+ Weiteres Gerät oder GoDeb-Server“ kommen beliebig viele weitere dazu: Handys und Laptops mit QR-Code und Datei, GoDeb-Server zu Hause (Standorte) mit Beitrittscode (`POST /api/setup/client`, `firstrun.AddClient`).
+   - **Mit Hub verbinden** (Heim-VM): Beitrittscode oder Client-Datei des VPS einfügen (siehe „Zielbild“).
    - **Ohne WireGuard.**
 4. **Erreichbarkeit und Firewall:**
    - **Nur über WireGuard:** Loopback und `wg0:8080`. Empfohlen für einen VPS.
@@ -189,11 +188,11 @@ Ist ufw schon vor der Einrichtung aktiv, muss der Port kurz offen sein (`sudo uf
 
 ```sh
 sudo godeb setup --role hub --endpoint <vps-ip> --access tunnel
-sudo godeb setup --join /root/heim-vm.conf --access lan
+sudo godeb setup --join - --access lan          # Beitrittscode einfügen
 sudo godeb setup --role none --access lan
 ```
 
-Der Hub bekommt einen ersten Client als QR-Code im Terminal (`wireguard.CreatePeer`, nur das Tunnelnetz als `AllowedIPs`). 2FA richtet der Administrator dann beim ersten Login in der Web-UI ein. Flags: `--role`, `--access`, `--lan-address`, `--address`, `--port`, `--ui-port`, `--client`, `--admin`, `--ssh-port`, `--no-firewall`, `--join DATEI`, `--yes` (unbeaufsichtigt, braucht `--role` und einen vorhandenen Admin).
+Der Hub bekommt einen ersten Client als QR-Code im Terminal (`firstrun.AddClient`, nur das Tunnelnetz als `AllowedIPs`). Danach fragt `godeb setup` nach weiteren Geräten oder GoDeb-Servern, bis der Name leer bleibt; Standorte bekommen einen Beitrittscode statt des QR-Codes. 2FA richtet der Administrator dann beim ersten Login in der Web-UI ein. Flags: `--role`, `--access`, `--lan-address`, `--address`, `--port`, `--ui-port`, `--client`, `--admin`, `--ssh-port`, `--no-firewall`, `--join DATEI|-` (Client-Datei oder Beitrittscode, `-` liest von stdin), `--yes` (unbeaufsichtigt, braucht `--role` und einen vorhandenen Admin).
 
 ## Installation auf einem Hetzner-VPS
 
@@ -427,7 +426,8 @@ Sitzung nötig, soweit nichts anderes steht. Antworten sind JSON.
 | GET | `/api/setup/status` | ohne Login: `required`, `hasAdmin` |
 | POST | `/api/setup/admin` | ohne Login, mit Header `X-GoDeb-Setup-Token`: erster Administrator |
 | GET | `/api/setup/info` | öffentliche IP, LAN-Adressen, SSH-Ports, ufw, Zertifikat |
-| POST | `/api/setup/hub` | WireGuard-Server und erster Client (QR als Data-URL) |
+| POST | `/api/setup/hub` | WireGuard-Server und erster Client (`first`: Datei, QR als Data-URL) |
+| POST | `/api/setup/client` | weiterer Client auf dem Hub (`name`, `site`, `address`): Datei und QR bzw. Beitrittscode |
 | POST | `/api/setup/join` | Peer eines Hubs |
 | POST | `/api/setup/finish` | Erreichbarkeit, Trusted Endpoint, Firewall, Abschluss |
 
@@ -469,8 +469,9 @@ Alle außer `status` antworten nach dem Abschluss mit `410`.
 | GET, POST | `/api/plugins/wireguard/peers` |
 | GET | `/api/plugins/wireguard/peers/{id}/config` |
 | GET | `/api/plugins/wireguard/peers/{id}/qr` |
+| GET | `/api/plugins/wireguard/peers/{id}/code` (Beitrittscode eines Standorts) |
 | POST | `/api/plugins/wireguard/peers/{id}/send-email` |
-| POST | `/api/plugins/wireguard/join` (`config`: Client-Datei des Hubs) |
+| POST | `/api/plugins/wireguard/join` (`config`: Beitrittscode oder Client-Datei des Hubs) |
 | GET, POST | `/api/plugins/wireguard/trust` (`enabled`, `address`, `port`) |
 | POST | `/api/plugins/wireguard/trust/sync` |
 | GET | `/api/plugins/wireguard/trust/info` (ohne Login, für den Hub) |
@@ -513,7 +514,7 @@ sudo journalctl -u godeb -u godeb-agent -e
 sudo godeb user passwd admin
 sudo godeb 2fa reset admin
 sudo tail -f /var/log/godeb/auth.log
-sudo godeb site add heim-vm --address 10.8.0.2   # Hub: Standort anlegen
+sudo godeb site add heim-vm                      # Hub: Standort anlegen, zeigt den Beitrittscode
 sudo godeb site sync                             # Hub: Standort-Weiterleitungen und Trusted Endpoints abgleichen
 sudo godeb trust enable                          # Heim: Trusted Endpoint für Auto-Disconnect
 sudo godeb trust show

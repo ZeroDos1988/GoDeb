@@ -64,7 +64,7 @@ var noStepUp = map[string]bool{
 func stepUpFor(method, raw string) stepUpLevel {
 	p := path.Clean("/" + raw)
 	if method == http.MethodGet || method == http.MethodHead || method == http.MethodOptions {
-		if strings.HasPrefix(p, "/api/plugins/wireguard/peers/") && (strings.HasSuffix(p, "/config") || strings.HasSuffix(p, "/qr")) {
+		if strings.HasPrefix(p, "/api/plugins/wireguard/peers/") && (strings.HasSuffix(p, "/config") || strings.HasSuffix(p, "/qr") || strings.HasSuffix(p, "/code")) {
 			return stepUpWindow
 		}
 		return stepUpNone
