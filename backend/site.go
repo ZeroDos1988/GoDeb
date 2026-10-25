@@ -61,7 +61,7 @@ func siteAdd(ctx context.Context, name string, args []string, stdout, stderr io.
 		return 1
 	}
 	if role.Role != wireguard.RoleHub {
-		fmt.Fprintln(stderr, "Dieser Server ist kein WireGuard-Hub. Zuerst `godeb setup` (ohne --join) ausführen.")
+		fmt.Fprintln(stderr, "Dieser Server ist kein WireGuard-Hub. Zuerst `sudo godeb setup` (ohne --join) ausführen.")
 		return 1
 	}
 	host := *endpoint
@@ -93,10 +93,13 @@ func siteAdd(ctx context.Context, name string, args []string, stdout, stderr io.
 	file := "/etc/wireguard/clients/" + name + ".conf"
 	fmt.Fprintf(stdout, `
 Weiter auf dem Standort (Heim-VM), GoDeb dort installiert:
-  1. Datei kopieren (enthält den privaten Schlüssel des Standorts):
-       scp root@<hub>:%s /root/
-  2. Auf dem Standort:  godeb setup --join /root/%s.conf
-  3. Web-UI des Standorts vom Handy über den Hub: http://%s:8080
+  1. Auf dem Hub eine Kopie ins eigene Home legen (enthält den privaten
+     Schlüssel des Standorts):
+       sudo install -m 600 -o "$USER" %s ~/
+  2. Auf dem Standort holen, auf dem Hub löschen und beitreten:
+       scp <benutzer>@<hub>:%[2]s.conf ~/ && ssh <benutzer>@<hub> rm %[2]s.conf
+       sudo godeb setup --join ~/%[2]s.conf && rm ~/%[2]s.conf
+  3. Web-UI des Standorts vom Handy über den Hub: http://%[3]s:8080
 `, file, name, stripMask(addr))
 	return 0
 }

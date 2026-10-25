@@ -68,11 +68,11 @@ func runSetupURL(stdout, stderr io.Writer) int {
 	fmt.Fprintf(stdout, "    %s\n", fp)
 	if st := core.RunAdmin(context.Background(), "ufw", "status"); st.Err == nil && strings.Contains(st.Stdout, "Status: active") {
 		fmt.Fprintln(stdout)
-		fmt.Fprintf(stdout, "  ufw ist aktiv. Vorher freigeben: ufw allow %s/tcp\n", port)
+		fmt.Fprintf(stdout, "  ufw ist aktiv. Vorher freigeben: sudo ufw allow %s/tcp\n", port)
 		fmt.Fprintln(stdout, "  (der Assistent entfernt die Regel am Ende wieder)")
 	}
 	fmt.Fprintln(stdout)
-	fmt.Fprintln(stdout, "  Link später erneut anzeigen: godeb setup-url   Ohne Browser: godeb setup")
+	fmt.Fprintln(stdout, "  Link später erneut anzeigen: sudo godeb setup-url   Ohne Browser: sudo godeb setup")
 	fmt.Fprintln(stdout, line)
 	fmt.Fprintln(stdout)
 	return 0

@@ -60,21 +60,23 @@ Ein neues Spiel ist eine `Game`-Beschreibung in `plugins/steam/`, kein eigenes P
 
 ## Installation
 
-Voraussetzung: Debian 13 (amd64), root, eine Netzwerkverbindung. GoDeb kommt aus einem eigenen, signierten APT-Repo auf GitHub Pages:
+Voraussetzung: Debian 13 (amd64), ein Konto mit `sudo`, eine Netzwerkverbindung. GoDeb kommt aus einem eigenen, signierten APT-Repo auf GitHub Pages:
 
 ```bash
-wget -O /usr/share/keyrings/godeb-archive-keyring.asc https://zerodos1988.github.io/GoDeb/godeb-archive-keyring.asc
-wget -O /etc/apt/sources.list.d/godeb.sources https://zerodos1988.github.io/GoDeb/godeb.sources
-apt update
-apt install --no-install-recommends godeb
+sudo wget -O /usr/share/keyrings/godeb-archive-keyring.asc https://zerodos1988.github.io/GoDeb/godeb-archive-keyring.asc
+sudo wget -O /etc/apt/sources.list.d/godeb.sources https://zerodos1988.github.io/GoDeb/godeb.sources
+sudo apt update
+sudo apt install --no-install-recommends godeb
 ```
 
-Der Schlüssel hat den Fingerprint `85BB 4B5E C4EB BC47 DCD1  6D32 FF4E 70E4 D1A7 EBB9` (prüfen mit `sq inspect /usr/share/keyrings/godeb-archive-keyring.asc`). Ab dann kommt jede neue Version mit `apt update && apt upgrade`. Ohne Repo geht es weiter mit dem `.deb` aus den [Releases](https://github.com/ZeroDos1988/GoDeb/releases): `apt install --no-install-recommends ./godeb_*_amd64.deb`. Ab Version 0.2.3 bringt das Paket Repo-Eintrag und Schlüssel selbst mit.
+Alle Befehle in dieser Anleitung laufen mit `sudo`. Wer direkt als root angemeldet ist (etwa auf einem frischen Hetzner-Server), lässt `sudo` weg. Fehlt `sudo` (Debian, bei dessen Installation ein root-Passwort gesetzt wurde), einmal als root: `apt install sudo && usermod -aG sudo <benutzer>`, dann neu anmelden.
+
+Der Schlüssel hat den Fingerprint `85BB 4B5E C4EB BC47 DCD1  6D32 FF4E 70E4 D1A7 EBB9` (prüfen mit `sq inspect /usr/share/keyrings/godeb-archive-keyring.asc`). Ab dann kommt jede neue Version mit `sudo apt update && sudo apt upgrade`. Ohne Repo geht es weiter mit dem `.deb` aus den [Releases](https://github.com/ZeroDos1988/GoDeb/releases): `sudo apt install --no-install-recommends ./godeb_*_amd64.deb`. Ab Version 0.2.3 bringt das Paket Repo-Eintrag und Schlüssel selbst mit.
 
 Am Ende der Installation steht in einem Kasten der Link zur Ersteinrichtung. Später lässt er sich jederzeit wieder abrufen:
 
 ```bash
-godeb setup-url
+sudo godeb setup-url
 ```
 
 ### Ersteinrichtung im Browser
@@ -85,7 +87,7 @@ Ein frisches GoDeb richtet nichts von selbst ein. Bis zum Abschluss öffnet es e
 2. **2FA** einrichten (QR-Code in einer Authenticator-App scannen)
 3. **Rolle** wählen: WireGuard-Hub, Peer eines vorhandenen Hubs oder eigenständig
 4. **Erreichbarkeit** festlegen: nur im Tunnel, zusätzlich per HTTPS im LAN, oder nur lokal
-5. **Übersicht**: wie der Server jetzt eingerichtet ist (Adresse der Oberfläche im Tunnel, Tunnel, Firewall), zum Drucken oder als PDF. Später: Startseite → Einrichtungsübersicht oder `godeb summary`
+5. **Übersicht**: wie der Server jetzt eingerichtet ist (Adresse der Oberfläche im Tunnel, Tunnel, Firewall), zum Drucken oder als PDF. Später: Startseite → Einrichtungsübersicht oder `sudo godeb summary`
 
 Für eine Heim-VM als Peer: auf dem Hub unter WireGuard einen Peer mit „Standort“ anlegen, die `.conf` wird heruntergeladen; im Assistenten der Heim-VM „Mit Hub verbinden“ wählen und die Datei hochladen.
 
@@ -94,16 +96,16 @@ Danach schließt sich der Assistent, und ufw lässt nur noch SSH, WireGuard (auf
 Ohne Browser geht dasselbe auf der Kommandozeile, mit denselben Funktionen im Hintergrund:
 
 ```bash
-godeb setup --role hub --access tunnel             # VPS
-godeb site add heim-vm --address 10.8.0.2          # auf dem Hub: Standort anlegen
-godeb setup --join /root/heim-vm.conf --access lan # auf der Heim-VM
+sudo godeb setup --role hub --access tunnel            # VPS
+sudo godeb site add heim-vm --address 10.8.0.2         # auf dem Hub: Standort anlegen
+sudo godeb setup --join ~/heim-vm.conf --access lan    # auf der Heim-VM
 ```
 
 Die vollständige Anleitung für VPS und Heim-VM, inklusive Portweiterleitung und Spielserver, steht in [DOCUMENTATION.md](DOCUMENTATION.md#zielbild-vps-und-heim-vm).
 
 ### Updates und Backups
 
-Jeder Build trägt eine Version aus dem Git-Tag (`0.1.0` oder `0.1.0+git42.abc1234`), apt erkennt neuere Pakete als Update. Mit dem APT-Repo reicht `apt update && apt upgrade`. Die Version steht in der Seitenleiste, in `godeb version` und in `/api/health`.
+Jeder Build trägt eine Version aus dem Git-Tag (`0.1.0` oder `0.1.0+git42.abc1234`), apt erkennt neuere Pakete als Update. Mit dem APT-Repo reicht `sudo apt update && sudo apt upgrade`. Die Version steht in der Seitenleiste, in `godeb version` und in `/api/health`.
 
 Backups macht GoDeb bewusst nicht selbst. Dafür sind die Snapshots der Plattform da (Proxmox zu Hause, Hetzner-Backups auf dem VPS).
 
@@ -121,7 +123,7 @@ Backups macht GoDeb bewusst nicht selbst. Dafür sind die Snapshots der Plattfor
 | 2FA beim Agenten | TOTP-Geheimnisse liegen nur beim root-Agenten, der jede Änderung selbst mit Code prüft. Eine übernommene Weboberfläche kann lesen, aber nichts ändern |
 | Lieferkette | `govulncheck` und `npm audit` in der CI, `systemd-analyze security` als Schwelle (Weboberfläche 1.3) |
 
-Notfall-Befehle wie `godeb user passwd`, `godeb 2fa reset` und `godeb sessions revoke` gibt es nur auf der Kommandozeile als root.
+Notfall-Befehle wie `godeb user passwd`, `godeb 2fa reset` und `godeb sessions revoke` gibt es nur auf der Kommandozeile mit root-Rechten (`sudo godeb …`).
 
 Sicherheitslücken bitte vertraulich melden, siehe [SECURITY.md](SECURITY.md).
 

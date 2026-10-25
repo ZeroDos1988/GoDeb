@@ -218,7 +218,7 @@ func scrubWebSecrets(sf auth.SecondFactor) {
 			return
 		}
 		if len(kept) > 0 && attempt == 29 {
-			slog.Warn("2FA-Daten liegen nur in der Web-Datenbank; als root: godeb 2fa reset <benutzer>", "benutzer", kept)
+			slog.Warn("2FA-Daten liegen nur in der Web-Datenbank; sudo godeb 2fa reset <benutzer>", "benutzer", kept)
 		}
 		time.Sleep(2 * time.Second)
 	}

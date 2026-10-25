@@ -28,7 +28,7 @@ const usage = `Aufruf:
   godeb trust enable [--address IP] [--port 8787] | disable | show
                                  Trusted Endpoint im Heimnetz (Auto-Disconnect der App)
   godeb user passwd <benutzer>   Benutzer anlegen oder Passwort setzen
-  godeb 2fa reset <benutzer>     2FA zurücksetzen (Notfall, per SSH als root)
+  godeb 2fa reset <benutzer>     2FA zurücksetzen (Notfall, per SSH mit sudo)
   godeb sessions revoke <benutzer>  Alle Web-Sitzungen des Benutzers beenden
 `
 

@@ -80,11 +80,11 @@ cat >"$OUT/index.html" <<EOF
 <meta charset="utf-8">
 <title>GoDeb APT-Repository</title>
 <h1>GoDeb APT-Repository</h1>
-<p>Für Debian 13 (Trixie), amd64. Als root:</p>
-<pre>wget -O /usr/share/keyrings/godeb-archive-keyring.asc https://zerodos1988.github.io/GoDeb/godeb-archive-keyring.asc
-wget -O /etc/apt/sources.list.d/godeb.sources https://zerodos1988.github.io/GoDeb/godeb.sources
-apt update
-apt install --no-install-recommends godeb</pre>
+<p>Für Debian 13 (Trixie), amd64. Mit einem Konto mit sudo (als root ohne <code>sudo</code>):</p>
+<pre>sudo wget -O /usr/share/keyrings/godeb-archive-keyring.asc https://zerodos1988.github.io/GoDeb/godeb-archive-keyring.asc
+sudo wget -O /etc/apt/sources.list.d/godeb.sources https://zerodos1988.github.io/GoDeb/godeb.sources
+sudo apt update
+sudo apt install --no-install-recommends godeb</pre>
 <p>Fingerprint des Schlüssels: <code>$fingerprint</code></p>
 <p>Quellcode und Anleitung: <a href="https://github.com/ZeroDos1988/GoDeb">github.com/ZeroDos1988/GoDeb</a></p>
 </html>

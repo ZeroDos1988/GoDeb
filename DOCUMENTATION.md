@@ -119,22 +119,23 @@ Zwei Installationen mit **demselben GoDeb-Paket**. Sie unterscheiden sich nur in
 2. **Standort auf dem VPS anlegen:**
 
    ```sh
-   godeb site add heim-vm --address 10.8.0.2
+   sudo godeb site add heim-vm --address 10.8.0.2
+   sudo install -m 600 -o "$USER" /etc/wireguard/clients/heim-vm.conf ~/
    ```
 
-   Alternativ in der Web-UI: WireGuard → Neuer Peer → „Standort“ anhaken; die Client-Datei `heim-vm.conf` wird dann direkt heruntergeladen. Beides läuft über `wireguard.CreatePeer`. Die Client-Datei bekommt nur das Tunnelnetz, kein DNS und Keepalive 25. Der Hub schaltet IP-Forwarding ein und erlaubt Tunnel-Clients den Zugriff auf `10.8.0.2:8080/tcp`.
-3. **Heim-VM:** Paket installieren, die Datei `/etc/wireguard/clients/heim-vm.conf` vom VPS holen und beitreten:
+   Der zweite Befehl legt eine Kopie der Client-Datei ins eigene Home, damit `scp` sie ohne root holen kann (`/etc/wireguard` gehört root). Alternativ in der Web-UI: WireGuard → Neuer Peer → „Standort“ anhaken; die Client-Datei `heim-vm.conf` wird dann direkt heruntergeladen. Beides läuft über `wireguard.CreatePeer`. Die Client-Datei bekommt nur das Tunnelnetz, kein DNS und Keepalive 25. Der Hub schaltet IP-Forwarding ein und erlaubt Tunnel-Clients den Zugriff auf `10.8.0.2:8080/tcp`.
+3. **Heim-VM:** Paket installieren, die Kopie vom VPS holen, dort löschen und beitreten (die Datei enthält den privaten Schlüssel des Standorts):
 
    ```sh
-   scp root@<vps-ip>:/etc/wireguard/clients/heim-vm.conf /root/
-   godeb setup --join /root/heim-vm.conf
-   rm /root/heim-vm.conf
+   scp <benutzer>@<vps-ip>:heim-vm.conf ~/ && ssh <benutzer>@<vps-ip> rm heim-vm.conf
+   sudo godeb setup --join ~/heim-vm.conf
+   rm ~/heim-vm.conf
    ```
 
-   Oder im Browser: auf der Heim-VM `godeb setup-url` aufrufen, den Link im Heimnetz öffnen, Administrator und 2FA anlegen, „Mit Hub verbinden“ wählen und die heruntergeladene Datei hochladen (oder ihren Inhalt einfügen), dann „Heimnetz und Tunnel“ und den Trusted Endpoint. Beides schreibt `wg0.conf` als Peer, startet den Tunnel, wartet auf den Handshake und richtet ufw ein: SSH, `8080/tcp` auf `wg0`, HTTPS `8443/tcp` nur aus dem LAN, kein offener WireGuard-Port.
+   Oder im Browser: auf der Heim-VM `sudo godeb setup-url` aufrufen, den Link im Heimnetz öffnen, Administrator und 2FA anlegen, „Mit Hub verbinden“ wählen und die heruntergeladene Datei hochladen (oder ihren Inhalt einfügen), dann „Heimnetz und Tunnel“ und den Trusted Endpoint. Beides schreibt `wg0.conf` als Peer, startet den Tunnel, wartet auf den Handshake und richtet ufw ein: SSH, `8080/tcp` auf `wg0`, HTTPS `8443/tcp` nur aus dem LAN, kein offener WireGuard-Port.
 4. **Enshrouded auf der Heim-VM:** In der Web-UI (`http://10.8.0.2:8080`, vom Handy über den Hub) „Spielserver“ → Enshrouded → „Server installieren“. Die Ports öffnen sich nur auf `wg0`, und die Ansicht zeigt die Adresse, unter der Spieler sich verbinden.
 5. **Portweiterleitung auf dem VPS:** Plugin „Portweiterleitung“, Vorlage Enshrouded, Ziel `10.8.0.2`, „Weiterleiten“. Danach im Spiel `<vps-ip>:15637`.
-6. **Handy für Auto-Disconnect:** Das Handy-Profil vom Setup des VPS ist älter als der Trusted Endpoint der Heim-VM. Auf dem VPS `godeb site sync` ausführen (oder WireGuard → Trusted Endpoint → „Client-Dateien aktualisieren“) und den QR-Code in der GoDeb-Tunnel-App neu scannen. Neue Clients bekommen Endpoint und Schlüssel automatisch.
+6. **Handy für Auto-Disconnect:** Das Handy-Profil vom Setup des VPS ist älter als der Trusted Endpoint der Heim-VM. Auf dem VPS `sudo godeb site sync` ausführen (oder WireGuard → Trusted Endpoint → „Client-Dateien aktualisieren“) und den QR-Code in der GoDeb-Tunnel-App neu scannen. Neue Clients bekommen Endpoint und Schlüssel automatisch.
 
 Die beim Beitritt eingefügte Datei wird streng geprüft: genau ein `[Interface]` und ein `[Peer]`, nur die Schlüssel `PrivateKey`, `Address` (eine /32), `MTU`, `PublicKey`, `PresharedKey`, `Endpoint`, `AllowedIPs` und `PersistentKeepalive`. `AllowedIPs` darf nur das Tunnelnetz enthalten. `PreUp`/`PostUp`/`PreDown`/`PostDown`, `Table` und `SaveConfig` werden abgelehnt, weil `wg-quick` sie als root ausführt bzw. das Routing umstellt. `DNS` wird weggelassen. GoDeb schreibt die Datei aus den geprüften Werten neu, nie die eingefügten Zeilen.
 
@@ -142,15 +143,15 @@ Die beim Beitritt eingefügte Datei wird streng geprüft: genau ein `[Interface]
 
 ## Ersteinrichtung
 
-Nach `apt install` steht der Link zur Einrichtung in einem Kasten am Ende der Ausgabe (`godeb setup-url` zeigt ihn erneut). Ist die Einrichtung schon abgeschlossen, zeigt dieselbe Stelle die Übersicht.
+Nach `sudo apt install` steht der Link zur Einrichtung in einem Kasten am Ende der Ausgabe (`sudo godeb setup-url` zeigt ihn erneut). Ist die Einrichtung schon abgeschlossen, zeigt dieselbe Stelle die Übersicht.
 
-**Übersicht:** Der letzte Schritt des Assistenten zeigt, wie der Server eingerichtet ist: Adressen der Weboberfläche (Tunnel mit IP, Heimnetz, SSH-Notzugang), Rolle, Tunnel-Adresse und -Netz, Endpoint, Standorte und Clients, Trusted Endpoint, SSH-Port und Firewall-Regeln. „Drucken / als PDF speichern“ druckt nur diese Übersicht, hell auf Papier. Später: Startseite → „Einrichtungsübersicht“ (`GET /api/setup/summary`, mit Login) oder `godeb summary`. Sie enthält keine Passwörter, Tokens oder privaten Schlüssel.
+**Übersicht:** Der letzte Schritt des Assistenten zeigt, wie der Server eingerichtet ist: Adressen der Weboberfläche (Tunnel mit IP, Heimnetz, SSH-Notzugang), Rolle, Tunnel-Adresse und -Netz, Endpoint, Standorte und Clients, Trusted Endpoint, SSH-Port und Firewall-Regeln. „Drucken / als PDF speichern“ druckt nur diese Übersicht, hell auf Papier. Später: Startseite → „Einrichtungsübersicht“ (`GET /api/setup/summary`, mit Login) oder `sudo godeb summary`. Sie enthält keine Passwörter, Tokens oder privaten Schlüssel.
 
 Ein frisch installiertes GoDeb richtet nichts von selbst ein. Alle Plugins sind dabei; was davon genutzt wird, entscheidet die Einrichtung (und später der Plugin-Manager). Es entsteht insbesondere kein WireGuard-Server, solange man ihn nicht wählt.
 
 ### Im Browser (Standard)
 
-Nach `apt install --no-install-recommends ./godeb_*.deb` gibt das Paket einen Link aus, jederzeit wieder abrufbar mit:
+Nach `sudo apt install --no-install-recommends ./godeb_*.deb` gibt das Paket einen Link aus, jederzeit wieder abrufbar mit:
 
 ```sh
 sudo godeb setup-url
@@ -180,7 +181,7 @@ Bis die Einrichtung abgeschlossen ist, lauscht GoDeb zusätzlich auf `0.0.0.0:84
 
 Mit „Einrichtung abschließen“ schließt sich der Port `8443` auf allen Adressen, der Token wird gelöscht. Danach gibt es nur noch die gewählten Zugänge; Klartext-HTTP nie außerhalb von Loopback und `wg0`. Die Einstellungen stehen in `/var/lib/godeb/setup.json` und `/var/lib/godeb/access.json`. Installationen aus der Zeit vor dem Assistenten gelten beim Update als eingerichtet; der Einrichtungsport öffnet sich dort nicht.
 
-Ist ufw schon vor der Einrichtung aktiv, muss der Port kurz offen sein (`ufw allow 8443/tcp`; `godeb setup-url` weist darauf hin). Der Assistent entfernt die Regel am Ende. Eine Hetzner-Cloud-Firewall braucht für die Einrichtung ebenfalls `8443/tcp`.
+Ist ufw schon vor der Einrichtung aktiv, muss der Port kurz offen sein (`sudo ufw allow 8443/tcp`; `sudo godeb setup-url` weist darauf hin). Der Assistent entfernt die Regel am Ende. Eine Hetzner-Cloud-Firewall braucht für die Einrichtung ebenfalls `8443/tcp`.
 
 ### Ohne Browser
 
@@ -204,28 +205,28 @@ Für einen Testserver. Was vor dem produktiven Einsatz noch fehlt, steht unter �
 - Image **Debian 13**, eigenen SSH-Schlüssel hinterlegen.
 - Eine Hetzner-Cloud-Firewall ist optional. Wenn sie aktiv ist, muss sie eingehend `22/tcp` und `51820/udp` erlauben. Port `8080` bleibt dort zu.
 
-**Auf dem Server** (`ssh root@<server-ip>`), aus dem APT-Repo (siehe „APT-Repo“):
+**Auf dem Server** (`ssh <benutzer>@<server-ip>`, ein Konto mit `sudo`), aus dem APT-Repo (siehe „APT-Repo“). Ein frischer Hetzner-Server kennt zunächst nur root; wer sich als root anmeldet, lässt `sudo` in allen Befehlen weg.
 
 ```sh
-apt update && apt full-upgrade -y
-wget -O /usr/share/keyrings/godeb-archive-keyring.asc https://zerodos1988.github.io/GoDeb/godeb-archive-keyring.asc
-wget -O /etc/apt/sources.list.d/godeb.sources https://zerodos1988.github.io/GoDeb/godeb.sources
-apt update
-apt install -y --no-install-recommends godeb
+sudo apt update && sudo apt full-upgrade -y
+sudo wget -O /usr/share/keyrings/godeb-archive-keyring.asc https://zerodos1988.github.io/GoDeb/godeb-archive-keyring.asc
+sudo wget -O /etc/apt/sources.list.d/godeb.sources https://zerodos1988.github.io/GoDeb/godeb.sources
+sudo apt update
+sudo apt install -y --no-install-recommends godeb
 ```
 
-Oder ein einzelnes Paket von der [Release-Seite](https://github.com/ZeroDos1988/GoDeb/releases) mit `apt install --no-install-recommends ./godeb_*_amd64.deb`. Selbst gebaut geht auch: `./scripts/build-deb.sh` im Repository, dann `scp godeb_*_amd64.deb root@<server-ip>:/root/`. Die CI legt das Paket bei jedem Push als Artefakt `godeb-deb` ab, bei einem Tag `vX.Y.Z` als GitHub-Release.
+Oder ein einzelnes Paket von der [Release-Seite](https://github.com/ZeroDos1988/GoDeb/releases) mit `sudo apt install --no-install-recommends ./godeb_*_amd64.deb`. Selbst gebaut geht auch: `./scripts/build-deb.sh` im Repository, dann `scp godeb_*_amd64.deb <benutzer>@<server-ip>:`. Die CI legt das Paket bei jedem Push als Artefakt `godeb-deb` ab, bei einem Tag `vX.Y.Z` als GitHub-Release.
 
-`--no-install-recommends` lässt Postfix weg; das braucht nur das Mail-Gateway, und seine Installation fragt interaktiv. Am Ende steht der Link zur Ersteinrichtung (`godeb setup-url`).
+`--no-install-recommends` lässt Postfix weg; das braucht nur das Mail-Gateway, und seine Installation fragt interaktiv. Am Ende steht der Link zur Ersteinrichtung (`sudo godeb setup-url`).
 
-**Im Browser:** den Link öffnen, Fingerprint prüfen, dann Administrator, 2FA, „WireGuard-Server“ (erster Client als QR-Code: mit der GoDeb-Tunnel-App scannen) und „Nur über WireGuard“. Die Übersicht am Ende drucken oder als PDF speichern. Nach dem Abschluss ist die Oberfläche nur noch über den Tunnel erreichbar: Tunnel verbinden, die Adresse aus der Übersicht öffnen (meist `http://10.8.0.1:8080`). Ohne Browser: `godeb setup --role hub --endpoint <server-ip> --access tunnel`.
+**Im Browser:** den Link öffnen, Fingerprint prüfen, dann Administrator, 2FA, „WireGuard-Server“ (erster Client als QR-Code: mit der GoDeb-Tunnel-App scannen) und „Nur über WireGuard“. Die Übersicht am Ende drucken oder als PDF speichern. Nach dem Abschluss ist die Oberfläche nur noch über den Tunnel erreichbar: Tunnel verbinden, die Adresse aus der Übersicht öffnen (meist `http://10.8.0.1:8080`). Ohne Browser: `sudo godeb setup --role hub --endpoint <server-ip> --access tunnel`.
 
 **Prüfen** (auf dem Server):
 
 ```sh
-ufw status verbose                 # deny (incoming), SSH, 51820/udp, 8080 nur auf wg0
-ss -ltnp | grep -E ':8080|:8443'   # 8080 nur auf 127.0.0.1 und 10.8.0.1, 8443 nicht mehr
-wg show                            # nach dem Verbinden: latest handshake beim Peer
+sudo ufw status verbose            # deny (incoming), SSH, 51820/udp, 8080 nur auf wg0
+sudo ss -ltnp | grep -E ':8080|:8443'  # 8080 nur auf 127.0.0.1 und 10.8.0.1, 8443 nicht mehr
+sudo wg show                       # nach dem Verbinden: latest handshake beim Peer
 timedatectl | grep synchronized    # TOTP braucht eine richtige Uhr: "yes"
 godeb version
 systemctl status godeb fail2ban
@@ -236,20 +237,23 @@ Von außen (ohne Tunnel) müssen `curl -m 5 http://<server-ip>:8080` und `curl -
 **Enshrouded** (optional): In der Web-UI „Spielserver“ → Enshrouded → „Server installieren“. Der Job installiert Wine, legt das Konto `steam-enshrouded` an, lädt SteamCMD und die Serverdateien und öffnet `15636–15637/udp` in ufw. Danach im Spiel mit `<server-ip>:15637` verbinden; die Passwörter der Gruppen stehen in der Konfiguration. Liegen unter `/var/lib/godeb-steam/enshrouded/server` schon Serverdateien, lädt die Installation sie nicht neu. Sie übergibt sie dem Konto `steam-enshrouded`, und SteamCMD prüft sie nur (`validate`) und lädt Fehlendes nach. So lässt sich ein vorhandener Download einspielen, vor dem Klick auf „Server installieren“ und inklusive `steamapps/` (dort steht die Build-Nummer):
 
 ```sh
-tar -C ~/godeb-cache/enshrouded -cf - server | ssh root@<server-ip> 'mkdir -p /var/lib/godeb-steam/enshrouded && tar -C /var/lib/godeb-steam/enshrouded -xf -'
+tar -C ~/godeb-cache/enshrouded -cf - server | ssh <benutzer>@<server-ip> 'cat > enshrouded-server.tar'
+ssh -t <benutzer>@<server-ip> 'sudo mkdir -p /var/lib/godeb-steam/enshrouded && sudo tar -C /var/lib/godeb-steam/enshrouded -xf enshrouded-server.tar && rm enshrouded-server.tar'
 ```
+
+Der Umweg über eine Datei im Home ist nötig, weil `sudo` nach dem Passwort fragt und dafür ein Terminal braucht; dort müssen dafür kurz rund 8 GB frei sein.
 
 Das lohnt sich vor allem bei wiederholten Tests im Heimnetz. Ein Hetzner-Server lädt von Steam meist schneller, als ein Heimanschluss 8 GB hochlädt.
 
-Lokal getestet sind Download und Konfiguration, noch nicht der Start unter Wine ohne X-Server. Startet der Dienst nicht: `journalctl -u godeb-steam-enshrouded -e`.
+Lokal getestet sind Download und Konfiguration, noch nicht der Start unter Wine ohne X-Server. Startet der Dienst nicht: `sudo journalctl -u godeb-steam-enshrouded -e`.
 
-**SSH und Updates**: `sshd -T | grep -E 'passwordauthentication|permitrootlogin'` muss `passwordauthentication no` und `permitrootlogin without-password` zeigen. Steht dort `yes`, in `/etc/ssh/sshd_config.d/10-godeb.conf` `PasswordAuthentication no` eintragen und `systemctl reload ssh` ausführen, aber erst, nachdem die Anmeldung per Schlüssel funktioniert hat. Sicherheitsupdates installiert der Server selbst nach:
+**SSH und Updates**: `sudo sshd -T | grep -E 'passwordauthentication|permitrootlogin'` muss `passwordauthentication no` und `permitrootlogin without-password` zeigen. Steht dort `yes`, in `/etc/ssh/sshd_config.d/10-godeb.conf` `PasswordAuthentication no` eintragen und `sudo systemctl reload ssh` ausführen, aber erst, nachdem die Anmeldung per Schlüssel funktioniert hat. Sicherheitsupdates installiert der Server selbst nach:
 
 ```sh
-apt install -y unattended-upgrades
+sudo apt install -y unattended-upgrades
 ```
 
-**Update**: `apt update && apt upgrade` (aus dem APT-Repo), sonst neues Paket kopieren und `apt install --no-install-recommends ./godeb_*_amd64.deb`. `unattended-upgrades` spielt GoDeb nicht von selbst ein, nur Debians Sicherheitsupdates. Jeder Build hat eine höhere Version (siehe „Versionen und Updates“), apt erkennt ihn als Update. **Entfernen**: `apt purge godeb`. `/etc/wireguard` und `/etc/godeb` bleiben dabei liegen.
+**Update**: `sudo apt update && sudo apt upgrade` (aus dem APT-Repo), sonst neues Paket kopieren und `sudo apt install --no-install-recommends ./godeb_*_amd64.deb`. `unattended-upgrades` spielt GoDeb nicht von selbst ein, nur Debians Sicherheitsupdates. Jeder Build hat eine höhere Version (siehe „Versionen und Updates“), apt erkennt ihn als Update. **Entfernen**: `sudo apt purge godeb`. `/etc/wireguard` und `/etc/godeb` bleiben dabei liegen.
 
 **Backups** macht nicht GoDeb, sondern die Plattform: auf Hetzner die Backups bzw. Snapshots des VPS, zu Hause Proxmox für die VM. Beide sichern die ganze Maschine mit `/etc/godeb`, `/etc/wireguard` und den Spielständen. Vor größeren Änderungen einen Snapshot ziehen.
 
@@ -343,7 +347,7 @@ Damit die GoDeb-Tunnel-App den Tunnel im Heim-WLAN abschaltet und außerhalb wie
 
 - **Listener:** eigener HTTP-Server nur an der LAN-Adresse (z. B. `192.168.1.50:8787`) mit genau einer Route, `GET /godeb-trust?nonce=…`. Die Web-UI bleibt nur im Tunnel erreichbar. Höchstens 8 gleichzeitige Signaturen, kurze Timeouts.
 - **Firewall:** `ufw allow in on <lan-if> from <lan-netz> to <lan-ip> port 8787 proto tcp`.
-- **Einschalten:** `godeb trust enable [--address IP] [--port 8787]`, in `godeb setup --join` oder in der Web-UI (WireGuard → Trusted Endpoint). Die Einstellung liegt in `/etc/godeb/trust.json`; der Dienst übernimmt Änderungen nach spätestens 5 Sekunden ohne Neustart. Ein- und Ausschalten braucht einen frischen 2FA-Code.
+- **Einschalten:** `sudo godeb trust enable [--address IP] [--port 8787]`, in `godeb setup --join` oder in der Web-UI (WireGuard → Trusted Endpoint). Die Einstellung liegt in `/etc/godeb/trust.json`; der Dienst übernimmt Änderungen nach spätestens 5 Sekunden ohne Neustart. Ein- und Ausschalten braucht einen frischen 2FA-Code.
 - **Verteilung:** Beim Anlegen eines Clients holt der Hub über den Tunnel `GET /api/plugins/wireguard/trust/info` von jedem Standort (öffentlicher Schlüssel und LAN-URL, ohne Login, nur über `wg0` erreichbar) und schreibt in die Client-Datei:
 
   ```text
