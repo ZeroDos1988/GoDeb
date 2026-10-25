@@ -105,7 +105,7 @@ Die vollständige Anleitung für VPS und Heim-VM, inklusive Portweiterleitung un
 
 ### Updates und Backups
 
-Jeder Build trägt eine Version aus dem Git-Tag (`0.1.0` oder `0.1.0+git42.abc1234`), apt erkennt neuere Pakete als Update. Mit dem APT-Repo reicht `sudo apt update && sudo apt upgrade`. Die Version steht in der Seitenleiste, in `godeb version` und in `/api/health`.
+Jeder Build trägt eine Version aus dem Git-Tag (`0.1.0` oder `0.1.0+git42.abc1234`), apt erkennt neuere Pakete als Update. Mit dem APT-Repo reicht `sudo apt update && sudo apt upgrade`. Die Version steht im Benutzermenü oben rechts, in `godeb version` und in `/api/health`.
 
 Backups macht GoDeb bewusst nicht selbst. Dafür sind die Snapshots der Plattform da (Proxmox zu Hause, Hetzner-Backups auf dem VPS).
 

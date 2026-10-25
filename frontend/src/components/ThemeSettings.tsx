@@ -1,9 +1,8 @@
 import { useTranslation } from "react-i18next";
-import { LanguageSelect } from "@/components/LanguageSelect.tsx";
 import { useTheme } from "@/context/ThemeContext.tsx";
 import { applyTheme, darkColors, lightColors, type ThemeColors, type ThemeMode } from "@/context/theme.ts";
 
-export function ThemeSettings({ onClose, persist = false }: { onClose: () => void; persist?: boolean }) {
+export function ThemeSettings({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation();
   const { settings, setMode, setColors } = useTheme();
   const modes: { id: ThemeMode; label: string; hint: string }[] = [
@@ -43,11 +42,6 @@ export function ThemeSettings({ onClose, persist = false }: { onClose: () => voi
           <button type="button" onClick={onClose} className="text-sm text-white/70 transition-all duration-200 ease-in-out hover:text-white">
             {t("common.close")}
           </button>
-        </div>
-
-        <div className="mb-4">
-          <div className="mb-2 text-xs tracking-wide text-white/50 uppercase">{t("common.language")}</div>
-          <LanguageSelect persist={persist} />
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">

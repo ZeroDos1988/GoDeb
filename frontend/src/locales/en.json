@@ -10,6 +10,10 @@
     "serverAdmin": "Server administration",
     "sessions": "Sessions"
   },
+  "user": {
+    "menu": "Account {{name}}: open menu",
+    "signedInAs": "Signed in as"
+  },
   "pluginManager": {
     "title": "Plugins",
     "lead": "All plugins ship with GoDeb. A disabled plugin disappears from the navigation, its API stops answering and its services are stopped. Enabling needs its packages installed.",
@@ -34,7 +38,8 @@
     "print": "Print",
     "active": "active",
     "inactive": "inactive",
-    "language": "Language"
+    "language": "Language",
+    "languageAuto": "Auto ({{language}})"
   },
   "login": {
     "title": "Sign in",

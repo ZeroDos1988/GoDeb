@@ -269,9 +269,15 @@ Ist noch kein TOTP bestätigt, liefert der Login die Stufe `enroll`. `POST /api/
 
 Alle `/api`-Routen außer Gesundheit, Login, Logout, 2FA und den öffentlichen OIDC-Startpunkten verlangen eine volle Sitzung. Zustandsändernde Anfragen von einer anderen Origin erhalten `403`. Fehlversuche schreibt der Daemon als `FAILED_LOGIN ip=…` nach `/var/log/godeb/auth.log`.
 
+### Benutzermenü und Sprache
+
+Alles, was das eigene Konto betrifft, liegt hinter dem Avatar oben rechts: Sprache, Darstellung, Sitzungen, Einrichtungsübersicht, Abmelden und die Version. Auf dem Handy sitzt der Avatar in der Kopfzeile neben dem Logo, die Seiten selbst bleiben frei davon.
+
+Die Sprache folgt standardmäßig dem Browser (erste unterstützte Sprache aus `navigator.languages`, sonst Englisch). Wer eine Sprache wählt, legt sie im Browser (`localStorage`) und im Konto (`/api/user/settings`) ab; „Auto“ kehrt zum Browser zurück. Anmeldung und Ersteinrichtung haben oben rechts eine eigene Auswahl, die nur im Browser gilt. Nach der Anmeldung gewinnt eine im Konto gespeicherte Sprache.
+
 ### Sitzungen
 
-Jede Anmeldung ist eine Zeile in der SQLite-Tabelle `sessions`. Gespeichert wird nur der SHA-256 der Token-ID aus dem signierten Cookie; ein Datenbankleck liefert also keine verwendbaren Cookies. Logout löscht die Zeile. Unter „Sitzungen“ in der Kopfzeile stehen alle eigenen Anmeldungen mit Gerät, IP und letzter Aktivität; einzelne oder alle anderen lassen sich beenden. Ein neues Passwort oder ein neues 2FA-Geheimnis beendet alle Sitzungen. Pro Login-Versuch und pro Sitzung sind fünf falsche Codes erlaubt; danach ist die Anmeldung verworfen.
+Jede Anmeldung ist eine Zeile in der SQLite-Tabelle `sessions`. Gespeichert wird nur der SHA-256 der Token-ID aus dem signierten Cookie; ein Datenbankleck liefert also keine verwendbaren Cookies. Logout löscht die Zeile. Unter „Sitzungen“ im Benutzermenü (Avatar oben rechts) stehen alle eigenen Anmeldungen mit Gerät, IP und letzter Aktivität; einzelne oder alle anderen lassen sich beenden. Ein neues Passwort oder ein neues 2FA-Geheimnis beendet alle Sitzungen. Pro Login-Versuch und pro Sitzung sind fünf falsche Codes erlaubt; danach ist die Anmeldung verworfen.
 
 Ohne Web-UI, per SSH:
 
@@ -446,7 +452,7 @@ Alle außer `status` antworten nach dem Abschluss mit `410`.
 | POST | `/api/auth/2fa/authenticate` | TOTP oder Backup-Code |
 | POST | `/api/auth/logout` | Sitzung beenden |
 | GET | `/api/auth/me` | aktueller Benutzer |
-| GET, POST | `/api/user/settings` | Theme und Sprache |
+| GET, POST | `/api/user/settings` | Theme und Sprache (`language` leer = wie der Browser) |
 | GET | `/api/auth/oidc/providers` | öffentliche, fertig konfigurierte Anbieter |
 | GET, PUT | `/api/auth/oidc/config`, `/api/auth/oidc/providers/{id}` | OIDC-Konfiguration |
 | GET | `/api/auth/oidc/{id}/start` | Browser-Redirect zum Anbieter |
@@ -562,7 +568,7 @@ ls -l /run/godeb-agent/agent.sock  # srw-rw---- root godeb
 
 ### Versionen und Updates
 
-`scripts/version.sh` bestimmt die Version: Ein Commit mit Tag `vX.Y.Z` ist genau `X.Y.Z`, jeder andere `X.Y.Z+git<Anzahl Commits>.<Hash>` (mit `.dirty` bei nicht committeten Änderungen). Debian sortiert das immer über den vorigen Build, ein neues Paket ist für apt also ein Update. Die Version steht im Paketnamen, in `godeb version`, in `/api/health` und unten in der Seitenleiste. Ein Release entsteht, wenn ein Tag gepusht wird:
+`scripts/version.sh` bestimmt die Version: Ein Commit mit Tag `vX.Y.Z` ist genau `X.Y.Z`, jeder andere `X.Y.Z+git<Anzahl Commits>.<Hash>` (mit `.dirty` bei nicht committeten Änderungen). Debian sortiert das immer über den vorigen Build, ein neues Paket ist für apt also ein Update. Die Version steht im Paketnamen, in `godeb version`, in `/api/health` und im Benutzermenü oben rechts. Ein Release entsteht, wenn ein Tag gepusht wird:
 
 ```sh
 git tag v0.2.0 && git push origin v0.2.0   # CI baut und veröffentlicht das .deb

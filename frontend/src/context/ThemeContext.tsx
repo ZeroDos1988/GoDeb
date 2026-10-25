@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { applyLanguage } from "@/i18n.ts";
-import i18n from "@/i18n.ts";
+import { applyLanguage, languagePreference } from "@/i18n.ts";
 import { ApiError, api } from "@/lib/api.ts";
 import {
   applyTheme,
@@ -37,7 +36,7 @@ function toRemote(settings: ThemeSettings): RemoteSettings {
     colorBg: settings.colors.bg,
     colorAccent: settings.colors.accent,
     colorText: settings.colors.text,
-    language: i18n.language.split("-")[0] ?? "",
+    language: languagePreference(),
   };
 }
 

@@ -134,6 +134,7 @@ Ziel: auf einen Blick sehen, ob der Server gesund ist, ob der Traffic normal aus
 ## Phase 6 – Mobile Feinschliff
 
 - [ ] Kompakte Kopfzeile mit Menü-Button statt der vollen Seitenleiste auf dem Handy.
+- [x] **Benutzermenü wie bei GitHub** (Wunsch und Umsetzung 25.10.): Avatar oben rechts mit Sprache, Darstellung, Sitzungen, Einrichtungsübersicht, Abmelden und Version. Die Sprache folgt standardmäßig dem Browser („Auto“); Login und Ersteinrichtung haben eine eigene Sprachwahl.
 - [ ] Touch-Ziele mindestens 44 px, Tabellen als Karten unter `sm` (WireGuard-Peers, UFW-Regeln).
 - [ ] Playwright-Smoke-Test mit iPhone- und Pixel-Viewport in CI (prüft `scrollWidth == innerWidth`).
 

@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { LanguageSelect } from "@/components/LanguageSelect.tsx";
 import { TwoFAEnrollment } from "@/components/2FAEnrollment.tsx";
 import { ThemeSettings } from "@/components/ThemeSettings.tsx";
 import { api, ApiError } from "@/lib/api.ts";
@@ -83,10 +84,11 @@ export function Login2FA({ onAuthenticated }: { onAuthenticated: (username: stri
           <span className="grid h-10 w-10 place-items-center bg-debian text-sm font-semibold text-white">
             gd
           </span>
-          <div>
+          <div className="min-w-0 flex-1">
             <div className="text-lg leading-none font-semibold tracking-tight">GoDeb</div>
             <div className="mt-1 text-[11px] tracking-wide text-muted uppercase">{t("login.title")}</div>
           </div>
+          <LanguageSelect persist={false} className="text-xs" />
         </div>
 
         <div className="rounded-3xl border border-white/10 bg-slate-900/60 px-5 py-5 text-white shadow-xl backdrop-blur-xl transition-all duration-200 ease-in-out">

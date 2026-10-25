@@ -10,6 +10,10 @@
     "serverAdmin": "Serververwaltung",
     "sessions": "Sitzungen"
   },
+  "user": {
+    "menu": "Konto {{name}}: Menü öffnen",
+    "signedInAs": "Angemeldet als"
+  },
   "pluginManager": {
     "title": "Plugins",
     "lead": "Alle Plugins sind mitgeliefert. Ein deaktiviertes Plugin verschwindet aus der Navigation, seine API antwortet nicht mehr und seine Dienste werden gestoppt. Aktivieren setzt die nötigen Pakete voraus.",
@@ -34,7 +38,8 @@
     "print": "Drucken",
     "active": "aktiv",
     "inactive": "inaktiv",
-    "language": "Sprache"
+    "language": "Sprache",
+    "languageAuto": "Auto ({{language}})"
   },
   "login": {
     "title": "Anmeldung",

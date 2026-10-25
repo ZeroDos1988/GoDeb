@@ -30,7 +30,9 @@ export function isLanguage(value: string): value is LanguageCode {
   return supported.has(value);
 }
 
-export function detectLanguage(): LanguageCode {
+// languagePreference is the language the user picked, or "" for "follow
+// the browser" (the default until someone picks one).
+export function languagePreference(): LanguageCode | "" {
   try {
     const stored = localStorage.getItem(languageStorageKey);
     if (stored && isLanguage(stored)) {
@@ -39,16 +41,37 @@ export function detectLanguage(): LanguageCode {
   } catch {
     /* private mode */
   }
-  const base = navigator.language.toLowerCase().split("-")[0] ?? "";
-  return isLanguage(base) ? base : "en";
+  return "";
 }
 
+// browserLanguage is the first supported language from the browser's list.
+export function browserLanguage(): LanguageCode {
+  const list = navigator.languages?.length ? navigator.languages : [navigator.language];
+  for (const tag of list) {
+    const base = tag.toLowerCase().split("-")[0] ?? "";
+    if (isLanguage(base)) {
+      return base;
+    }
+  }
+  return "en";
+}
+
+export function detectLanguage(): LanguageCode {
+  return languagePreference() || browserLanguage();
+}
+
+// applyLanguage switches the UI; "" follows the browser again.
 export function applyLanguage(code: string) {
-  const language = isLanguage(code) ? code : "en";
+  const choice = isLanguage(code) ? code : "";
+  const language = choice || browserLanguage();
   document.documentElement.lang = language;
   document.documentElement.dir = language === "ar" ? "rtl" : "ltr";
   try {
-    localStorage.setItem(languageStorageKey, language);
+    if (choice) {
+      localStorage.setItem(languageStorageKey, choice);
+    } else {
+      localStorage.removeItem(languageStorageKey);
+    }
   } catch {
     /* ignore */
   }
@@ -66,7 +89,7 @@ export async function persistLanguage(code: string) {
       colorBg: theme.colors.bg,
       colorAccent: theme.colors.accent,
       colorText: theme.colors.text,
-      language: isLanguage(code) ? code : "en",
+      language: isLanguage(code) ? code : "",
     }),
   });
 }
@@ -86,6 +109,6 @@ void i18n.use(initReactI18next).init({
   interpolation: { escapeValue: false },
 });
 
-applyLanguage(i18n.language);
+applyLanguage(languagePreference());
 
 export default i18n;
