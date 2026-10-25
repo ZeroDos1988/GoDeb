@@ -78,6 +78,7 @@ Eine Testinstallation auf einem Hetzner-VPS ist ab 20.10. möglich. Die Anleitun
 - [x] ~~**Backups**~~ (entschieden 21.10.): nicht Aufgabe von GoDeb. Proxmox (Heim-VM) und Hetzner (VPS) sichern die ganze Maschine; vor größeren Änderungen einen Snapshot ziehen.
 - [ ] VPS-Spezifika: SSH nur per Schlüssel und unattended-upgrades prüft bzw. installiert das Setup noch nicht (steht bisher nur in der Anleitung).
 - [ ] Paket auch für `arm64` (Hetzner CAX).
+- [ ] **Updates aus der Oberfläche** (Wunsch 25.10.): Das APT-Plugin zeigt bisher nur `apt list --upgradable` aus dem vorhandenen Paket-Cache und kann nichts installieren; ohne `apt update` erscheint eine neue GoDeb-Version dort nicht. Ziel: „Paketlisten aktualisieren“ (`apt-get update`) und „Alle aktualisieren“ (`apt-get upgrade`) im Agenten, mit frischem 2FA-Code, Fortschritt und Log in der Oberfläche. GoDeb aktualisiert sich dabei selbst: `postinst` startet den Agenten neu, der das Update ausführt. Deshalb läuft der Vorgang in einer eigenen systemd-Unit (`systemd-run`), die den Neustart überlebt; die Oberfläche verbindet sich danach neu und zeigt das Ergebnis.
 - [x] **Eigenes APT-Repo** (24.10.): signiertes Repo auf GitHub Pages (`zerodos1988.github.io/GoDeb`, Suite `trixie`), nach jedem Release aus allen Releases neu gebaut (`apt-repo.yml`). Das Paket bringt `godeb.sources` und Schlüssel mit, danach kommt GoDeb mit `apt upgrade`. Die CI hat nur den Signier-Unterschlüssel (bis 2028).
 
 ## Phase 3b – Standortverbindung VPS ↔ Heim-VM (umgesetzt 20.10.)
