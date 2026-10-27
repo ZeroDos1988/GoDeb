@@ -217,7 +217,12 @@ function DomainView({
   onChanged: () => void;
 }) {
   const { t } = useTranslation();
-  const query = useGet<{ domain: Domain; records: Record[] }>(
+  const query = useGet<{
+    domain: Domain;
+    records: Record[];
+    hetznerError?: string;
+    zoneMissing?: boolean;
+  }>(
     `${base}/domains/${encodeURIComponent(name)}`,
   );
   const [error, setError] = useState("");
@@ -315,6 +320,15 @@ function DomainView({
         </div>
         {!tokenSet && (query.data?.domain.mode ?? mode) === "hetzner" ? (
           <p className="mt-3 text-sm text-amber-200">{t("domains.needToken")}</p>
+        ) : null}
+        {query.data?.zoneMissing ? (
+          <p className="mt-3 rounded-2xl border border-amber-400/30 bg-amber-500/10 p-3 text-sm text-amber-100">
+            {t("domains.zoneMissing", { name })}
+          </p>
+        ) : query.data?.hetznerError ? (
+          <p className="mt-3 rounded-2xl border border-amber-400/30 bg-amber-500/10 p-3 text-sm text-amber-100">
+            {t("domains.hetznerUnreachable", { error: query.data.hetznerError })}
+          </p>
         ) : null}
         <p className="mt-3 text-sm text-white/60">{t("domains.recordsHint")}</p>
       </section>

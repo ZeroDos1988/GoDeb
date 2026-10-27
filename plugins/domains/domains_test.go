@@ -236,6 +236,24 @@ func TestHandlersAndTokenSealed(t *testing.T) {
 	if strings.Contains(rec.Body.String(), token) {
 		t.Fatal("status leaks the token")
 	}
+	useFake(t, &fakeHetzner{t: t, rrsets: map[string]hzRRSet{}})
+	if rec := do(http.MethodPost, base+"/domains", `{"name":"other.org","mode":"hetzner"}`); rec.Code != 200 {
+		t.Fatalf("add other: %d %s", rec.Code, rec.Body)
+	}
+	var view struct {
+		HetznerError string `json:"hetznerError"`
+		ZoneMissing  bool   `json:"zoneMissing"`
+	}
+	rec = do(http.MethodGet, base+"/domains/other.org", "")
+	if err := json.Unmarshal(rec.Body.Bytes(), &view); err != nil || !view.ZoneMissing || view.HetznerError == "" {
+		t.Fatalf("zone missing view: %d %s", rec.Code, rec.Body)
+	}
+	rec = do(http.MethodGet, base+"/domains/example.com", "")
+	view.HetznerError, view.ZoneMissing = "", false
+	if err := json.Unmarshal(rec.Body.Bytes(), &view); err != nil || view.ZoneMissing || view.HetznerError != "" {
+		t.Fatalf("known zone view: %d %s", rec.Code, rec.Body)
+	}
+
 	if rec := do(http.MethodPost, base+"/domains/example.com/delete", "{}"); rec.Code != 200 {
 		t.Fatalf("delete: %d", rec.Code)
 	}

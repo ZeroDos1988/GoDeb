@@ -658,6 +658,8 @@
     "delete": "Remove domain",
     "deleteConfirm": "Remove domain {{name}} from GoDeb? DNS records at the provider stay.",
     "needToken": "Store a Hetzner API token above first.",
+    "zoneMissing": "The zone {{name}} does not exist in this token's Hetzner project. Create it in the Hetzner Console under DNS (and point the nameservers at your registrar to Hetzner) or store the token of the right project. Until then only manual mode works.",
+    "hetznerUnreachable": "Hetzner API not readable: {{error}}",
     "recordsHint": "Missing records show as “missing”. With Hetzner, “Apply at Hetzner” only writes GoDeb-owned (labelled) records; others stay untouched and are reported as conflicts.",
     "noRecords": "No plugin supplies records for this domain. Set up the mail server with this domain first.",
     "managed": "by GoDeb",

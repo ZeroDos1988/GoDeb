@@ -658,6 +658,8 @@
     "delete": "Domain entfernen",
     "deleteConfirm": "Domain {{name}} aus GoDeb entfernen? DNS-Einträge beim Anbieter bleiben.",
     "needToken": "Zuerst oben einen Hetzner-API-Token hinterlegen.",
+    "zoneMissing": "Die Zone {{name}} gibt es im Hetzner-Projekt dieses Tokens nicht. In der Hetzner Console unter DNS die Zone anlegen (Nameserver beim Registrar auf Hetzner umstellen) oder den Token des richtigen Projekts hinterlegen. Bis dahin funktioniert nur der manuelle Betrieb.",
+    "hetznerUnreachable": "Hetzner-API nicht lesbar: {{error}}",
     "recordsHint": "Fehlende Einträge erscheinen als „fehlt“. Bei Hetzner schreibt „Bei Hetzner setzen“ nur eigene (markierte) Einträge; fremde bleiben unberührt und werden als Konflikt gemeldet.",
     "noRecords": "Kein Plugin liefert Einträge für diese Domain. Richte zuerst den Mailserver mit dieser Domain ein.",
     "managed": "von GoDeb",

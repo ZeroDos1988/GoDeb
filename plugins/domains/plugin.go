@@ -1,6 +1,7 @@
 package domains
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 
@@ -179,8 +180,8 @@ func handleDeleteDomain(w http.ResponseWriter, r *http.Request) {
 }
 
 type domainView struct {
-	Domain  Domain   `json:"domain"`
-	Records []Record `json:"records"`
+	Domain Domain `json:"domain"`
+	recordsView
 }
 
 func handleDomain(w http.ResponseWriter, r *http.Request) {
@@ -198,13 +199,13 @@ func handleDomain(w http.ResponseWriter, r *http.Request) {
 		core.WriteError(w, http.StatusNotFound, "Domain nicht gefunden")
 		return
 	}
-	recs, err := liveRecords(r, name)
+	view, err := liveRecords(r, name)
 	if err != nil {
 		core.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	w.Header().Set("Cache-Control", "no-store")
-	core.WriteJSON(w, http.StatusOK, domainView{Domain: d, Records: recs})
+	core.WriteJSON(w, http.StatusOK, domainView{Domain: d, recordsView: view})
 }
 
 func handleRecords(w http.ResponseWriter, r *http.Request) {
@@ -220,13 +221,13 @@ func handleRecords(w http.ResponseWriter, r *http.Request) {
 		core.WriteError(w, http.StatusNotFound, "Domain nicht gefunden")
 		return
 	}
-	recs, err := liveRecords(r, name)
+	view, err := liveRecords(r, name)
 	if err != nil {
 		core.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	w.Header().Set("Cache-Control", "no-store")
-	core.WriteJSON(w, http.StatusOK, map[string]any{"records": recs})
+	core.WriteJSON(w, http.StatusOK, view)
 }
 
 func handleApply(w http.ResponseWriter, r *http.Request) {
@@ -274,19 +275,31 @@ func handleApply(w http.ResponseWriter, r *http.Request) {
 	core.WriteJSON(w, http.StatusOK, map[string]any{"records": recs})
 }
 
-func liveRecords(r *http.Request, zone string) ([]Record, error) {
+// recordsView is the live state of a zone plus why Hetzner could not be
+// read (zone missing in the project, token without DNS rights, …).
+type recordsView struct {
+	Records      []Record `json:"records"`
+	HetznerError string   `json:"hetznerError,omitempty"`
+	ZoneMissing  bool     `json:"zoneMissing,omitempty"`
+}
+
+func liveRecords(r *http.Request, zone string) (recordsView, error) {
 	needs, err := collectNeeds(zone)
 	if err != nil {
-		return nil, err
+		return recordsView{}, err
 	}
-	recs := recordsFor(r.Context(), needs)
+	view := recordsView{Records: recordsFor(r.Context(), needs)}
 	_, token, err := loadSettings()
 	if err != nil || token == "" {
-		return recs, nil
+		return view, nil
 	}
 	d, ok, err := getDomain(zone)
 	if err != nil || !ok || d.Mode != ModeHetzner {
-		return recs, nil
+		return view, nil
 	}
-	return markManaged(r.Context(), token, zone, recs), nil
+	if view.Records, err = markManaged(r.Context(), token, zone, view.Records); err != nil {
+		view.HetznerError = err.Error()
+		view.ZoneMissing = errors.Is(err, errZoneMissing)
+	}
+	return view, nil
 }

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -37,6 +38,8 @@ func (e hzError) Error() string {
 	}
 	return "Hetzner: " + e.Message
 }
+
+var errZoneMissing = errors.New("nicht in diesem Hetzner-Projekt")
 
 type hzZone struct {
 	ID   int64  `json:"id"`
@@ -116,7 +119,7 @@ func validateToken(ctx context.Context, token string) error {
 func findZone(ctx context.Context, token, name string) (hzZone, error) {
 	data, code, err := hzRequest(ctx, token, http.MethodGet, "/zones/"+url.PathEscape(name), nil)
 	if code == http.StatusNotFound {
-		return hzZone{}, fmt.Errorf("Zone %s nicht in diesem Hetzner-Projekt", name)
+		return hzZone{}, fmt.Errorf("Zone %s %w", name, errZoneMissing)
 	}
 	if err != nil {
 		return hzZone{}, err

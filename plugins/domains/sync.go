@@ -142,10 +142,11 @@ func unquoteTXT(s string) string {
 }
 
 // markManaged flags records whose Hetzner RRSet carries the godeb label.
-func markManaged(ctx context.Context, token string, zoneName string, records []Record) []Record {
+// The error tells the UI why the zone could not be read.
+func markManaged(ctx context.Context, token string, zoneName string, records []Record) ([]Record, error) {
 	zone, err := findZone(ctx, token, zoneName)
 	if err != nil {
-		return records
+		return records, err
 	}
 	for i := range records {
 		r := &records[i]
@@ -156,5 +157,5 @@ func markManaged(ctx context.Context, token string, zoneName string, records []R
 			r.Managed = isManaged(cur)
 		}
 	}
-	return records
+	return records, nil
 }

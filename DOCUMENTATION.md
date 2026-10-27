@@ -529,7 +529,7 @@ Alle außer `status` antworten nach dem Abschluss mit `410`.
 | POST | `/api/plugins/domains/domains` (`name`, `mode`: `manual` oder `hetzner`) |
 | GET, POST | `/api/plugins/domains/domains/{domain}` (Ansicht; ändern: `mode`) |
 | POST | `/api/plugins/domains/domains/{domain}/delete` |
-| GET | `/api/plugins/domains/domains/{domain}/records` (Soll + Live-Prüfung) |
+| GET | `/api/plugins/domains/domains/{domain}/records` (Soll + Live-Prüfung; bei Modus `hetzner` zusätzlich `hetznerError` und `zoneMissing`, wenn die Zone im Projekt fehlt) |
 | POST | `/api/plugins/domains/domains/{domain}/apply` (bei Modus `hetzner`; frischer 2FA-Code) |
 | GET | `/api/plugins/mail/status` (Einrichtung, Dienste, Domains, laufende Aufgabe) |
 | POST | `/api/plugins/mail/install` (`hostname`, `clamav`; frischer 2FA-Code) |
