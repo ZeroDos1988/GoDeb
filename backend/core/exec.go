@@ -69,6 +69,9 @@ func run(ctx context.Context, timeout time.Duration, stdin string, failLevel slo
 		"LC_ALL=C",
 		"LANG=C",
 		"DEBIAN_FRONTEND=noninteractive",
+		// Files Debian manages with ucf (dovecot.conf) keep GoDeb's
+		// version on package updates instead of asking.
+		"UCF_FORCE_CONFFOLD=1",
 	)
 	if stdin != "" {
 		cmd.Stdin = strings.NewReader(stdin)

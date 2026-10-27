@@ -270,6 +270,7 @@ func startUnit(ctx context.Context, action, trigger string) error {
 		"--description=GoDeb APT (" + action + ")",
 		"--property=Type=exec",
 		"--setenv=DEBIAN_FRONTEND=noninteractive",
+		"--setenv=UCF_FORCE_CONFFOLD=1",
 	}
 	if d := strings.TrimSpace(os.Getenv("GODEB_STATE_DIR")); d != "" {
 		args = append(args, "--setenv=GODEB_STATE_DIR="+d)
