@@ -10,7 +10,6 @@ import (
 	"strings"
 	"sync"
 	"syscall"
-	"time"
 
 	"godeb/backend/core"
 )
@@ -24,7 +23,8 @@ func init() {
 	RegisterCheck("units", unitsCheck)
 	RegisterCheck("reboot", rebootCheck)
 	RegisterCheck("time", timeCheck)
-	RegisterCheck("updates", updatesCheck)
+	// "updates" is registered by plugins/apt (needs apt.json and the last
+	// godeb-apt status to decide whether pending security updates warn).
 }
 
 var (
@@ -352,42 +352,4 @@ func timeCheck(ctx context.Context) []Finding {
 		return []Finding{{ID: "time", Status: StatusWarning, Title: "Uhrzeit nicht synchronisiert", Detail: "timedatectl: NTPSynchronized=no. 2FA-Codes und Zertifikate hängen an der Uhr."}}
 	}
 	return nil
-}
-
-var (
-	updatesMu   sync.Mutex
-	updatesAt   time.Time
-	updatesLast []Finding
-)
-
-// updatesCheck counts pending upgrades every 30 minutes (apt is slow).
-func updatesCheck(ctx context.Context) []Finding {
-	updatesMu.Lock()
-	defer updatesMu.Unlock()
-	if time.Since(updatesAt) < 30*time.Minute {
-		return updatesLast
-	}
-	updatesAt = time.Now()
-	out, env := core.ReadCommand(ctx, "", "apt", "list", "--upgradable")
-	updatesLast = nil
-	if env.Mocked {
-		return nil
-	}
-	total, security := 0, 0
-	for _, line := range strings.Split(out, "\n") {
-		if !strings.Contains(line, "[upgradable from:") {
-			continue
-		}
-		total++
-		if strings.Contains(line, "-security") {
-			security++
-		}
-	}
-	switch {
-	case security > 0:
-		updatesLast = []Finding{{ID: "updates", Status: StatusWarning, Title: fmt.Sprintf("%d Sicherheitsupdates offen", security), Detail: fmt.Sprintf("%d Updates insgesamt (APT)", total)}}
-	case total > 0:
-		updatesLast = []Finding{{ID: "updates", Status: StatusInfo, Title: fmt.Sprintf("%d Updates verfügbar", total)}}
-	}
-	return updatesLast
 }

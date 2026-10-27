@@ -478,7 +478,7 @@ func checkUpdates(ctx context.Context, env Env) []Finding {
 	var out []Finding
 	res := env.Run(ctx, "apt", "list", "--upgradable")
 	if !missing(res) {
-		all, security := parseUpgradable(res.Stdout)
+		all, security := ParseUpgradable(res.Stdout)
 		switch {
 		case len(security) > 0:
 			out = append(out, Finding{Area: area, Level: Warn, Text: fmt.Sprintf("%d Sicherheitsupdates ausstehend (insgesamt %d)", len(security), len(all)), Details: security})
@@ -494,11 +494,16 @@ func checkUpdates(ctx context.Context, env Env) []Finding {
 	return out
 }
 
-// parseUpgradable reads `apt list --upgradable` and returns all package
-// names and those coming from a -security suite.
-func parseUpgradable(out string) (all, security []string) {
+// ParseUpgradable reads `apt list --upgradable` and returns all package
+// names and those coming from a -security suite. Same rule as plugins/apt
+// and the monitor Ampel.
+func ParseUpgradable(out string) (all, security []string) {
 	for _, l := range lines(out) {
-		name, suites, ok := strings.Cut(strings.Fields(l)[0], "/")
+		fields := strings.Fields(l)
+		if len(fields) == 0 {
+			continue
+		}
+		name, suites, ok := strings.Cut(fields[0], "/")
 		if !ok {
 			continue
 		}

@@ -33,9 +33,9 @@ Diese Liste ist zum Abarbeiten durch einen Agenten (Cursor, Claude Code) gedacht
 
 Umgesetzt: `X-GoDeb-Password` bei `stepUpFresh`, Prüfung in der Weboberfläche vor dem Code, Header wird vor dem Agenten entfernt, Dialog mit Passwort+Code, Tests und Doku.
 
-### 2. Update-Hinweise in der Überwachung
+### 2. Update-Hinweise in der Überwachung – erledigt 27.10.
 
-ROADMAP Phase 3: Ausstehende Sicherheitsupdates bei abgeschalteter Automatik, fehlgeschlagene automatische Läufe (`godeb-apt.service`) und „Neustart nötig“ (`/run/reboot-required`) sollen als Befund in der Ampel des Plugins `monitor` erscheinen und optional als Alarm rausgehen. Wo möglich die vorhandene Logik aus `backend/doctor` wiederverwenden.
+Umgesetzt in `plugins/apt/metrics.go`: Warnung bei offenen Sicherheitsupdates nur wenn AutoCheck/AutoSecurity aus ist, Warnung bei fehlgeschlagenem automatischem Lauf (`status.json`), Neustart weiter über `rebootCheck`. Läuft in Ampel und Alarme.
 
 ### 3. Befunde von `godeb doctor` auf der Startseite
 

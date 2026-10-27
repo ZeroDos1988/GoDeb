@@ -77,7 +77,7 @@ Eine Testinstallation auf einem Hetzner-VPS ist ab 20.10. möglich. Die Anleitun
 - [ ] VPS-Spezifika: SSH nur per Schlüssel und unattended-upgrades prüft bzw. installiert das Setup noch nicht (steht bisher nur in der Anleitung).
 - [ ] Paket auch für `arm64` (Hetzner CAX).
 - [x] **Updates aus der Oberfläche, automatische Prüfung und Sicherheitsupdates** (Wunsch und Umsetzung 25.10.): Der Agent prüft alle 10 Minuten (einstellbar) und installiert Pakete aus `trixie-security` selbst; „Alle aktualisieren“ mit frischem 2FA-Code für den Rest, GoDeb inklusive. Jeder Lauf ist eine eigene Unit `godeb-apt.service` (`systemd-run`), damit das Selbst-Update den Neustart des Agenten überlebt.
-- [ ] **Update-Hinweise in der Überwachung**: ausstehende Sicherheitsupdates bei abgeschalteter Automatik, fehlgeschlagene automatische Läufe und „Neustart nötig“ nach einem Kernel-Update als Befund (Ampel, Alarm).
+- [x] **Update-Hinweise in der Überwachung** (Umsetzung 27.10.): Sicherheitsupdates als Warnung nur bei abgeschalteter Automatik (`plugins/apt/metrics.go`), fehlgeschlagene automatische `godeb-apt`-Läufe als Warnung, „Neustart nötig“ weiter über `rebootCheck`; beides läuft in die Ampel und optional in die Alarme.
 - [x] **Eigenes APT-Repo** (24.10.): signiertes Repo auf GitHub Pages (`zerodos1988.github.io/GoDeb`, Suite `trixie`), nach jedem Release aus allen Releases neu gebaut (`apt-repo.yml`). Das Paket bringt `godeb.sources` und Schlüssel mit, danach kommt GoDeb mit `apt upgrade`. Die CI hat nur den Signier-Unterschlüssel (bis 2028).
 
 ## Phase 3b – Standortverbindung VPS ↔ Heim-VM (umgesetzt 20.10.)

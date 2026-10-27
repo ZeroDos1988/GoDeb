@@ -63,7 +63,7 @@ func TestParseHandshakesAndPolicy(t *testing.T) {
 	if inst != "0.2.7" || cand != "0.2.8" {
 		t.Fatalf("policy = %q %q", inst, cand)
 	}
-	all, sec := parseUpgradable("Listing...\nopenssl/stable-security 3.5.1-1+deb13u1 amd64 [upgradable from: 3.5.1-1]\ncurl/stable 8.14 amd64 [upgradable from: 8.13]\n")
+	all, sec := ParseUpgradable("Listing...\nopenssl/stable-security 3.5.1-1+deb13u1 amd64 [upgradable from: 3.5.1-1]\ncurl/stable 8.14 amd64 [upgradable from: 8.13]\n")
 	if len(all) != 2 || len(sec) != 1 || sec[0] != "openssl" {
 		t.Fatalf("upgradable = %v %v", all, sec)
 	}
