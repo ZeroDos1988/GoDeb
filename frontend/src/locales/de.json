@@ -94,7 +94,12 @@
     "blockedCount": "{{count}} gesperrt",
     "noneBlocked": "Keine Sperre",
     "tunnelUp": "Tunnel aktiv",
-    "tunnelDown": "Tunnel inaktiv"
+    "tunnelDown": "Tunnel inaktiv",
+    "doctor": "Server-Diagnose",
+    "doctorOk": "Keine Fehler oder Warnungen",
+    "doctorSummary": "{{fails}} Fehler, {{warns}} Warnungen",
+    "doctorHint": "Dieselbe Prüfung wie sudo godeb doctor. Ausgabe ohne Geheimnisse.",
+    "doctorOpen": "Aktualisieren"
   },
   "panel": {
     "mocked": "Beispieldaten. Der zugehörige Debian-Pfad oder Befehl war auf diesem Host nicht ausführbar."

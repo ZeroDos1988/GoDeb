@@ -158,3 +158,18 @@ func TestCheckReport(t *testing.T) {
 }
 
 func itoa(n int64) string { return big.NewInt(n).String() }
+
+func TestNewReport(t *testing.T) {
+	at := time.Date(2026, 10, 27, 12, 0, 0, 0, time.UTC)
+	r := NewReport([]Finding{
+		{Area: "A", Level: OK, Text: "gut"},
+		{Area: "B", Level: Warn, Text: "vorsicht", Details: []string{"x"}},
+		{Area: "C", Level: Fail, Text: "kaputt"},
+	}, at)
+	if r.Fails != 1 || r.Warns != 1 || r.Checked != at.Unix() || len(r.Findings) != 3 {
+		t.Fatalf("%+v", r)
+	}
+	if r.Findings[1].Level != "WARN" || r.Findings[1].Details[0] != "x" {
+		t.Fatalf("finding = %+v", r.Findings[1])
+	}
+}

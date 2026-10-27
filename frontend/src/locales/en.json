@@ -94,7 +94,12 @@
     "blockedCount": "{{count}} blocked",
     "noneBlocked": "None blocked",
     "tunnelUp": "Tunnel up",
-    "tunnelDown": "Tunnel down"
+    "tunnelDown": "Tunnel down",
+    "doctor": "Server diagnosis",
+    "doctorOk": "No failures or warnings",
+    "doctorSummary": "{{fails}} failures, {{warns}} warnings",
+    "doctorHint": "Same check as sudo godeb doctor. Output without secrets.",
+    "doctorOpen": "Refresh"
   },
   "panel": {
     "mocked": "Sample data. The Debian path or command could not be run on this host."

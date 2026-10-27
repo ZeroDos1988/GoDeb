@@ -128,6 +128,7 @@ func newHandler(root string, fail auth.FailureFunc) (http.Handler, error) {
 		auth.DelegateStepUp(agent.Routed)
 		mountAgentProxy(mux, agent.NewProxy(sock, sessionIdentity, auth.ApplyAgentVerdict))
 		useAgentState(client)
+		mountDoctorAPI(mux, client)
 		go scrubWebSecrets(sf)
 		firstrun.MountPublic(mux)
 		slog.Info("Plugins gefunden, ausgeführt vom Agenten", "anzahl", len(plugins), "pfad", pluginsDir, "socket", sock)
@@ -137,6 +138,7 @@ func newHandler(root string, fail auth.FailureFunc) (http.Handler, error) {
 		}
 		firstrun.Mount(mux)
 		pluginmgr.Mount(mux, pluginsDir)
+		mountDoctorAPI(mux, nil)
 		slog.Info("Plugins geladen", "anzahl", len(plugins), "pfad", pluginsDir)
 	}
 

@@ -94,6 +94,37 @@ func Check(ctx context.Context, env Env) []Finding {
 	return out
 }
 
+// Report is the JSON form of a Check for the web UI and /internal/doctor.
+type Report struct {
+	Findings []ReportFinding `json:"findings"`
+	Fails    int             `json:"fails"`
+	Warns    int             `json:"warns"`
+	Checked  int64           `json:"checked"` // unix seconds
+}
+
+// ReportFinding is one Finding without secrets (same fields as the CLI).
+type ReportFinding struct {
+	Area    string   `json:"area"`
+	Level   string   `json:"level"` // OK, INFO, WARN, FAIL
+	Text    string   `json:"text"`
+	Details []string `json:"details,omitempty"`
+}
+
+// NewReport turns Check results into the API payload.
+func NewReport(findings []Finding, at time.Time) Report {
+	r := Report{Findings: make([]ReportFinding, 0, len(findings)), Checked: at.Unix()}
+	for _, f := range findings {
+		r.Findings = append(r.Findings, ReportFinding{Area: f.Area, Level: f.Level.String(), Text: f.Text, Details: f.Details})
+		switch f.Level {
+		case Fail:
+			r.Fails++
+		case Warn:
+			r.Warns++
+		}
+	}
+	return r
+}
+
 // Write prints the report grouped by area and returns the number of
 // failures and warnings.
 func Write(w io.Writer, findings []Finding) (fails, warns int) {

@@ -37,9 +37,9 @@ Umgesetzt: `X-GoDeb-Password` bei `stepUpFresh`, Prüfung in der Weboberfläche 
 
 Umgesetzt in `plugins/apt/metrics.go`: Warnung bei offenen Sicherheitsupdates nur wenn AutoCheck/AutoSecurity aus ist, Warnung bei fehlgeschlagenem automatischem Lauf (`status.json`), Neustart weiter über `rebootCheck`. Läuft in Ampel und Alarme.
 
-### 3. Befunde von `godeb doctor` auf der Startseite
+### 3. Befunde von `godeb doctor` auf der Startseite – erledigt 27.10.
 
-Dieselben Prüfungen wie `backend/doctor` als Kachel bzw. Liste auf der Startseite. Was nur root lesen darf, kommt über eine interne Agent-Route, und zwar nur lesend (Regeln für `/internal/…` in `CLAUDE.md`).
+`GET /api/doctor` (Web) bzw. `GET /internal/doctor` (Agent, nur lesend); Kachel auf der Übersicht mit FAIL/WARN.
 
 ### 4. Mail-Ausbau (Plugin `mail`, Dovecot **2.4**-Syntax)
 

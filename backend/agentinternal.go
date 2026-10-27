@@ -18,6 +18,11 @@ import (
 // mountAgentInternal registers the routes only the web process calls on
 // the socket: what it would otherwise read from root-only files.
 func mountAgentInternal(mux *http.ServeMux) {
+	// Read-only host diagnosis for the overview; never changes the system.
+	mux.HandleFunc("GET /internal/doctor", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
+		core.WriteJSON(w, http.StatusOK, runDoctorReport(r.Context()))
+	})
 	mux.HandleFunc("GET /internal/plugins/disabled", func(w http.ResponseWriter, r *http.Request) {
 		ids, err := pluginmgr.DisabledIDs()
 		if err != nil {

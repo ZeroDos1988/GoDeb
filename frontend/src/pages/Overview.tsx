@@ -12,8 +12,16 @@ type Health = {
   series: { name: string; value: number }[] | null;
 };
 
+type DoctorReport = {
+  findings: { area: string; level: string; text: string; details?: string[] }[];
+  fails: number;
+  warns: number;
+  checked: number;
+};
+
 // The overview refreshes itself; CPU is a share over time and a single
-// reading on page load mostly measures the page load.
+// reading on page load mostly measures the page load. Doctor is slower,
+// so it only reloads on demand and when the page opens.
 const REFRESH_MS = 10_000;
 
 const healthDot: Record<Health["status"], string> = {
@@ -23,6 +31,13 @@ const healthDot: Record<Health["status"], string> = {
   critical: "bg-[#d03b3b] animate-pulse",
 };
 
+const doctorTone: Record<string, string> = {
+  FAIL: "bg-rose-500/20 text-rose-100",
+  WARN: "bg-amber-500/20 text-amber-100",
+  INFO: "bg-white/10 text-white/70",
+  OK: "bg-emerald-500/15 text-emerald-200",
+};
+
 export function Overview() {
   const { t } = useTranslation();
   const query = useGet<SystemInfo>("/api/system");
@@ -30,6 +45,7 @@ export function Overview() {
   const bans = useGet<JailList>("/api/plugins/fail2ban/status");
   // Missing when the monitor plugin is switched off; the card then hides.
   const health = useGet<Health>("/api/plugins/monitor/summary");
+  const doctor = useGet<DoctorReport>("/api/doctor");
   const reloadSystem = query.reload;
   const reloadHealth = health.reload;
   useEffect(() => {
@@ -46,6 +62,7 @@ export function Overview() {
   const livePeers = (peers.data?.peers ?? []).filter((peer) => peer.live).length;
   const blocked = (bans.data?.jails ?? []).reduce((sum, jail) => sum + (jail.bannedIPs?.length ?? 0), 0);
   const tunnelUp = Boolean(peers.data?.interface?.up);
+  const doctorIssues = (doctor.data?.findings ?? []).filter((f) => f.level === "FAIL" || f.level === "WARN");
 
   return (
     <section>
@@ -79,6 +96,49 @@ export function Overview() {
           </span>
           <span className="text-sm text-white/60">{t("monitor.tileOpen")} →</span>
         </a>
+      ) : null}
+
+      {doctor.data || doctor.loading || doctor.error ? (
+        <article className="mt-4 max-w-3xl rounded-3xl border border-white/10 bg-slate-900/60 p-5 text-white backdrop-blur-xl">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-xs tracking-wide text-white/60 uppercase">{t("overview.doctor")}</h2>
+              <p className="mt-1 text-lg font-semibold">
+                {doctor.data
+                  ? doctor.data.fails + doctor.data.warns === 0
+                    ? t("overview.doctorOk")
+                    : t("overview.doctorSummary", { fails: doctor.data.fails, warns: doctor.data.warns })
+                  : doctor.loading
+                    ? t("common.loading")
+                    : doctor.error}
+              </p>
+              <p className="mt-1 text-xs text-white/50">{t("overview.doctorHint")}</p>
+            </div>
+            <button
+              type="button"
+              onClick={doctor.reload}
+              disabled={doctor.loading}
+              className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm transition-all duration-200 enabled:hover:bg-white/10 disabled:opacity-50"
+            >
+              {t("overview.doctorOpen")}
+            </button>
+          </div>
+          {doctorIssues.length > 0 ? (
+            <ul className="mt-4 grid gap-2">
+              {doctorIssues.slice(0, 12).map((f, i) => (
+                <li key={`${f.area}-${f.text}-${i}`} className="rounded-2xl border border-white/10 bg-slate-950/40 px-3 py-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={`rounded-full px-2 py-0.5 text-xs ${doctorTone[f.level] ?? doctorTone.INFO}`}>
+                      {f.level}
+                    </span>
+                    <span className="text-xs text-white/50">{f.area}</span>
+                  </div>
+                  <p className="mt-1 text-sm">{f.text}</p>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </article>
       ) : null}
 
       {info ? (

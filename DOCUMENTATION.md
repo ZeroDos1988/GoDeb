@@ -475,6 +475,7 @@ Alle außer `status` antworten nach dem Abschluss mit `410`.
 | --- | --- | --- |
 | GET | `/api/health` | öffentlich, Dienst lebt |
 | GET | `/api/system` | Hostname, OS, Kernel, CPU, RAM, Platte |
+| GET | `/api/doctor` | Server-Diagnose wie `godeb doctor` (nur lesen; mit Agent über `/internal/doctor`, Ausgabe ohne Geheimnisse) |
 | GET | `/api/plugins` | Sidebar-Metadaten |
 | POST | `/api/auth/login` | Passwort, setzt Pending-Cookie |
 | POST | `/api/auth/2fa/enroll` | TOTP anlegen |
