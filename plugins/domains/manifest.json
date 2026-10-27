@@ -1,0 +1,7 @@
+{
+  "id": "domains",
+  "name": "Domains",
+  "description": "Domains und DNS: Einträge prüfen oder über die Hetzner-Cloud-API setzen",
+  "icon": "globe",
+  "order": 33
+}

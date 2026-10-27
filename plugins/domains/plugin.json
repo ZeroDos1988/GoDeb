@@ -1,0 +1,6 @@
+{
+  "id": "domains",
+  "name": "Domains",
+  "apt_dependencies": [],
+  "systemd_services": []
+}

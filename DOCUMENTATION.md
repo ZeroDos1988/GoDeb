@@ -409,6 +409,15 @@ Hinweis: Enshrouded hat keinen nativen Linux-Server. Der Windows-Server läuft u
 
 **Weiteres Spiel hinzufügen:** In `plugins/steam/` eine Datei mit `register(&Game{…})` in `init()` anlegen und in einem Test prüfen, dass Standardkonfiguration und Prüfung zusammenpassen. Optional ein Formular unter `ui/games/` in `forms` eintragen.
 
+### Domains und DNS (Plugin Domains)
+
+Domains werden einmal in GoDeb eingetragen. Andere Plugins (zuerst Mail) melden die DNS-Einträge, die sie brauchen. Pro Domain gibt es zwei Betriebsarten:
+
+- **Manuell:** GoDeb zeigt die Einträge zum Kopieren und prüft sie live (wie der DNS-Reiter im Mail-Plugin).
+- **Hetzner Cloud-API:** Ein API-Token (im Agenten versiegelt, Projekt mit den Zonen) legt fehlende RRSets an und ändert nur Einträge mit Label `godeb=1`. Fremde Einträge bleiben unberührt und erscheinen als Konflikt. Reverse-DNS (PTR) setzt GoDeb über `change_dns_ptr` am Cloud-Server mit derselben öffentlichen IP.
+
+Kein eigener Port 53 auf dem VPS. Die alte DNS-API unter `dns.hetzner.com` wird nicht genutzt.
+
 ### Mailserver (Plugin E-Mail)
 
 Ein vollständiger Mailserver nach dem Vorbild von HestiaCP: Maildomains, Postfächer mit Quota, Aliase, Weiterleitungen (mit oder ohne eigene Kopie), reine Weiterleitungsadressen, Catch-all, Sperren von Postfach oder Domain, DKIM, SPF/DMARC-Vorgaben und Spamfilter. Bedienung: Domainliste, je Domain die Reiter Postfächer, DNS, Einstellungen und Mailprogramm. Gedacht ist er zuerst für den VPS; später soll der VPS nur weiterleiten und die Postfächer auf der Heim-VM liegen (siehe `ROADMAP.md`). Mailserver und Mail-Gateway schließen sich aus, weil beide Postfix konfigurieren.
@@ -513,6 +522,13 @@ Alle außer `status` antworten nach dem Abschluss mit `410`.
 | GET | `/api/plugins/portforward/status` |
 | POST | `/api/plugins/portforward/rules` (`name`, `proto`, `from`, `to`, `target`) |
 | POST | `/api/plugins/portforward/rules/{name}/delete` |
+| GET | `/api/plugins/domains/status` (Domains, Token hinterlegt?, öffentliche IP) |
+| POST | `/api/plugins/domains/token` (`token` oder `clear`, optional `serverId`; frischer 2FA-Code) |
+| POST | `/api/plugins/domains/domains` (`name`, `mode`: `manual` oder `hetzner`) |
+| GET, POST | `/api/plugins/domains/domains/{domain}` (Ansicht; ändern: `mode`) |
+| POST | `/api/plugins/domains/domains/{domain}/delete` |
+| GET | `/api/plugins/domains/domains/{domain}/records` (Soll + Live-Prüfung) |
+| POST | `/api/plugins/domains/domains/{domain}/apply` (bei Modus `hetzner`; frischer 2FA-Code) |
 | GET | `/api/plugins/mail/status` (Einrichtung, Dienste, Domains, laufende Aufgabe) |
 | POST | `/api/plugins/mail/install` (`hostname`, `clamav`; frischer 2FA-Code) |
 | POST | `/api/plugins/mail/clamav` (`enabled`), `/api/plugins/mail/certificate` (`email`) |

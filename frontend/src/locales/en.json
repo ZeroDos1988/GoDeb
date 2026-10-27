@@ -633,6 +633,54 @@
     "status": "Status",
     "reason": "Reason"
   },
+  "domains": {
+    "title": "Domains",
+    "description": "Register domains once. GoDeb shows the DNS records plugins need (e.g. mail), checks them live, and can publish them through the Hetzner Cloud API.",
+    "failed": "Action failed",
+    "hetzner": "Hetzner Cloud API",
+    "hetznerHint": "API token for a project that owns the DNS zones (read and write only). GoDeb only changes records labelled godeb=1 and creates new ones that way. Reverse DNS (PTR) uses the same token on the server.",
+    "tokenSet": "Token stored (…{{hint}})",
+    "tokenClear": "Remove token",
+    "tokenPlaceholder": "Hetzner API token",
+    "tokenSave": "Save token",
+    "list": "Domains",
+    "name": "Domain",
+    "mode": "Mode",
+    "modes": {
+      "manual": "Manual (copy and check)",
+      "hetzner": "Hetzner Cloud API"
+    },
+    "open": "Open",
+    "empty": "No domain yet.",
+    "add": "Add",
+    "domainLead": "Records from plugins and live checks.",
+    "apply": "Apply at Hetzner",
+    "delete": "Remove domain",
+    "deleteConfirm": "Remove domain {{name}} from GoDeb? DNS records at the provider stay.",
+    "needToken": "Store a Hetzner API token above first.",
+    "recordsHint": "Missing records show as “missing”. With Hetzner, “Apply at Hetzner” only writes GoDeb-owned (labelled) records; others stay untouched and are reported as conflicts.",
+    "noRecords": "No plugin supplies records for this domain. Set up the mail server with this domain first.",
+    "managed": "by GoDeb",
+    "dnsName": "Name",
+    "dnsType": "Type",
+    "dnsValue": "Value",
+    "dnsFound": "Found",
+    "kinds": {
+      "mx": "MX",
+      "spf": "SPF",
+      "dkim": "DKIM",
+      "dmarc": "DMARC",
+      "a": "A",
+      "ptr": "PTR"
+    },
+    "status": {
+      "ok": "ok",
+      "missing": "missing",
+      "wrong": "wrong",
+      "unknown": "unknown",
+      "conflict": "conflict"
+    }
+  },
   "mail": {
     "title": "E-mail",
     "description": "Mail server with domains, mailboxes, aliases, forwarding, DKIM and spam filter (Postfix, Dovecot, Rspamd).",

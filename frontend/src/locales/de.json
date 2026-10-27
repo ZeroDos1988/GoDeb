@@ -633,6 +633,54 @@
     "status": "Status",
     "reason": "Grund"
   },
+  "domains": {
+    "title": "Domains",
+    "description": "Domains einmal eintragen. GoDeb zeigt die DNS-Einträge, die Plugins brauchen (z. B. Mail), prüft sie live und kann sie über die Hetzner-Cloud-API setzen.",
+    "failed": "Aktion fehlgeschlagen",
+    "hetzner": "Hetzner Cloud-API",
+    "hetznerHint": "API-Token eines Projekts mit den DNS-Zonen (Rechte nur Lesen und Schreiben). GoDeb ändert nur Einträge mit der Markierung godeb=1 und legt neue so an. Reverse-DNS (PTR) setzt GoDeb über denselben Token am Server.",
+    "tokenSet": "Token hinterlegt (…{{hint}})",
+    "tokenClear": "Token entfernen",
+    "tokenPlaceholder": "Hetzner-API-Token",
+    "tokenSave": "Token speichern",
+    "list": "Domains",
+    "name": "Domain",
+    "mode": "Betrieb",
+    "modes": {
+      "manual": "Manuell (kopieren und prüfen)",
+      "hetzner": "Hetzner Cloud-API"
+    },
+    "open": "Öffnen",
+    "empty": "Noch keine Domain.",
+    "add": "Hinzufügen",
+    "domainLead": "Einträge von Plugins und Live-Prüfung.",
+    "apply": "Bei Hetzner setzen",
+    "delete": "Domain entfernen",
+    "deleteConfirm": "Domain {{name}} aus GoDeb entfernen? DNS-Einträge beim Anbieter bleiben.",
+    "needToken": "Zuerst oben einen Hetzner-API-Token hinterlegen.",
+    "recordsHint": "Fehlende Einträge erscheinen als „fehlt“. Bei Hetzner schreibt „Bei Hetzner setzen“ nur eigene (markierte) Einträge; fremde bleiben unberührt und werden als Konflikt gemeldet.",
+    "noRecords": "Kein Plugin liefert Einträge für diese Domain. Richte zuerst den Mailserver mit dieser Domain ein.",
+    "managed": "von GoDeb",
+    "dnsName": "Name",
+    "dnsType": "Typ",
+    "dnsValue": "Wert",
+    "dnsFound": "Gefunden",
+    "kinds": {
+      "mx": "MX",
+      "spf": "SPF",
+      "dkim": "DKIM",
+      "dmarc": "DMARC",
+      "a": "A",
+      "ptr": "PTR"
+    },
+    "status": {
+      "ok": "ok",
+      "missing": "fehlt",
+      "wrong": "abweichend",
+      "unknown": "unbekannt",
+      "conflict": "Konflikt"
+    }
+  },
   "mail": {
     "title": "E-Mail",
     "description": "Mailserver mit Domains, Postfächern, Aliasen, Weiterleitungen, DKIM und Spamfilter (Postfix, Dovecot, Rspamd).",

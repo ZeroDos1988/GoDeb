@@ -53,6 +53,7 @@ var criticalExact = map[string]bool{
 	"/api/plugins/wireguard/join":  true, // replaces how this host reaches the tunnel
 	"/api/plugins/wireguard/trust": true, // decides where phones switch their tunnel off
 	"/api/plugins/apt/upgrade":     true, // installs every pending update, GoDeb included
+	"/api/plugins/domains/token":   true, // Cloud-API token that can change every DNS zone
 }
 
 // noStepUp lists state-changing routes that skip the second factor.
@@ -83,6 +84,10 @@ func stepUpFor(method, raw string) stepUpLevel {
 		if _, action, ok := strings.Cut(rest, "/"); ok && criticalGameActions[action] {
 			return stepUpFresh
 		}
+	}
+	// Publishing DNS through the provider rewrites public records.
+	if strings.HasPrefix(p, "/api/plugins/domains/") && strings.HasSuffix(p, "/apply") {
+		return stepUpFresh
 	}
 	for _, prefix := range criticalPrefixes {
 		if p == strings.TrimSuffix(prefix, "/") || strings.HasPrefix(p, prefix) {

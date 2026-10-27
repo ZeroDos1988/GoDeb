@@ -3,6 +3,7 @@ package main
 import (
 	_ "godeb/plugins/apt"
 	_ "godeb/plugins/certbot"
+	_ "godeb/plugins/domains"
 	_ "godeb/plugins/fail2ban"
 	_ "godeb/plugins/logs"
 	_ "godeb/plugins/mail"
