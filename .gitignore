@@ -52,8 +52,6 @@ package/debian/usr/
 # Local dev state (see CLAUDE.md)
 /.dev/
 
-# Claude Code: per-session worktrees and local settings
+# Claude Code: worktrees and personal settings stay local; .claude/skills is shared
 .claude/worktrees/
 .claude/settings.local.json
-
-# Claude Code: worktrees and personal settings stay local; .claude/skills is shared
