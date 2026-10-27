@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 
 	"godeb/backend/core"
 )
@@ -17,6 +18,7 @@ var unitPattern = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9:._@-]{0,120}\.servi
 // Mount registers the systemd routes.
 func Mount(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/plugins/systemd/services", handleServices)
+	mux.HandleFunc("GET /api/plugins/systemd/overview", handleOverview)
 	mux.HandleFunc("POST /api/plugins/systemd/action", handleAction)
 }
 
@@ -52,11 +54,11 @@ func handleAction(w http.ResponseWriter, r *http.Request) {
 		core.WriteError(w, http.StatusBadRequest, "Unit-Name ist nicht erlaubt")
 		return
 	}
-	if req.Action != "start" && req.Action != "stop" {
-		core.WriteError(w, http.StatusBadRequest, "Aktion muss start oder stop sein")
+	if req.Action != "start" && req.Action != "stop" && req.Action != "restart" {
+		core.WriteError(w, http.StatusBadRequest, "Aktion muss start, stop oder restart sein")
 		return
 	}
-	res := core.RunAdmin(r.Context(), "systemctl", req.Action, req.Unit)
+	res := core.RunAdminTimeout(r.Context(), 2*time.Minute, "systemctl", req.Action, req.Unit)
 	if res.Err != nil {
 		core.WriteError(w, http.StatusBadGateway, res.Detail())
 		return

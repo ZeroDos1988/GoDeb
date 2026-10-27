@@ -344,8 +344,8 @@
     "path": "Pfad"
   },
   "systemd": {
-    "title": "Systemd",
-    "description": "Geladene Dienste. Start und Stop laufen über systemctl.",
+    "title": "Dienste",
+    "description": "Alle geladenen systemd-Dienste. Start, Neustart und Stopp laufen über systemctl.",
     "filter": "Filter",
     "failed": "Aktion fehlgeschlagen",
     "unit": "Unit",
@@ -353,7 +353,120 @@
     "sub": "Sub",
     "descriptionCol": "Beschreibung",
     "start": "Start",
-    "stop": "Stop"
+    "stop": "Stopp",
+    "allTitle": "Alle Units",
+    "overviewDescription": "Die wichtigen Dienste dieses Servers mit Status, Laufzeit, CPU und Arbeitsspeicher. Aktualisiert sich alle 10 Sekunden.",
+    "tab": {
+      "server": "Serverdienste",
+      "all": "Alle Units"
+    },
+    "server": {
+      "host": "Hostname",
+      "os": "Betriebssystem",
+      "kernel": "Kernel",
+      "uptime": "Läuft seit",
+      "load": "Last (1/5/15 min)",
+      "cpus": "{{count}} CPUs",
+      "memory": "Arbeitsspeicher"
+    },
+    "status": "Status",
+    "running": "läuft",
+    "stopped": "gestoppt",
+    "failedState": "Fehler",
+    "uptime": "Laufzeit",
+    "resources": "CPU · RAM",
+    "locked": "GoDeb selbst",
+    "restart": "Neustart",
+    "confirm": {
+      "stop": "{{name}} wirklich stoppen? Darüber kann der Zugang zum Server (SSH, Tunnel zur Oberfläche) oder sein Schutz hängen.",
+      "restart": "{{name}} neu starten? Die Verbindung kann kurz abreißen."
+    },
+    "dur": {
+      "dh": "{{d}} T {{h}} Std",
+      "hm": "{{h}} Std {{m}} Min",
+      "m": "{{m}} Min"
+    }
+  },
+  "services": {
+    "godeb": {
+      "name": "GoDeb",
+      "description": "Weboberfläche (ohne root-Rechte)"
+    },
+    "godebAgent": {
+      "name": "GoDeb-Agent",
+      "description": "Führt Systemänderungen aus, prüft 2FA selbst"
+    },
+    "ssh": {
+      "name": "SSH",
+      "description": "Fernzugang per Schlüssel"
+    },
+    "cron": {
+      "name": "Cron",
+      "description": "Geplante Aufgaben"
+    },
+    "timesync": {
+      "name": "Zeitabgleich",
+      "description": "Hält die Uhr genau (wichtig für 2FA)"
+    },
+    "ufw": {
+      "name": "Firewall",
+      "description": "ufw-Regeln beim Start laden"
+    },
+    "fail2ban": {
+      "name": "Fail2ban",
+      "description": "Sperrt IPs nach Fehlversuchen"
+    },
+    "wireguard": {
+      "name": "WireGuard",
+      "description": "Tunnel wg0"
+    },
+    "portforward": {
+      "name": "Portweiterleitung",
+      "description": "NAT-Regeln zu Standorten laden"
+    },
+    "postfix": {
+      "name": "Postfix",
+      "description": "Mailserver (SMTP)"
+    },
+    "dovecot": {
+      "name": "Dovecot",
+      "description": "Postfächer (IMAP)"
+    },
+    "rspamd": {
+      "name": "Rspamd",
+      "description": "Spamfilter und DKIM-Signatur"
+    },
+    "redis": {
+      "name": "Redis",
+      "description": "Speicher für Rspamd"
+    },
+    "clamav": {
+      "name": "ClamAV",
+      "description": "Virenscanner"
+    },
+    "freshclam": {
+      "name": "Freshclam",
+      "description": "Virensignaturen aktualisieren"
+    },
+    "opendkim": {
+      "name": "OpenDKIM",
+      "description": "DKIM-Signatur für das Mail-Gateway"
+    },
+    "nginx": {
+      "name": "nginx",
+      "description": "Webserver"
+    },
+    "mariadb": {
+      "name": "MariaDB",
+      "description": "Datenbankserver"
+    },
+    "postgresql": {
+      "name": "PostgreSQL",
+      "description": "Datenbankserver"
+    },
+    "game": {
+      "description": "Spielserver"
+    }
   },
   "ufw": {
     "title": "UFW",

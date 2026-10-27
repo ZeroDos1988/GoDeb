@@ -344,8 +344,8 @@
     "path": "Path"
   },
   "systemd": {
-    "title": "Systemd",
-    "description": "Loaded services. Start and stop run through systemctl.",
+    "title": "Services",
+    "description": "All loaded systemd services. Start, restart and stop go through systemctl.",
     "filter": "Filter",
     "failed": "Action failed",
     "unit": "Unit",
@@ -353,7 +353,120 @@
     "sub": "Sub",
     "descriptionCol": "Description",
     "start": "Start",
-    "stop": "Stop"
+    "stop": "Stop",
+    "allTitle": "All units",
+    "overviewDescription": "The services that matter on this server with status, uptime, CPU and memory. Refreshes every 10 seconds.",
+    "tab": {
+      "server": "Server services",
+      "all": "All units"
+    },
+    "server": {
+      "host": "Hostname",
+      "os": "Operating system",
+      "kernel": "Kernel",
+      "uptime": "Up for",
+      "load": "Load (1/5/15 min)",
+      "cpus": "{{count}} CPUs",
+      "memory": "Memory"
+    },
+    "status": "Status",
+    "running": "running",
+    "stopped": "stopped",
+    "failedState": "failed",
+    "uptime": "Uptime",
+    "resources": "CPU · RAM",
+    "locked": "GoDeb itself",
+    "restart": "Restart",
+    "confirm": {
+      "stop": "Really stop {{name}}? Access to the server (SSH, the tunnel to this interface) or its protection may depend on it.",
+      "restart": "Restart {{name}}? The connection may drop briefly."
+    },
+    "dur": {
+      "dh": "{{d}} d {{h}} h",
+      "hm": "{{h}} h {{m}} min",
+      "m": "{{m}} min"
+    }
+  },
+  "services": {
+    "godeb": {
+      "name": "GoDeb",
+      "description": "Web interface (without root rights)"
+    },
+    "godebAgent": {
+      "name": "GoDeb agent",
+      "description": "Applies system changes, checks 2FA itself"
+    },
+    "ssh": {
+      "name": "SSH",
+      "description": "Remote access with keys"
+    },
+    "cron": {
+      "name": "Cron",
+      "description": "Scheduled tasks"
+    },
+    "timesync": {
+      "name": "Time sync",
+      "description": "Keeps the clock exact (needed for 2FA)"
+    },
+    "ufw": {
+      "name": "Firewall",
+      "description": "Loads the ufw rules at boot"
+    },
+    "fail2ban": {
+      "name": "Fail2ban",
+      "description": "Bans IPs after failed attempts"
+    },
+    "wireguard": {
+      "name": "WireGuard",
+      "description": "Tunnel wg0"
+    },
+    "portforward": {
+      "name": "Port forwarding",
+      "description": "Loads the NAT rules to sites"
+    },
+    "postfix": {
+      "name": "Postfix",
+      "description": "Mail server (SMTP)"
+    },
+    "dovecot": {
+      "name": "Dovecot",
+      "description": "Mailboxes (IMAP)"
+    },
+    "rspamd": {
+      "name": "Rspamd",
+      "description": "Spam filter and DKIM signing"
+    },
+    "redis": {
+      "name": "Redis",
+      "description": "Storage for Rspamd"
+    },
+    "clamav": {
+      "name": "ClamAV",
+      "description": "Virus scanner"
+    },
+    "freshclam": {
+      "name": "Freshclam",
+      "description": "Updates virus signatures"
+    },
+    "opendkim": {
+      "name": "OpenDKIM",
+      "description": "DKIM signing for the mail gateway"
+    },
+    "nginx": {
+      "name": "nginx",
+      "description": "Web server"
+    },
+    "mariadb": {
+      "name": "MariaDB",
+      "description": "Database server"
+    },
+    "postgresql": {
+      "name": "PostgreSQL",
+      "description": "Database server"
+    },
+    "game": {
+      "description": "Game server"
+    }
   },
   "ufw": {
     "title": "UFW",
