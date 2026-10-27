@@ -1,24 +1,26 @@
 # Fahrplan
 
-Stand: 24.10.2026. Reihenfolge = Priorität. `[x]` erledigt, `[ ]` offen. Neue Ideen kommen hierher (passende Phase oder Phase 7), getroffene Entscheidungen unten unter „Entscheidungen“.
+Stand: 27.10.2026. Reihenfolge = Priorität. `[x]` erledigt, `[ ]` offen. Neue Ideen kommen hierher (passende Phase oder Phase 7), getroffene Entscheidungen unten unter „Entscheidungen“.
 
-## Aktueller Stand (25.10.)
+## Aktueller Stand (Übergabe 27.10.)
+
+Für einen neuen Chat: zuerst `/diagnose` (Skill in `.claude/skills/diagnose`, Skript `scripts/diagnose.sh`), dann hier weiterlesen.
 
 - **Veröffentlicht** (alle öffentlich, nur unter ZeroDos1988):
-  - `ZeroDos1988/GoDeb`: GPL-3.0, Release **v0.2.3** (Vorabversion, 25.10.), das erste aus dem APT-Repo `https://zerodos1988.github.io/GoDeb`.
-  - `ZeroDos1988/godeb-tunnel-android`: Apache-2.0, Release **1.1.0** mit signierter `godeb-tunnel.apk`.
-  - `ZeroDos1988/godeb-tunnel-arch`: GPL-3.0, Release **1.0.1**.
-  - Privat bleibt nur `godeb-wireguard-windows`.
-- **Lokal:**
-  - Repos unter `~/Projects/` (`GoDeb`, `godeb-tunnel-android`, `godeb-tunnel-arch`, `godeb-wireguard-windows`).
-  - Alte Historien (mit Klarnamen, nicht veröffentlichen) und ein Export der alten GitHub-Releases unter `~/Projects/Archiv/`.
-- **Auf den Servern:** Der Hetzner-VPS ist am 25.10. frisch aus dem APT-Repo mit v0.2.3 installiert. Rückmeldung: Installation lief; die gedruckte Übersicht war leer (behoben, siehe unten); weitere Clients und der Standort sollen gleich im Assistenten entstehen (umgesetzt, siehe Phase 8).
+  - `ZeroDos1988/GoDeb`: GPL-3.0, letztes Release **v0.2.6** (25.10., Vorabversion) im APT-Repo `https://zerodos1988.github.io/GoDeb`. Jeder Tag `vX.Y.Z` baut Release und APT-Repo automatisch; den Release-Text danach von Hand im Stil der vorigen Releases ersetzen und als Vorabversion markieren.
+  - `ZeroDos1988/godeb-tunnel-android` (Release 1.1.0), `ZeroDos1988/godeb-tunnel-arch` (1.0.1). Privat: `godeb-wireguard-windows`.
+- **Auf `main`, noch nicht veröffentlicht** (nächstes Release v0.2.7):
+  - Plugins abschalten blendet nur aus, stoppt keine Systemdienste mehr (vorher scheiterte es beim Mail-Gateway und hätte WireGuard/UFW gestoppt).
+  - Protokoll: schwarze Seite bei normalen systemd-Zeilen behoben; jede Ansicht hat jetzt einen Fehlerschutz statt einer leeren Seite.
+  - Dienste-Seite wie bei HestiaCP (Plugin `systemd`, jetzt „Dienste“).
+  - Mailserver, Plugin `mail` (erste Fassung, siehe Phase 7). Auf echten Servern **noch nicht getestet**; die Konfiguration ist gegen die echten Debian-13-Werkzeuge geprüft (`scripts/check-mail-config.sh`).
+- **Auf den Servern:** Hetzner-VPS seit 25.10. aus dem APT-Repo (zuletzt gemeldet v0.2.x); Heim-VM noch nicht neu eingerichtet. Rückmeldungen des Nutzers vom Handy: Plugins ließen sich nicht abschalten, Protokoll schwarz (beides behoben).
 - **Nächste Schritte, in dieser Reihenfolge:**
-  1. Servertest von v0.2.6 (veröffentlicht 25.10.) auf VPS und Heim-VM: automatische Updates und Selbst-Update über „Alle aktualisieren“, Benutzermenü und Sprache, Standort per Code, Übersicht und Backup-Codes drucken, Überwachung, Alarme.
-  2. Auf dem Server die APK als `/etc/godeb/android/godeb-tunnel.apk` ablegen.
-  3. Phase 8: Heim-VM als Gateway (Route im Router) und optional Ausgang ins Internet über den Hub.
-  4. Windows-Client umbenennen (ProductName, Installer, Dienste) und veröffentlichen.
-  5. ~~APT-Repo über GitHub Pages~~ (24.10. umgesetzt, Paket bringt Quelle und Schlüssel ab v0.2.3 mit).
+  1. v0.2.7 veröffentlichen, auf dem VPS über „Alle aktualisieren“ einspielen (erster echter Test des Selbst-Updates) und Servertest: Dienste-Seite, Protokoll, Plugins abschalten, automatische Updates.
+  2. Mailserver auf dem VPS einrichten: vorher A-Eintrag `mail.<domain>`, Reverse-DNS bei Hetzner, Freigabe von ausgehend 25/465 bei Hetzner (siehe „Entscheidungen“). Dann Domain, Postfach, Empfang und Versand mit Thunderbird/Handy testen, Ergebnis bei mail-tester.com.
+  3. Domains und DNS als Plugin (Phase 7), zuerst über die Hetzner-API.
+  4. Heim-VM mit v0.2.7 neu anbinden (Beitrittscode), Enshrouded, Portweiterleitung.
+  5. Danach: Mail-Ausbau (Webmail, Abwesenheitsnotiz, Autoconfig), VPS nur als Mail-Relay mit Postfächern auf der Heim-VM, Phase 8 (Heim-VM als Gateway), Windows-Client.
 
 ## Leitplanken für alle Phasen
 
@@ -145,6 +147,12 @@ Ziel: auf einen Blick sehen, ob der Server gesund ist, ob der Traffic normal aus
 - [ ] **Webseiten und Reverse-Proxy** (nginx): eigene Webseiten hosten und interne Dienste veröffentlichen, mit Let's-Encrypt-Zertifikaten (vorhandenes Certbot-Plugin). Auf dem VPS als Eingang, Ziele auch hinter dem Tunnel (z. B. die Heim-VM).
 - [x] **Vollwertiger Mailserver nach dem Vorbild von HestiaCP** (Wunsch und erste Fassung 27.10., Plugin `mail`, auf dem VPS): Domains, Postfächer, Aliase, Weiterleitungen, Catch-all, Sperren, DKIM, DNS-Prüfung, Spamfilter, Let's Encrypt, optional ClamAV. Entschieden: Postfächer erst auf dem VPS, Rspamd statt SpamAssassin, ClamAV abschaltbar. Noch offen: Webmail (Roundcube), Abwesenheitsnotiz (Sieve), Autoconfig/Autodiscover für Mailprogramme, MTA-STS und TLS-RPT, Quota-Warnungen, Spam/Ham lernen aus dem Junk-Ordner, Mail-Queue und Statistik, Befunde in der Überwachung. Danach: VPS nur als Relay (Ein- und Ausgang), Postfächer und Virenscanner auf der Heim-VM. Ursprünglicher Wunsch: Maildomains, Postfächer mit Passwort und Quota, Aliase und Weiterleitungen, Catch-all, DKIM/SPF/DMARC mit fertigen DNS-Einträgen, TLS über Let's Encrypt, IMAP/SMTP-Submission (Postfix + Dovecot), Spamfilter, optional Webmail, Autoconfig für Mailprogramme. Baut auf dem Mail-Gateway auf (Eingang und Versand über den VPS, weil Heimanschlüsse für Port 25 und PTR nicht taugen). Offene Entscheidungen: Standort (VPS oder Heim-VM), Spamfilter (Rspamd oder SpamAssassin), Virenscanner (ClamAV braucht etwa 1,5 GB RAM), Webmail (Roundcube braucht PHP und einen Webserver).
 - [x] **Dienste-Seite wie bei HestiaCP** (Wunsch und Umsetzung 27.10.): statt der Liste aller systemd-Units eine kuratierte Übersicht der Serverdienste (SSH, Firewall, Fail2ban, WireGuard, Postfix, Dovecot, Spielserver, GoDeb selbst) mit Beschreibung, Status, Laufzeit, CPU und RAM sowie Start/Stopp/Neustart; die vollständige Unit-Liste bleibt als zweiter Reiter. Oben die Eckdaten des Servers (Hostname, OS, Kernel, Laufzeit, Last).
+- [ ] **Domains und DNS** (Wunsch 27.10.): Domains einmal in GoDeb eintragen; die Einträge, die Plugins brauchen (Mail: MX, SPF, DKIM, DMARC, A des Mail-Hostnamens; später Webseiten), entstehen daraus. Drei Betriebsarten pro Domain:
+  - **Manuell:** GoDeb zeigt die Einträge zum Kopieren und prüft sie (so arbeitet heute das Mail-Plugin).
+  - **Hetzner DNS über die Cloud-API** (empfohlen als erster Schritt): Zonen und RRsets per API-Token (im Agenten versiegelt, Rechte nur Lesen/Schreiben), GoDeb legt Einträge selbst an, ändert nur die eigenen (markiert) und prüft sie. Kein offener Port 53 auf dem VPS. Die alte DNS-API unter `dns.hetzner.com` soll laut Drittquelle seit Mai 2026 abgeschaltet sein: nur die Cloud-API nutzen und das vor der Umsetzung prüfen.
+  - **Eigener primärer DNS auf dem VPS** (Knot DNS oder PowerDNS), Hetzner DNS als sekundärer Server über NOTIFY und AXFR/IXFR (Hetzner unterstützt sekundäre Zonen). Unabhängig vom Anbieter, aber Port 53 öffentlich, DNSSEC und Pflege kommen dazu. Als Option nach der API-Variante.
+  - **Reverse-DNS (PTR)** gehört dem Inhaber der IP und geht immer über den Anbieter: bei Hetzner Cloud über die Cloud-API (`change_dns_ptr` der Server-IP), sonst als Hinweis zum Eintragen von Hand.
+- [ ] **`godeb doctor`** (Idee 27.10.): Server-Diagnose als ein Befehl (Dienste, offene Ports, Firewall, Tunnel-Handshakes, Zertifikate, DNS der Maildomains, Fehler im Journal, Updates), Ausgabe ohne Geheimnisse zum Weitergeben. Ersetzt den Befehlsblock im Skill `/diagnose`.
 - [ ] **Cron-Aufgaben**: geplante Aufgaben anzeigen und verwalten (gab es im alten Prototyp aus PR #1 als eigene Seite).
 - [ ] **Datenbanken**: Datenbankserver installieren (z. B. MariaDB, PostgreSQL), Datenbanken und Benutzer anlegen, dazu ein eingebauter Admin-Client zum Ansehen von Tabellen und Daten. Zugangsdaten mit `security.Seal`, Datenbankports nie öffentlich.
 
@@ -169,5 +177,6 @@ Festgehalten, damit sie nicht wieder neu diskutiert werden.
 - **Weboberfläche ohne root, root-Agent mit eigener 2FA** (22.10.) statt sudoers-Allowlist.
 - **Ein Repository** (21.10.): Plugins bleiben in `GoDeb`, keine Aufteilung in einzelne Repos oder eine GitHub-Organisation. Die Apps haben eigene Repos: `godeb-tunnel-android` (Apache-2.0) und `godeb-tunnel-arch` (GPL-3.0), öffentlich seit 23.10.; Windows (`godeb-wireguard-windows`) bleibt privat, bis der Produktname im Installer und in der Oberfläche umgebaut ist. Umbenannt von „GoDeb WireGuard“ wegen der Markenrichtlinie von WireGuard.
 - **Öffentlich unter GPL-3.0** (23.10.): neues Repo `ZeroDos1988/GoDeb` mit frischer Historie ab v0.2.1, nur unter dem Namen ZeroDos1988 (noreply-Adresse). Die Entwicklungsgeschichte bis dahin liegt im privaten Archiv `GoDeb-private`. `main` ist gegen Löschen und Force-Push geschützt, `v*`-Tags darf nur der Admin setzen; Lücken über Private Vulnerability Reporting.
+- **Mailserver zuerst auf dem VPS** (27.10.): Postfächer liegen vorerst auf dem VPS; Ziel bleibt VPS nur als Relay, Postfächer und Virenscanner auf der Heim-VM. Rspamd statt SpamAssassin (leichter, DKIM eingebaut), ClamAV abschaltbar (RAM). Bedienung nach dem Vorbild von HestiaCP, aber moderner. Hetzner sperrt bei Cloud-Servern ausgehend 25 und 465 standardmäßig, unabhängig von der eigenen Domain; Freigabe per Antrag, meist erst nach der ersten bezahlten Rechnung. Ohne Freigabe geht Empfang, Versand nur über einen Relay-Dienst auf Port 587.
 - **Beitrittscode statt Kopplungsdienst** (25.10.): Der Code enthält die Client-Datei selbst. Ein kurzer Code, mit dem die Heim-VM ihre Datei beim Hub abholt, bräuchte einen öffentlich erreichbaren Endpunkt am Hub; das widerspricht „nur über den Tunnel“. Der lange Code wird kopiert, nicht abgetippt.
 - **Releases per Git-Tag** (22.10., ergänzt 23.10.): Vorabversionen bis zum Test auf echten Servern. Neue Funktionen erhöhen die mittlere Stelle (`v0.2.0`: Logging und Überwachung), Fixes nach einem Servertest die letzte (`v0.2.x`); apt erkennt jede als Update. Die Installationsanleitung steht im Text des Releases.

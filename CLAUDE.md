@@ -8,6 +8,9 @@ Architektur, API und Sicherheitskonzept stehen in `DOCUMENTATION.md`, offene Arb
 - Backend-Tests: `go test ./...`
 - Frontend-Build (inkl. Typecheck): `cd frontend && npm run build`
 - Paket: `scripts/build-deb.sh` (baut Frontend + statisches Binary, prüft `DEBIAN/control` und `postinst`)
+- Gesamtdiagnose ohne Server: `scripts/diagnose.sh` (`--quick` ohne Build/Netz); der Skill `/diagnose` (`.claude/skills/diagnose`) beschreibt den ganzen Ablauf inkl. Server-Befehlsblock
+- Mail-Konfiguration gegen die echten Debian-13-Werkzeuge prüfen (ohne root): `scripts/check-mail-config.sh`
+- Oberfläche ohne Browser auf dem Rechner ansehen: Playwright + `chromium-headless-shell` nach `/tmp` (siehe Skill `/diagnose`), `/api` per `page.route` mit Beispieldaten
 - Lokal ohne root starten: `GODEB_DB=$PWD/.dev/godeb.db GODEB_AUTH_DIR=$PWD/.dev/auth GODEB_AUTH_LOG=$PWD/.dev/auth.log GODEB_MASTER_KEY=$PWD/.dev/master.key go run ./backend`
   (fehlende Werkzeuge liefern Beispieldaten mit `mocked: true`)
 - Mit Agent lokal (zwei Terminals, gleiche Variablen plus `GODEB_AGENT_SOCKET=$PWD/.dev/agent.sock GODEB_AGENT_DB=$PWD/.dev/agent.db GODEB_STATE_DIR=$PWD/.dev`): `go run ./backend agent`, dann `go run ./backend`
@@ -43,6 +46,7 @@ GoDeb läuft als zwei Prozesse desselben Programms: die Weboberfläche (`godeb.s
 - Das OS ist die Quelle der Wahrheit (`/etc/wireguard/wg0.conf`, `main.cf`, systemd, apt). SQLite (`/var/lib/godeb/godeb.db` für die Weboberfläche, `/etc/godeb/godeb.db` für den Agenten, GORM + `glebarez/sqlite`) hält nur Metadaten, die die UI zum Anzeigen oder Wiederanwenden braucht.
 - Kein CGO: `CGO_ENABLED=0`, `-tags netgo`.
 - Ein Plugin besteht aus `manifest.json` (Sidebar), `plugin.json` (APT-Pakete, systemd-Units für den Plugin-Manager), Go-Paket mit `core.Register` in `init()` plus Blank-Import in `backend/modules.go`, und optional `ui/Panel.tsx` (wird per `import.meta.glob` geladen).
+- Mailserver: Plugin `mail` (Postfix 3.10, Dovecot **2.4** – neue Konfigurationssyntax, Anleitungen für 2.3 passen nicht –, Rspamd, Redis, optional ClamAV). GoDeb schreibt alle Mail-Dateien aus der Agent-Datenbank (`mailserver_*`), die ganze `dovecot.conf` inklusive. Mail-Gateway (`mailgateway`) und Mailserver schließen sich aus.
 - Spielserver laufen alle über das Plugin `steam` (SteamCMD). Ein neues Spiel ist eine `Game`-Beschreibung in `plugins/steam/` (plus optional ein Formular in `plugins/steam/ui/games/`), kein eigenes Plugin.
 - Fehlt ein Werkzeug auf dem Host, liefert die API Beispieldaten und `mocked: true`, statt einen Fehler zu werfen.
 - Zielbild Betrieb: zwei Installationen desselben Pakets. Der Hetzner-VPS (klein) ist öffentlicher Eingang und WireGuard-Hub `10.8.0.1`. Die Heim-VM hängt als Peer `10.8.0.2` daran und betreibt Enshrouded; der VPS leitet `15636–15637/udp` per DNAT/SNAT weiter. Unterschiede nur über Setup-Rolle und Plugins. Umgesetzt mit `godeb site add` (Hub), `godeb setup --join` (Heim-VM), `wireguard.DetectRole` und dem Plugin `portforward` (eigene nftables-Tabelle, nicht `before.rules`). Details: `DOCUMENTATION.md` „Zielbild: VPS und Heim-VM“, offene Punkte: `ROADMAP.md` Phase 3b.

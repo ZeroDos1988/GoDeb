@@ -471,6 +471,10 @@ Alle außer `status` antworten nach dem Abschluss mit `410`.
 | POST | `/api/auth/2fa/authenticate` | TOTP oder Backup-Code |
 | POST | `/api/auth/logout` | Sitzung beenden |
 | GET | `/api/auth/me` | aktueller Benutzer |
+| GET | `/api/auth/sessions` | eigene Sitzungen mit Gerät, IP, letzter Aktivität |
+| POST | `/api/auth/sessions/{id}/revoke`, `/api/auth/sessions/revoke-others` | eine bzw. alle anderen Sitzungen beenden |
+| GET | `/api/plugin-manager` | Plugins mit Paketen, Units, an/aus |
+| POST | `/api/plugin-manager/scan`, `/api/plugin-manager/{id}/install`, `/api/plugin-manager/{id}/enable`, `/api/plugin-manager/{id}/disable` | neu einlesen, Pakete installieren, ein- und ausblenden (frischer 2FA-Code außer bei `scan`) |
 | GET, POST | `/api/user/settings` | Theme und Sprache (`language` leer = wie der Browser) |
 | GET | `/api/auth/oidc/providers` | öffentliche, fertig konfigurierte Anbieter |
 | GET, PUT | `/api/auth/oidc/config`, `/api/auth/oidc/providers/{id}` | OIDC-Konfiguration |
@@ -498,6 +502,7 @@ Alle außer `status` antworten nach dem Abschluss mit `410`.
 | GET | `/api/plugins/wireguard/status` |
 | GET, POST | `/api/plugins/wireguard/peers` |
 | GET | `/api/plugins/wireguard/peers/{id}/config` |
+| GET | `/api/plugins/wireguard/android`, `/api/plugins/wireguard/android/apk` (GoDeb-Tunnel-App: Infos und Download) |
 | GET | `/api/plugins/wireguard/peers/{id}/qr` |
 | GET | `/api/plugins/wireguard/peers/{id}/code` (Beitrittscode eines Standorts) |
 | POST | `/api/plugins/wireguard/peers/{id}/send-email` |
@@ -515,7 +520,8 @@ Alle außer `status` antworten nach dem Abschluss mit `410`.
 | GET, POST | `/api/plugins/mail/domains/{domain}` (Postfächer, DNS-Einträge, Mailprogramm; ändern: `catchAll`, `suspended`) |
 | POST | `/api/plugins/mail/domains/{domain}/delete` |
 | GET | `/api/plugins/mail/domains/{domain}/dns` (Live-Prüfung) |
-| POST | `/api/plugins/mail/domains/{domain}/accounts` und `…/accounts/{local}` (`local`, `password`, `quotaMB`, `aliases`, `forward`, `forwardOnly`, `suspended`), `…/accounts/{local}/delete` |
+| POST | `/api/plugins/mail/domains/{domain}/accounts`, `/api/plugins/mail/domains/{domain}/accounts/{local}` (`local`, `password`, `quotaMB`, `aliases`, `forward`, `forwardOnly`, `suspended`; leeres Passwort behält das alte) |
+| POST | `/api/plugins/mail/domains/{domain}/accounts/{local}/delete` (mit allen Mails) |
 | GET | `/api/plugins/mailgateway/status` |
 | POST | `/api/plugins/mailgateway/setup` |
 | GET | `/api/plugins/mailgateway/queue` |
