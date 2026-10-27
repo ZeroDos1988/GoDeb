@@ -100,6 +100,12 @@ func handleSetup(w http.ResponseWriter, r *http.Request) {
 		core.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	// The mail server plugin owns Postfix once it is set up; both writing
+	// main.cf would undo each other.
+	if _, err := os.Stat(etcPath("postfix", "godeb", "domains")); err == nil {
+		core.WriteError(w, http.StatusConflict, "Auf diesem Server läuft der Mailserver (Plugin E-Mail). Das Mail-Gateway ist für einen VPS gedacht, der nur weiterleitet.")
+		return
+	}
 	relay, err := normalizeRelay(req.RelayHost)
 	if err != nil {
 		core.WriteError(w, http.StatusBadRequest, err.Error())

@@ -5,6 +5,7 @@ import (
 	_ "godeb/plugins/certbot"
 	_ "godeb/plugins/fail2ban"
 	_ "godeb/plugins/logs"
+	_ "godeb/plugins/mail"
 	_ "godeb/plugins/mailgateway/backend"
 	_ "godeb/plugins/monitor"
 	_ "godeb/plugins/portforward"

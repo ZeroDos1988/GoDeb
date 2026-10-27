@@ -1,0 +1,6 @@
+{
+  "id": "mail",
+  "name": "E-Mail",
+  "apt_dependencies": [],
+  "systemd_services": []
+}

@@ -54,6 +54,7 @@ Jedes Plugin lässt sich im Plugin-Manager abschalten. Es verschwindet dann aus 
 | **WireGuard** | Hub oder Peer, Clients mit QR-Code, Standorte per Beitrittscode, Trusted Endpoint |
 | **Portweiterleitung** | Öffentliche Ports des Hubs an Standorte im Tunnel weiterleiten (eigene nftables-Tabelle) |
 | **Spielserver** | Dedizierte Server über SteamCMD, ein Konto und eine systemd-Unit pro Spiel. Als erstes Spiel: Enshrouded |
+| **E-Mail** | Mailserver wie bei HestiaCP: Domains, Postfächer mit Quota, Aliase, Weiterleitungen, Catch-all, DKIM/SPF/DMARC, Spamfilter (Postfix, Dovecot, Rspamd, optional ClamAV) |
 | **Mail-Gateway** | Postfix-Relay über WireGuard mit OpenDKIM, Queue und Statistik |
 
 Ein neues Spiel ist eine `Game`-Beschreibung in `plugins/steam/`, kein eigenes Plugin.

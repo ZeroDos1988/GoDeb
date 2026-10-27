@@ -38,6 +38,9 @@ var criticalPrefixes = []string{
 	"/api/plugins/systemd/",     // stop/restart any allowed unit, sshd and wg-quick included
 	"/api/plugins/portforward/", // exposes ports of a tunnel peer to the internet
 	"/api/plugins/mailgateway/setup",
+	"/api/plugins/mail/install",     // installs packages, opens ports, rewrites Postfix and Dovecot
+	"/api/plugins/mail/clamav",      // installs or removes packages
+	"/api/plugins/mail/certificate", // opens port 80 for certbot
 }
 
 // criticalGameActions always need a fresh code below /api/plugins/steam/games/

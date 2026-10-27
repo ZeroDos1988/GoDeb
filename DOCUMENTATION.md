@@ -409,6 +409,29 @@ Hinweis: Enshrouded hat keinen nativen Linux-Server. Der Windows-Server läuft u
 
 **Weiteres Spiel hinzufügen:** In `plugins/steam/` eine Datei mit `register(&Game{…})` in `init()` anlegen und in einem Test prüfen, dass Standardkonfiguration und Prüfung zusammenpassen. Optional ein Formular unter `ui/games/` in `forms` eintragen.
 
+### Mailserver (Plugin E-Mail)
+
+Ein vollständiger Mailserver nach dem Vorbild von HestiaCP: Maildomains, Postfächer mit Quota, Aliase, Weiterleitungen (mit oder ohne eigene Kopie), reine Weiterleitungsadressen, Catch-all, Sperren von Postfach oder Domain, DKIM, SPF/DMARC-Vorgaben und Spamfilter. Bedienung: Domainliste, je Domain die Reiter Postfächer, DNS, Einstellungen und Mailprogramm. Gedacht ist er zuerst für den VPS; später soll der VPS nur weiterleiten und die Postfächer auf der Heim-VM liegen (siehe `ROADMAP.md`). Mailserver und Mail-Gateway schließen sich aus, weil beide Postfix konfigurieren.
+
+**Bausteine (Debian 13):** Postfix 3.10 (SMTP, Submission), Dovecot 2.4 (IMAP, LMTP, Sieve, Quota), Rspamd 3.12 (Spamfilter, DKIM-Signatur und ARC, Prüfung von SPF/DKIM/DMARC) mit Redis, optional ClamAV. „Einrichten“ installiert die Pakete, legt das Konto `vmail` und `/var/vmail` an, schreibt die Konfiguration, startet die Dienste und öffnet in ufw `25`, `465`, `587` und `993/tcp`.
+
+**Sicherheit:**
+
+- Port 25 nimmt nur Post für die eigenen Domains an (`reject_unauth_destination`, `reject_unlisted_recipient`), ohne Anmeldung. Versenden geht nur über 465 (TLS) oder 587 (STARTTLS, Pflicht) mit Anmeldung, und nur mit eigener Adresse oder eigenem Alias als Absender (`reject_sender_login_mismatch` mit `/etc/postfix/godeb/senders`).
+- IMAP nur verschlüsselt auf 993 (Port 143 ist aus), keine Anmeldung ohne TLS (`auth_allow_cleartext = no`), TLS ab 1.2. Kein POP3.
+- GoDeb schreibt die ganze `dovecot.conf` selbst (das Original bleibt als `dovecot.conf.godeb-orig`): Debians Fassung meldet Systembenutzer per PAM an, hier dürfen nur die Postfächer aus GoDeb. Dovecot-Updates übernehmen die Datei nicht (`UCF_FORCE_CONFFOLD`).
+- Passwörter speichert GoDeb nur als Argon2id-Hash (19 MiB, t=2), in der Agent-Datenbank zusätzlich versiegelt. Das Passwort wird einmal nach dem Anlegen angezeigt.
+- Gesperrte Postfächer stehen in `/etc/dovecot/godeb/deny` und werden vor der Passwortprüfung abgewiesen; sie empfangen weiter. Gesperrte Domains nehmen keine Post mehr an.
+- Fail2ban überwacht Postfix (`mode = aggressive`) und Dovecot über das Journal (`/etc/fail2ban/jail.d/godeb-mail.conf`).
+- Rspamd: ab 4 Punkten Greylisting, ab 6 Kopfzeile `X-Spam: Yes` (ein Sieve-Skript legt die Mail in „Junk“), ab 15 Ablehnung. ClamAV lehnt Viren ab.
+- Zertifikat: bis zur Ausstellung das selbstsignierte von `ssl-cert`; „Let's-Encrypt-Zertifikat holen“ ruft `certbot --standalone` für den Hostnamen auf. Port 80 ist nur dabei offen (auch beim Verlängern, über die gespeicherten Hooks), danach laden Postfix und Dovecot neu.
+
+**Dateien**, alle von GoDeb erzeugt und bei jeder Änderung neu geschrieben: `/etc/postfix/godeb/{domains,mailboxes,aliases,senders}` (texthash, kein `postmap` nötig), Einstellungen in `main.cf`/`master.cf` per `postconf`, `/etc/dovecot/dovecot.conf`, `/etc/dovecot/godeb/{users,deny,spam.sieve}`, `/etc/rspamd/local.d/*.conf`, DKIM-Schlüssel `/var/lib/rspamd/dkim/<domain>.<selector>.key` (`root:_rspamd`, `0640`). Die Metadaten (Domains, Postfächer, Hashes) liegen in der Agent-Datenbank `/etc/godeb/godeb.db` (`mailserver_*`).
+
+**DNS pro Domain:** MX auf den Hostnamen, SPF `v=spf1 mx -all`, DKIM (Selector `godeb`, RSA 2048), DMARC `p=quarantine`, dazu einmal der A-Eintrag des Hostnamens und der Reverse-DNS (PTR) beim Hoster. Der Reiter DNS zeigt alle Einträge zum Kopieren und prüft sie live.
+
+**Prüfen ohne Server:** `scripts/check-mail-config.sh` erzeugt die Konfiguration für ein Beispiel und prüft sie mit den echten Werkzeugen aus Debian 13 (`postconf`, `postmap`, `doveconf`, `sievec`, `doveadm pw`, `rspamadm configtest`). Die Pakete werden nur entpackt und in einem User-Namespace ausgeführt, ohne root.
+
 ### Mail-Gateway
 
 Der Hetzner-V-Server nimmt Post für eingetragene Domains an und gibt sie über den WireGuard-Tunnel an den Homeserver weiter. Postfix ist der Store-and-Forward-Puffer: ist `10.8.0.x:25` nicht erreichbar, bleibt die Post in der Queue und geht nach dem Reconnect mit `postqueue -f` oder dem normalen Queue-Lauf hinaus.
@@ -485,6 +508,14 @@ Alle außer `status` antworten nach dem Abschluss mit `410`.
 | GET | `/api/plugins/portforward/status` |
 | POST | `/api/plugins/portforward/rules` (`name`, `proto`, `from`, `to`, `target`) |
 | POST | `/api/plugins/portforward/rules/{name}/delete` |
+| GET | `/api/plugins/mail/status` (Einrichtung, Dienste, Domains, laufende Aufgabe) |
+| POST | `/api/plugins/mail/install` (`hostname`, `clamav`; frischer 2FA-Code) |
+| POST | `/api/plugins/mail/clamav` (`enabled`), `/api/plugins/mail/certificate` (`email`) |
+| POST | `/api/plugins/mail/domains` (`name`) |
+| GET, POST | `/api/plugins/mail/domains/{domain}` (Postfächer, DNS-Einträge, Mailprogramm; ändern: `catchAll`, `suspended`) |
+| POST | `/api/plugins/mail/domains/{domain}/delete` |
+| GET | `/api/plugins/mail/domains/{domain}/dns` (Live-Prüfung) |
+| POST | `/api/plugins/mail/domains/{domain}/accounts` und `…/accounts/{local}` (`local`, `password`, `quotaMB`, `aliases`, `forward`, `forwardOnly`, `suspended`), `…/accounts/{local}/delete` |
 | GET | `/api/plugins/mailgateway/status` |
 | POST | `/api/plugins/mailgateway/setup` |
 | GET | `/api/plugins/mailgateway/queue` |

@@ -1,0 +1,7 @@
+{
+  "id": "mail",
+  "name": "E-Mail",
+  "description": "Mailserver: Domains, Postfächer, Aliase, DKIM, Spamfilter",
+  "icon": "mail",
+  "order": 34
+}
