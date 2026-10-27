@@ -87,7 +87,7 @@ func Check(ctx context.Context, env Env) []Finding {
 	var out []Finding
 	for _, c := range []func(context.Context, Env) []Finding{
 		checkVersion, checkServices, checkPorts, checkFirewall, checkWireGuard,
-		checkCerts, checkDNS, checkJournal, checkUpdates, checkDisk,
+		checkCerts, checkDNS, checkJournal, checkUpdates, checkDisk, checkHardening,
 	} {
 		out = append(out, c(ctx, env)...)
 	}
@@ -561,6 +561,80 @@ func checkDisk(_ context.Context, env Env) []Finding {
 		f.Level = Warn
 	}
 	return []Finding{f}
+}
+
+// checkHardening only reports; it never changes SSH or unattended-upgrades.
+// Password login and root passwords are warnings; unattended-upgrades is
+// informational because GoDeb installs security updates itself via apt.
+func checkHardening(ctx context.Context, env Env) []Finding {
+	const area = "Härtung"
+	var out []Finding
+	out = append(out, sshFindings(env.Run(ctx, "sshd", "-T"))...)
+	out = append(out, unattendedFindings(env.Run(ctx, "systemctl", "is-enabled", "unattended-upgrades.service"))...)
+	return out
+}
+
+func sshFindings(res core.CommandResult) []Finding {
+	const area = "Härtung"
+	if missing(res) {
+		return []Finding{{Area: area, Level: Info, Text: "sshd nicht gefunden"}}
+	}
+	if res.Err != nil {
+		return []Finding{{Area: area, Level: Info, Text: "sshd -T nicht lesbar"}}
+	}
+	pass, root := parseSSHD(res.Stdout)
+	var out []Finding
+	switch pass {
+	case "no":
+		out = append(out, Finding{Area: area, Level: OK, Text: "SSH nur per Schlüssel (PasswordAuthentication no)"})
+	case "yes":
+		out = append(out, Finding{Area: area, Level: Warn, Text: "SSH erlaubt Passwort-Login", Details: []string{"PasswordAuthentication yes – in sshd_config.d abschalten, nachdem Schlüssel-Login funktioniert"}})
+	default:
+		out = append(out, Finding{Area: area, Level: Info, Text: "SSH PasswordAuthentication: " + pass})
+	}
+	switch root {
+	case "prohibit-password", "without-password", "no":
+		out = append(out, Finding{Area: area, Level: OK, Text: "Root-SSH ohne Passwort (" + root + ")"})
+	case "yes":
+		out = append(out, Finding{Area: area, Level: Warn, Text: "Root-SSH mit Passwort erlaubt", Details: []string{"PermitRootLogin yes"}})
+	default:
+		if root != "" {
+			out = append(out, Finding{Area: area, Level: Info, Text: "PermitRootLogin " + root})
+		}
+	}
+	return out
+}
+
+func parseSSHD(out string) (passwordAuth, permitRoot string) {
+	for _, l := range lines(out) {
+		f := strings.Fields(strings.ToLower(l))
+		if len(f) < 2 {
+			continue
+		}
+		switch f[0] {
+		case "passwordauthentication":
+			passwordAuth = f[1]
+		case "permitrootlogin":
+			permitRoot = f[1]
+		}
+	}
+	return passwordAuth, permitRoot
+}
+
+func unattendedFindings(res core.CommandResult) []Finding {
+	const area = "Härtung"
+	if missing(res) {
+		return []Finding{{Area: area, Level: Info, Text: "unattended-upgrades nicht geprüft (systemctl fehlt)"}}
+	}
+	state := strings.TrimSpace(res.Stdout)
+	if state == "" {
+		state = "unbekannt"
+	}
+	// GoDeb installs security updates itself; this is only a notice.
+	if state == "enabled" {
+		return []Finding{{Area: area, Level: Info, Text: "unattended-upgrades ist aktiv (zusätzlich zur GoDeb-APT-Automatik)"}}
+	}
+	return []Finding{{Area: area, Level: Info, Text: "unattended-upgrades: " + state, Details: []string{"GoDeb spielt Sicherheitsupdates über das APT-Plugin ein; unattended-upgrades ist optional"}}}
 }
 
 func gib(b uint64) float64 { return float64(b) / (1 << 30) }

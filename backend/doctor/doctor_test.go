@@ -159,6 +159,21 @@ func TestCheckReport(t *testing.T) {
 
 func itoa(n int64) string { return big.NewInt(n).String() }
 
+func TestParseSSHDAndHardening(t *testing.T) {
+	pass, root := parseSSHD("passwordauthentication no\npermitrootlogin prohibit-password\n")
+	if pass != "no" || root != "prohibit-password" {
+		t.Fatalf("%q %q", pass, root)
+	}
+	got := sshFindings(core.CommandResult{Stdout: "passwordauthentication yes\npermitrootlogin yes\n"})
+	if len(got) != 2 || got[0].Level != Warn || got[1].Level != Warn {
+		t.Fatalf("%+v", got)
+	}
+	got = unattendedFindings(core.CommandResult{Stdout: "disabled\n"})
+	if len(got) != 1 || got[0].Level != Info || !strings.Contains(got[0].Text, "disabled") {
+		t.Fatalf("%+v", got)
+	}
+}
+
 func TestNewReport(t *testing.T) {
 	at := time.Date(2026, 10, 27, 12, 0, 0, 0, time.UTC)
 	r := NewReport([]Finding{
