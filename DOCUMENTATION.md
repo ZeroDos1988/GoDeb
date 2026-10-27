@@ -512,8 +512,9 @@ Alle außer `status` antworten nach dem Abschluss mit `410`.
 | GET | `/api/plugins/fail2ban/status` |
 | POST | `/api/plugins/fail2ban/unban` |
 | GET | `/api/plugins/wireguard/status` |
-| GET, POST | `/api/plugins/wireguard/peers` |
+| GET, POST | `/api/plugins/wireguard/peers` (anlegen: optional `publicKey` vom Gerät – dann keine Client-Datei mit privatem Schlüssel) |
 | GET | `/api/plugins/wireguard/peers/{id}/config` |
+| POST | `/api/plugins/wireguard/peers/{id}/delete-config` (Client-`.conf` mit privatem Schlüssel löschen; Peer bleibt) |
 | GET | `/api/plugins/wireguard/android`, `/api/plugins/wireguard/android/apk` (GoDeb-Tunnel-App: Infos und Download) |
 | GET | `/api/plugins/wireguard/peers/{id}/qr` |
 | GET | `/api/plugins/wireguard/peers/{id}/code` (Beitrittscode eines Standorts) |

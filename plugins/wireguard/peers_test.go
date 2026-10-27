@@ -143,6 +143,8 @@ func TestCreateRejectsBadInput(t *testing.T) {
 		`{"name":"phone","endpoint":"vpn.example.org"}`,
 		`{"name":"phone","endpoint":"vpn.example.org:51820","dns":"x"}`,
 		`{"name":"phone","endpoint":"vpn.example.org:51820","keepalive":-1}`,
+		`{"name":"phone","endpoint":"vpn.example.org:51820","publicKey":"not-a-key"}`,
+		`{"name":"phone","endpoint":"vpn.example.org:51820","site":true,"publicKey":"aGVsbG8taGVsbG8taGVsbG8taGVsbG8taGVsbG8tISE="}`,
 		`{"name":"phone","endpoint":"vpn.example.org:51820","extra":true}`,
 	} {
 		req := httptest.NewRequest(http.MethodPost, "/api/plugins/wireguard/peers", strings.NewReader(body))

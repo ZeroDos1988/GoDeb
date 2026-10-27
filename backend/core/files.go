@@ -122,6 +122,27 @@ func WriteAdminFile(path string, data []byte, perm os.FileMode) error {
 	return os.Rename(tmp.Name(), clean)
 }
 
+// RemoveAdminFile deletes a file under /etc/wireguard or /etc/godeb (not the
+// directory itself). Used e.g. to drop a WireGuard client file after download.
+func RemoveAdminFile(path string) error {
+	clean := filepath.Clean(path)
+	if !underRoot(clean, writeRoots) || isRoot(clean, writeRoots) {
+		return fmt.Errorf("Pfad nicht erlaubt: %s", clean)
+	}
+	if os.Geteuid() != 0 {
+		res := Run(context.Background(), "sudo", "-n", "--", "rm", "-f", "--", clean)
+		if res.Err != nil {
+			return fmt.Errorf("%s löschen: %s", clean, res.Detail())
+		}
+		return nil
+	}
+	err := os.Remove(clean)
+	if os.IsNotExist(err) {
+		return fs.ErrNotExist
+	}
+	return err
+}
+
 func underRoot(path string, roots []string) bool {
 	for _, root := range roots {
 		if path == root || strings.HasPrefix(path, root+string(os.PathSeparator)) {

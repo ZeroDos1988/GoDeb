@@ -108,6 +108,7 @@ export default function Panel() {
   const [codePeer, setCodePeer] = useState<WgPeer | null>(null);
   const [notice, setNotice] = useState("");
   const [actionError, setActionError] = useState("");
+  const [deleteAfterDownload, setDeleteAfterDownload] = useState(false);
   const info = query.data?.interface;
   const peers = query.data?.peers ?? [];
   const isPeer = query.data?.role?.role === "peer";
@@ -143,6 +144,14 @@ export default function Panel() {
       link.download = `${peer.id}.conf`;
       link.click();
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      if (deleteAfterDownload) {
+        await api(`${peersPath}/${encodeURIComponent(peer.id)}/delete-config`, {
+          method: "POST",
+          body: "{}",
+        });
+        query.reload();
+        setNotice(t("wg.configDeleted", { name: peer.id }));
+      }
     } catch (err: unknown) {
       setActionError(err instanceof Error ? err.message : t("wg.downloadFailed"));
     }
@@ -227,6 +236,19 @@ export default function Panel() {
           {peers.length === 0 ? (
             <p className="text-sm text-muted">{t("wg.none")}</p>
           ) : (
+            <>
+            <label className="mb-3 flex items-start gap-2 text-sm text-white/80">
+              <input
+                type="checkbox"
+                checked={deleteAfterDownload}
+                onChange={(event) => setDeleteAfterDownload(event.target.checked)}
+                className="mt-1"
+              />
+              <span>
+                {t("wg.deleteAfterDownload")}
+                <span className="block text-xs text-white/50">{t("wg.deleteAfterDownloadHint")}</span>
+              </span>
+            </label>
             <DataTable head={[t("wg.name"), t("wg.ip"), t("wg.publicKey"), t("wg.endpoint"), t("wg.handshake"), t("wg.transfer"), ""]}>
               {peers.map((peer, index) => (
                 <tr key={`${peer.publicKey || "peer"}-${index}`}>
@@ -276,6 +298,7 @@ export default function Panel() {
                 </tr>
               ))}
             </DataTable>
+            </>
           )}
 
           {qrPeer?.id ? <QrModal peer={qrPeer} onClose={() => setQrPeer(null)} /> : null}
@@ -473,6 +496,8 @@ function CreateForm({
   const [excludedIPs, setExcludedIPs] = useState("");
   const [address, setAddress] = useState("");
   const [site, setSite] = useState(false);
+  const [deviceKey, setDeviceKey] = useState(false);
+  const [publicKey, setPublicKey] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -482,12 +507,23 @@ function CreateForm({
     try {
       const result = await api<CreateResult>(peersPath, {
         method: "POST",
-        body: JSON.stringify({ name, endpoint, dns: dnsValue, allowedIPs, excludedIPs, address, site }),
+        body: JSON.stringify({
+          name,
+          endpoint,
+          dns: dnsValue,
+          allowedIPs,
+          excludedIPs,
+          address,
+          site,
+          publicKey: deviceKey ? publicKey.trim() : undefined,
+        }),
       });
       setName("");
       setAddress("");
       setExcludedIPs("");
       setSite(false);
+      setDeviceKey(false);
+      setPublicKey("");
       onCreated(result);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : t("wg.createFailed"));
@@ -526,6 +562,7 @@ function CreateForm({
         <input
           type="checkbox"
           checked={site}
+          disabled={deviceKey}
           onChange={(event) => {
             setSite(event.target.checked);
             if (event.target.checked && address.trim() === "") {
@@ -539,9 +576,37 @@ function CreateForm({
           <span className="block text-xs text-white/50">{t("wg.siteHint")}</span>
         </span>
       </label>
+      {!site ? (
+        <label className="mt-3 flex items-start gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={deviceKey}
+            onChange={(event) => {
+              setDeviceKey(event.target.checked);
+              if (event.target.checked) {
+                setSite(false);
+              }
+            }}
+            className="mt-1"
+          />
+          <span>
+            {t("wg.deviceKey")}
+            <span className="block text-xs text-white/50">{t("wg.deviceKeyHint")}</span>
+          </span>
+        </label>
+      ) : null}
+      {deviceKey && !site ? (
+        <div className="mt-3">
+          <Field label={t("wg.publicKey")} value={publicKey} onChange={setPublicKey} placeholder="Base64 …=" required />
+        </div>
+      ) : null}
       {!site ? <p className="mt-2 text-xs text-white/50">{t("wg.excludedHint")}</p> : null}
       <div className="mt-4 flex flex-wrap items-center gap-3">
-        <button type="submit" disabled={busy || disabled || name.trim() === ""} className={buttonClass}>
+        <button
+          type="submit"
+          disabled={busy || disabled || name.trim() === "" || (deviceKey && publicKey.trim() === "")}
+          className={buttonClass}
+        >
           {busy ? t("wg.creating") : t("wg.create")}
         </button>
         {disabled ? (

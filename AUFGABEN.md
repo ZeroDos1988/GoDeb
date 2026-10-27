@@ -72,7 +72,7 @@ MariaDB und/oder PostgreSQL installieren, Datenbanken und Benutzer anlegen, einf
 
 ### 9. Kleinere offene Punkte
 
-- WireGuard: Option „Schlüssel auf dem Gerät erzeugen“ (Public Key einfügen), Client-Dateien nach dem Download optional löschen.
+- [x] WireGuard: Option „Schlüssel auf dem Gerät erzeugen“ (Public Key einfügen), Client-Dateien nach dem Download optional löschen – 27.10.
 - APK-Download optional mit Token.
 - [x] `godeb doctor` und Ampel: SSH nur per Schlüssel und unattended-upgrades (nur melden) – 27.10.
 - Paket auch für `arm64` (Hetzner CAX): `scripts/build-deb.sh`, CI und APT-Repo-Workflow.

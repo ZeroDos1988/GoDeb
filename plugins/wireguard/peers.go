@@ -179,6 +179,10 @@ type PeerRequest struct {
 	// the tunnel network only, no DNS, keepalive 25, and tunnel clients may
 	// reach its web UI through the hub (SyncHubRoutes).
 	Site bool `json:"site"`
+	// PublicKey, when set, uses a key generated on the device: GoDeb stores
+	// only the public key in wg0.conf and does not write a client file with
+	// a private key. Mutually exclusive with Site.
+	PublicKey string `json:"publicKey,omitempty"`
 }
 
 type createResponse struct {
@@ -237,6 +241,15 @@ func CreatePeer(ctx context.Context, req PeerRequest) (PeerResult, error) {
 	dns, err := validDNS(req.DNS)
 	if err != nil {
 		return PeerResult{}, reject(http.StatusBadRequest, err.Error())
+	}
+	pubKey := strings.TrimSpace(req.PublicKey)
+	if pubKey != "" {
+		if !validKey(pubKey) {
+			return PeerResult{}, reject(http.StatusBadRequest, "PublicKey muss ein Base64-kodierter 32-Byte-WireGuard-Schlüssel sein")
+		}
+		if req.Site {
+			return PeerResult{}, reject(http.StatusBadRequest, "Standort braucht einen privaten Schlüssel (Beitrittscode), kein PublicKey allein")
+		}
 	}
 	if req.Site {
 		// Filled in below from the server prefix; DNS would need resolvconf
@@ -328,9 +341,14 @@ func CreatePeer(ctx context.Context, req PeerRequest) (PeerResult, error) {
 	if err != nil {
 		return PeerResult{}, err
 	}
-	keys, err := GenerateKeypair(ctx)
-	if err != nil {
-		return PeerResult{}, err
+	var keys Keypair
+	if pubKey != "" {
+		keys.Public = pubKey
+	} else {
+		keys, err = GenerateKeypair(ctx)
+		if err != nil {
+			return PeerResult{}, err
+		}
 	}
 	psk, err := GeneratePresharedKey(ctx)
 	if err != nil {
@@ -338,39 +356,48 @@ func CreatePeer(ctx context.Context, req PeerRequest) (PeerResult, error) {
 	}
 
 	created := time.Now()
-	var trust []TrustInfo
-	if !req.Site {
-		trust = trustForClients(ctx, clients)
+	var clientConf string
+	if pubKey == "" {
+		var trust []TrustInfo
+		if !req.Site {
+			trust = trustForClients(ctx, clients)
+		}
+		clientConf = RenderClient(ClientSpec{
+			Name:           req.Name,
+			Keys:           keys,
+			PresharedKey:   psk,
+			Address:        address,
+			DNS:            dns,
+			ServerKey:      serverKey,
+			Endpoint:       endpoint,
+			AllowedIPs:     allowed,
+			AllowedIPsBase: allowedBase,
+			ExcludedIPs:    excluded,
+			Keepalive:      keepalive,
+			Created:        created,
+			Site:           req.Site,
+			Trust:          trust,
+		})
 	}
-	clientConf := RenderClient(ClientSpec{
-		Name:           req.Name,
-		Keys:           keys,
-		PresharedKey:   psk,
-		Address:        address,
-		DNS:            dns,
-		ServerKey:      serverKey,
-		Endpoint:       endpoint,
-		AllowedIPs:     allowed,
-		AllowedIPsBase: allowedBase,
-		ExcludedIPs:    excluded,
-		Keepalive:      keepalive,
-		Created:        created,
-		Site:           req.Site,
-		Trust:          trust,
-	})
 	serverConf := strings.TrimRight(string(original), "\n") + "\n" + RenderServerPeer(req.Name, keys.Public, psk, address)
 
 	if err := core.WriteAdminFile(configPath, []byte(serverConf), 0o600); err != nil {
 		return PeerResult{}, err
 	}
-	if err := core.WriteAdminFile(clientPath(req.Name), []byte(clientConf), 0o600); err != nil {
-		if rollback := core.WriteAdminFile(configPath, original, 0o600); rollback != nil {
-			err = errors.Join(err, rollback)
+	if clientConf != "" {
+		if err := core.WriteAdminFile(clientPath(req.Name), []byte(clientConf), 0o600); err != nil {
+			if rollback := core.WriteAdminFile(configPath, original, 0o600); rollback != nil {
+				err = errors.Join(err, rollback)
+			}
+			return PeerResult{}, err
 		}
-		return PeerResult{}, err
 	}
 
 	setCmd := []string{"wg", "set", iface, "peer", keys.Public, "preshared-key", "/dev/stdin", "allowed-ips", address.String() + "/32"}
+	cmds := [][]string{{"wg", "genpsk"}, setCmd}
+	if pubKey == "" {
+		cmds = append([][]string{{"wg", "genkey"}, {"wg", "pubkey"}}, cmds...)
+	}
 	resp := createResponse{
 		OK: true,
 		Peer: PeerView{
@@ -379,15 +406,23 @@ func CreatePeer(ctx context.Context, req PeerRequest) (PeerResult, error) {
 			PublicKey:  keys.Public,
 			AllowedIPs: []string{address.String() + "/32"},
 			InConfig:   true,
-			HasClient:  true,
+			HasClient:  clientConf != "",
 			Created:    created.UTC().Format(time.RFC3339),
 			Site:       req.Site,
 		},
-		Commands: [][]string{{"wg", "genkey"}, {"wg", "pubkey"}, {"wg", "genpsk"}, setCmd},
+		Commands: cmds,
+	}
+	if pubKey != "" {
+		resp.Detail = "Nur PublicKey hinterlegt – Client-Datei mit privatem Schlüssel liegt nicht auf dem Server."
 	}
 	res := core.RunAdminInput(ctx, psk+"\n", setCmd[0], setCmd[1:]...)
 	if res.Err != nil {
-		resp.Detail = "In " + configPath + " gespeichert, aber " + iface + " nicht live aktualisiert: " + res.Detail()
+		extra := "In " + configPath + " gespeichert, aber " + iface + " nicht live aktualisiert: " + res.Detail()
+		if resp.Detail != "" {
+			resp.Detail += " " + extra
+		} else {
+			resp.Detail = extra
+		}
 	} else {
 		resp.Live = true
 		resp.Peer.Live = true
@@ -456,6 +491,25 @@ func handleClientConfig(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	_, _ = w.Write(data)
+}
+
+// handleDeleteClientConfig removes the client .conf (private key) after the
+// admin downloaded it. The peer in wg0.conf stays.
+func handleDeleteClientConfig(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if !clientName.MatchString(id) {
+		core.WriteError(w, http.StatusBadRequest, "Ungültige Peer-ID")
+		return
+	}
+	if err := core.RemoveAdminFile(clientPath(id)); err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			core.WriteError(w, http.StatusNotFound, "Keine Client-Konfiguration für "+id)
+			return
+		}
+		core.WriteError(w, http.StatusBadGateway, err.Error())
+		return
+	}
+	core.WriteJSON(w, http.StatusOK, map[string]any{"ok": true, "id": id})
 }
 
 // handleJoinCode returns the client file as join code, for pasting into
