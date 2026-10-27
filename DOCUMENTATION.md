@@ -327,7 +327,7 @@ Jedes Plugin hat ein `manifest.json` (`id`, `name`, `description`, `icon`, `orde
 | --- | --- | --- |
 | APT | `apt list --upgradable`, `godeb-apt.service` (`apt-get`) | `/etc/godeb/apt.json` (Automatik), Log und Status in `/var/lib/godeb-agent/apt/` |
 | UFW | `ufw status`, `ufw --force` | keine |
-| systemd | `systemctl` | keine |
+| Dienste (systemd) | `systemctl show`/`list-units`, `/proc` | keine; die Auswahl der Serverdienste steht in `plugins/systemd/overview.go` |
 | Certbot | `/etc/letsencrypt/live` | keine; private Schlüssel werden nicht gelesen |
 | Fail2ban | `fail2ban-client` | keine |
 | WireGuard | `/etc/wireguard/wg0.conf`, `wg` | IPAM in `wireguard_peers` |
@@ -466,8 +466,9 @@ Alle außer `status` antworten nach dem Abschluss mit `410`.
 | POST | `/api/plugins/apt/settings` (`autoCheck`, `interval` 5–1440 Minuten, `autoSecurity`) |
 | GET | `/api/plugins/ufw/status` |
 | POST | `/api/plugins/ufw/rules` |
+| GET | `/api/plugins/systemd/overview` (Eckdaten des Servers, ausgewählte Dienste mit Status, Laufzeit, CPU, RAM) |
 | GET | `/api/plugins/systemd/services` |
-| POST | `/api/plugins/systemd/action` |
+| POST | `/api/plugins/systemd/action` (`unit`, `action`: `start`, `stop`, `restart`; nicht für GoDebs eigene Units) |
 | GET | `/api/plugins/certbot/certificates` |
 | GET | `/api/plugins/fail2ban/status` |
 | POST | `/api/plugins/fail2ban/unban` |
