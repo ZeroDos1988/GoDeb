@@ -212,6 +212,8 @@ function ServiceRow({
 }) {
   const { t } = useTranslation();
   const running = s.active === "active";
+  // Oneshot units (ufw, wg-quick) stay active without a process.
+  const oneshot = running && s.sub === "exited";
   const failed = s.active === "failed";
   const dot = running
     ? "bg-emerald-400"
@@ -248,11 +250,13 @@ function ServiceRow({
           <Stat
             label={t("systemd.status")}
             value={
-              running
-                ? t("systemd.running")
-                : failed
-                  ? t("systemd.failedState")
-                  : t("systemd.stopped")
+              oneshot
+                ? t("systemd.activeOneshot")
+                : running
+                  ? t("systemd.running")
+                  : failed
+                    ? t("systemd.failedState")
+                    : t("systemd.stopped")
             }
             tone={
               running
@@ -273,7 +277,7 @@ function ServiceRow({
           <Stat
             label={t("systemd.resources")}
             value={
-              running
+              running && !oneshot
                 ? `${s.cpu >= 0 ? `${s.cpu.toFixed(1)} %` : "…"} · ${s.memory >= 0 ? bytes(s.memory) : "–"}`
                 : "–"
             }

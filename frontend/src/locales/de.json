@@ -385,7 +385,8 @@
       "dh": "{{d}} T {{h}} Std",
       "hm": "{{h}} Std {{m}} Min",
       "m": "{{m}} Min"
-    }
+    },
+    "activeOneshot": "aktiv"
   },
   "services": {
     "godeb": {
