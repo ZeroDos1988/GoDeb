@@ -882,8 +882,10 @@
   },
   "stepUp": {
     "title": "Confirm with 2FA",
+    "titleCritical": "Confirm with password and 2FA",
     "window": "This action changes the server. Enter a current code from your authenticator app. It then covers further actions for 5 minutes.",
-    "critical": "This action can change access to the server or install software. It needs a new code every time.",
+    "critical": "This action can change access to the server or install software. It needs your password and a new code every time.",
+    "password": "Password",
     "code": "2FA code",
     "backupHint": "Without your phone, a backup code works too. Each code works once: wait for the next code before the next action.",
     "confirm": "Confirm",

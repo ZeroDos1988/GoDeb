@@ -32,7 +32,9 @@ const DefaultSocket = "/run/godeb-agent/agent.sock"
 const UserHeader = "X-GoDeb-User"
 
 // internalHeaders are set by the web process only, never by the browser.
-var internalHeaders = []string{UserHeader, SessionHeader, ClientIPHeader}
+// X-GoDeb-Password is stripped too: the web process already checked it and
+// the agent must not see account passwords.
+var internalHeaders = []string{UserHeader, SessionHeader, ClientIPHeader, "X-GoDeb-Password"}
 
 // SocketPath is the agent socket the web process forwards to, from
 // GODEB_AGENT_SOCKET. Empty means no agent: everything runs in-process.

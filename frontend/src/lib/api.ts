@@ -9,9 +9,16 @@ export class ApiError extends Error {
 }
 
 export const STEP_UP_HEADER = "X-GoDeb-TOTP";
+export const PASSWORD_HEADER = "X-GoDeb-Password";
+
+export type StepUpCredentials = {
+  code: string;
+  password?: string;
+};
 
 export type StepUpRequest = {
   critical: boolean;
+  passwordRequired: boolean;
   error?: string;
   remaining?: number;
 };
@@ -20,14 +27,16 @@ type StepUpBody = {
   error?: string;
   step_up_required?: boolean;
   critical?: boolean;
+  password_required?: boolean;
   remaining?: number;
 };
 
-// StepUpPrompt asks the user for a TOTP or backup code; null means cancelled.
-export type StepUpPrompt = (request: StepUpRequest) => Promise<string | null>;
+// StepUpPrompt asks the user for a TOTP (and for critical actions the
+// account password); null means cancelled.
+export type StepUpPrompt = (request: StepUpRequest) => Promise<StepUpCredentials | null>;
 
 let stepUpPrompt: StepUpPrompt | null = null;
-let pendingPrompt: Promise<string | null> | null = null;
+let pendingPrompt: Promise<StepUpCredentials | null> | null = null;
 
 // setStepUpPrompt installs the dialog that confirms admin actions and returns
 // a function that removes it again.
@@ -40,7 +49,7 @@ export function setStepUpPrompt(prompt: StepUpPrompt): () => void {
   };
 }
 
-function ask(request: StepUpRequest): Promise<string | null> {
+function ask(request: StepUpRequest): Promise<StepUpCredentials | null> {
   if (!stepUpPrompt) {
     return Promise.resolve(null);
   }
@@ -52,8 +61,8 @@ function ask(request: StepUpRequest): Promise<string | null> {
 }
 
 // send performs the request and, when the daemon asks for a second factor,
-// prompts for a code and repeats the request with it until it is accepted,
-// the user cancels or the session ends.
+// prompts for a code (and password when critical) and repeats the request
+// until it is accepted, the user cancels or the session ends.
 async function send(path: string, init: RequestInit = {}): Promise<Response> {
   const headers = new Headers(init.headers);
   let response = await fetch(path, { ...init, headers });
@@ -68,15 +77,22 @@ async function send(path: string, init: RequestInit = {}): Promise<Response> {
     if (!body.step_up_required) {
       return response;
     }
-    const code = await ask({
-      critical: Boolean(body.critical),
+    const critical = Boolean(body.critical);
+    const credentials = await ask({
+      critical,
+      passwordRequired: critical || Boolean(body.password_required),
       error: retried ? body.error : undefined,
       remaining: body.remaining,
     });
-    if (code === null) {
+    if (credentials === null) {
       return response;
     }
-    headers.set(STEP_UP_HEADER, code);
+    headers.set(STEP_UP_HEADER, credentials.code);
+    if (credentials.password) {
+      headers.set(PASSWORD_HEADER, credentials.password);
+    } else {
+      headers.delete(PASSWORD_HEADER);
+    }
     response = await fetch(path, { ...init, headers });
     retried = true;
   }

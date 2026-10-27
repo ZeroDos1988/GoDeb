@@ -286,9 +286,9 @@ sudo godeb sessions revoke admin
 Eine Sitzung allein reicht für keine Änderung am Host. Jede `POST`/`PUT`/`DELETE`-Anfrage auf `/api` verlangt einen TOTP- oder Backup-Code im Header `X-GoDeb-TOTP`. Für die Routen des Agenten prüft der Agent den Code selbst (siehe „Aufteilung Weboberfläche und Agent“), für die übrigen die Weboberfläche über den Agenten. Fehlt er, antwortet der Daemon mit `403` und `step_up_required`. Die Oberfläche zeigt dann den Bestätigungsdialog und schickt die Aktion danach erneut ab. Neue Plugin-Routen sind ohne eigenes Zutun geschützt. Ausnahmen stehen mit Begründung in `noStepUp` (`backend/auth/stepup.go`), derzeit nur Theme/Sprache und das Neueinlesen der Plugin-Liste.
 
 - **Fenster:** Ein bestätigter Code gilt fünf Minuten für normale Aktionen, gespeichert serverseitig an der Sitzung.
-- **Immer neu:** Plugin-Manager, OIDC-Anbieter, UFW, systemd, neue WireGuard-Peers, der Beitritt zu einem Hub, die Portweiterleitung, das Mail-Gateway-Setup und die Enshrouded-Installation bzw. das Update verlangen bei jeder Anfrage einen eigenen Code.
-- **Downloads mit privaten Schlüsseln** (`GET …/peers/{id}/config`, `/qr`) brauchen das Fenster, obwohl es Lesezugriffe sind.
-- Fehlversuche zählen in dasselbe Limit und dasselbe fail2ban-Log wie beim Login. Die Regel lässt sich in der Oberfläche nicht abschalten.
+- **Immer neu (kritisch):** Plugin-Manager, OIDC-Anbieter, UFW, systemd, neue WireGuard-Peers, der Beitritt zu einem Hub, die Portweiterleitung, das Mail-Gateway-Setup, Domains-Token bzw. Apply und die Enshrouded-Installation bzw. das Update verlangen bei jeder Anfrage Passwort und Code. Das Passwort kommt im Header `X-GoDeb-Password`; die Weboberfläche prüft es gegen die Konten in `/var/lib/godeb` **bevor** der Code geprüft wird, damit ein falsches Passwort keinen Code verbraucht. Anschließend entfernt sie den Header; der Agent sieht ihn nie. Fehlt das Passwort, antwortet GoDeb mit `403`, `critical: true` und `password_required: true`.
+- **Downloads mit privaten Schlüsseln** (`GET …/peers/{id}/config`, `/qr`) brauchen das Fenster, obwohl es Lesezugriffe sind; kein Passwort.
+- Fehlversuche (falscher Code oder falsches Passwort) zählen in dasselbe Limit und dasselbe fail2ban-Log wie beim Login. Die Regel lässt sich in der Oberfläche nicht abschalten.
 
 ### Security-Header
 

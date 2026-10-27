@@ -882,8 +882,10 @@
   },
   "stepUp": {
     "title": "Mit 2FA bestätigen",
+    "titleCritical": "Mit Passwort und 2FA bestätigen",
     "window": "Diese Aktion verändert den Server. Gib einen aktuellen Code aus deiner Authenticator-App ein. Er gilt danach 5 Minuten für weitere Aktionen.",
-    "critical": "Diese Aktion kann den Zugang zum Server verändern oder Software installieren. Sie braucht jedes Mal einen neuen Code.",
+    "critical": "Diese Aktion kann den Zugang zum Server verändern oder Software installieren. Sie braucht jedes Mal dein Passwort und einen neuen Code.",
+    "password": "Passwort",
     "code": "2FA-Code",
     "backupHint": "Ohne Handy geht auch ein Backup-Code. Ein Code gilt nur einmal: Für die nächste Aktion den neuen Code abwarten.",
     "confirm": "Bestätigen",

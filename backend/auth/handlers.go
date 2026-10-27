@@ -301,8 +301,15 @@ func RequireSession(next http.Handler) http.Handler {
 			core.WriteError(w, http.StatusUnauthorized, "Anmeldung erforderlich")
 			return
 		}
-		// Routes of the root agent: the agent checks the code itself.
-		if !stepUpElsewhere(r.URL.Path) && !checkStepUp(w, r, s, stepUpFor(r.Method, r.URL.Path)) {
+		level := stepUpFor(r.Method, r.URL.Path)
+		if stepUpElsewhere(r.URL.Path) {
+			// The agent checks the TOTP itself. Passwords live in the web
+			// database, so critical actions still need the password here;
+			// checkCriticalPassword strips the header before the proxy.
+			if !checkCriticalPassword(w, r, s, level) {
+				return
+			}
+		} else if !checkStepUp(w, r, s, level) {
 			return
 		}
 		touchSession(s)

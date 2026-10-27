@@ -15,6 +15,11 @@ import (
 // StepUpHeader carries a TOTP or backup code that confirms one request.
 const StepUpHeader = "X-GoDeb-TOTP"
 
+// PasswordHeader carries the account password for critical (stepUpFresh)
+// actions. The web process checks it against the web database and strips
+// it before forwarding to the agent; the agent never sees it.
+const PasswordHeader = "X-GoDeb-Password"
+
 // elevationTTL is how long a confirmed code covers ordinary admin actions.
 const elevationTTL = 5 * time.Minute
 
@@ -98,18 +103,72 @@ func stepUpFor(method, raw string) stepUpLevel {
 }
 
 type stepUpResponse struct {
-	Error          string `json:"error"`
-	StepUpRequired bool   `json:"step_up_required"`
-	Critical       bool   `json:"critical"`
-	Remaining      int    `json:"remaining,omitempty"`
+	Error            string `json:"error"`
+	StepUpRequired   bool   `json:"step_up_required"`
+	Critical         bool   `json:"critical"`
+	PasswordRequired bool   `json:"password_required,omitempty"`
+	Remaining        int    `json:"remaining,omitempty"`
+}
+
+// checkCriticalPassword requires the account password for stepUpFresh. It
+// runs in the web process (password hashes live in the web database) even
+// when the agent checks the TOTP itself. The password is never logged; the
+// caller must strip PasswordHeader before forwarding to the agent.
+func checkCriticalPassword(w http.ResponseWriter, r *http.Request, s session, level stepUpLevel) bool {
+	if level != stepUpFresh {
+		return true
+	}
+	password := r.Header.Get(PasswordHeader)
+	if password == "" {
+		noStore(w)
+		logging.Annotate(r.Context(), slog.String("2fa", "passwort_verlangt"))
+		logging.Expected(r.Context())
+		core.WriteJSON(w, http.StatusForbidden, stepUpResponse{
+			Error:            "Bestätigung mit Passwort und 2FA-Code erforderlich",
+			StepUpRequired:   true,
+			Critical:         true,
+			PasswordRequired: true,
+		})
+		return false
+	}
+	if _, ok := CheckPassword(s.Username, password); !ok {
+		noStore(w)
+		logging.Annotate(r.Context(), slog.String("2fa", "passwort_falsch"))
+		onFailure(r, s.Username)
+		left, err := recordFailure(s.ID)
+		if errors.Is(err, errTooManyAttempts) {
+			clearCookie(w, r, SessionCookie, "/")
+			core.WriteError(w, http.StatusUnauthorized, "Zu viele Fehlversuche. Die Sitzung wurde beendet.")
+			return false
+		}
+		if err != nil {
+			core.WriteError(w, http.StatusInternalServerError, "Sitzung nicht lesbar")
+			return false
+		}
+		core.WriteJSON(w, http.StatusForbidden, stepUpResponse{
+			Error:            "Passwort falsch",
+			StepUpRequired:   true,
+			Critical:         true,
+			PasswordRequired: true,
+			Remaining:        left,
+		})
+		return false
+	}
+	// Drop the secret before any downstream handler (agent proxy included).
+	r.Header.Del(PasswordHeader)
+	return true
 }
 
 // checkStepUp enforces the level for s. It writes the response and returns
-// false when the request must not proceed. Wrong codes count against the
-// session; the last allowed failure ends it.
+// false when the request must not proceed. Wrong codes and wrong passwords
+// count against the session; the last allowed failure ends it. Critical
+// actions need the password first so a wrong password never consumes a code.
 func checkStepUp(w http.ResponseWriter, r *http.Request, s session, level stepUpLevel) bool {
 	if level == stepUpNone {
 		return true
+	}
+	if !checkCriticalPassword(w, r, s, level) {
+		return false
 	}
 	code := strings.TrimSpace(r.Header.Get(StepUpHeader))
 	critical := level == stepUpFresh
@@ -121,9 +180,10 @@ func checkStepUp(w http.ResponseWriter, r *http.Request, s session, level stepUp
 		logging.Annotate(r.Context(), slog.String("2fa", "verlangt"))
 		logging.Expected(r.Context())
 		core.WriteJSON(w, http.StatusForbidden, stepUpResponse{
-			Error:          "Bestätigung mit 2FA-Code erforderlich",
-			StepUpRequired: true,
-			Critical:       critical,
+			Error:            "Bestätigung mit 2FA-Code erforderlich",
+			StepUpRequired:   true,
+			Critical:         critical,
+			PasswordRequired: critical,
 		})
 		return false
 	}
@@ -152,10 +212,11 @@ func checkStepUp(w http.ResponseWriter, r *http.Request, s session, level stepUp
 			return false
 		}
 		core.WriteJSON(w, http.StatusForbidden, stepUpResponse{
-			Error:          "Code ungültig oder bereits verwendet",
-			StepUpRequired: true,
-			Critical:       critical,
-			Remaining:      left,
+			Error:            "Code ungültig oder bereits verwendet",
+			StepUpRequired:   true,
+			Critical:         critical,
+			PasswordRequired: critical,
+			Remaining:        left,
 		})
 		return false
 	}

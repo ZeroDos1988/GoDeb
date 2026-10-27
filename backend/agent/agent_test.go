@@ -84,6 +84,7 @@ func TestProxyForwardsIdentityAndDropsSpoofedHeaders(t *testing.T) {
 	req.Header.Set(UserHeader, "root")
 	req.Header.Set(SessionHeader, "forged")
 	req.Header.Set("X-GoDeb-TOTP", "123456")
+	req.Header.Set("X-GoDeb-Password", "secret-password")
 	rec := httptest.NewRecorder()
 	proxy.ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
@@ -100,6 +101,9 @@ func TestProxyForwardsIdentityAndDropsSpoofedHeaders(t *testing.T) {
 	}
 	if h.Get("X-GoDeb-TOTP") != "123456" {
 		t.Fatal("TOTP header must pass through for the agent's own check")
+	}
+	if h.Get("X-GoDeb-Password") != "" {
+		t.Fatal("password header must not reach the agent")
 	}
 	if h.Get("Cookie") != "" {
 		t.Fatal("session cookie was forwarded to the agent")

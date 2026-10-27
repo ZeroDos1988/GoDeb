@@ -10,10 +10,19 @@ import (
 )
 
 func (c *client) doCode(method, path, body, code string) *httptest.ResponseRecorder {
+	return c.doAuth(method, path, body, code, "")
+}
+
+func (c *client) doAuth(method, path, body, code, password string) *httptest.ResponseRecorder {
 	c.t.Helper()
 	req := httptest.NewRequest(method, path, strings.NewReader(body))
 	req.RemoteAddr = "192.0.2.50:5555"
-	req.Header.Set(StepUpHeader, code)
+	if code != "" {
+		req.Header.Set(StepUpHeader, code)
+	}
+	if password != "" {
+		req.Header.Set(PasswordHeader, password)
+	}
 	for _, cookie := range c.cookies {
 		if strings.HasPrefix(path, cookie.Path) {
 			req.AddCookie(cookie)
@@ -31,10 +40,12 @@ func (c *client) doCode(method, path, body, code string) *httptest.ResponseRecor
 	return rec
 }
 
+const testPassword = "correct horse battery"
+
 // signedIn returns a client with a full session and the user's TOTP secret.
 func signedIn(t *testing.T, failures *[]string) (*client, string) {
 	t.Helper()
-	if err := SetPassword("admin", "correct horse battery"); err != nil {
+	if err := SetPassword("admin", testPassword); err != nil {
 		t.Fatal(err)
 	}
 	mux := http.NewServeMux()
@@ -45,7 +56,7 @@ func signedIn(t *testing.T, failures *[]string) (*client, string) {
 	mux.HandleFunc("POST /api/plugins/ufw/rules", ok)
 	mux.HandleFunc("GET /api/plugins/wireguard/peers/{id}/config", ok)
 	c := &client{t: t, handler: RequireSession(mux), cookies: map[string]*http.Cookie{}}
-	c.do("POST", "/api/auth/login", `{"username":"admin","password":"correct horse battery"}`)
+	c.do("POST", "/api/auth/login", `{"username":"admin","password":"`+testPassword+`"}`)
 	var enr Enrollment
 	if err := json.Unmarshal(c.do("POST", "/api/auth/2fa/enroll", "").Body.Bytes(), &enr); err != nil {
 		t.Fatal(err)
@@ -112,15 +123,17 @@ func TestStepUpWindowAndFreshCodes(t *testing.T) {
 	if rec := c.do("POST", "/api/plugins/fail2ban/unban", "{}"); rec.Code != http.StatusNoContent {
 		t.Fatalf("window after login: %d %s", rec.Code, rec.Body.String())
 	}
-	// Critical actions never ride on the window.
+	// Critical actions never ride on the window and need the password.
 	rec := c.do("POST", "/api/plugins/ufw/rules", "{}")
-	if rec.Code != http.StatusForbidden || !strings.Contains(rec.Body.String(), `"step_up_required":true`) || !strings.Contains(rec.Body.String(), `"critical":true`) {
-		t.Fatalf("critical without code: %d %s", rec.Code, rec.Body.String())
+	if rec.Code != http.StatusForbidden || !strings.Contains(rec.Body.String(), `"step_up_required":true`) ||
+		!strings.Contains(rec.Body.String(), `"critical":true`) || !strings.Contains(rec.Body.String(), `"password_required":true`) {
+		t.Fatalf("critical without password: %d %s", rec.Code, rec.Body.String())
 	}
 
 	advance(elevationTTL + time.Second)
 	rec = c.do("POST", "/api/plugins/fail2ban/unban", "{}")
-	if rec.Code != http.StatusForbidden || !strings.Contains(rec.Body.String(), `"critical":false`) {
+	if rec.Code != http.StatusForbidden || !strings.Contains(rec.Body.String(), `"critical":false`) ||
+		strings.Contains(rec.Body.String(), `"password_required":true`) {
 		t.Fatalf("expired window: %d %s", rec.Code, rec.Body.String())
 	}
 	if rec := c.do("GET", "/api/plugins/wireguard/peers/laptop/config", ""); rec.Code != http.StatusForbidden {
@@ -131,14 +144,14 @@ func TestStepUpWindowAndFreshCodes(t *testing.T) {
 	}
 
 	current := code(t, secret)
-	if rec := c.doCode("POST", "/api/plugins/ufw/rules", "{}", current); rec.Code != http.StatusNoContent {
-		t.Fatalf("critical with code: %d %s", rec.Code, rec.Body.String())
+	if rec := c.doAuth("POST", "/api/plugins/ufw/rules", "{}", current, testPassword); rec.Code != http.StatusNoContent {
+		t.Fatalf("critical with password and code: %d %s", rec.Code, rec.Body.String())
 	}
 	// The same code cannot confirm a second critical action.
-	if rec := c.doCode("POST", "/api/plugins/ufw/rules", "{}", current); rec.Code != http.StatusForbidden {
+	if rec := c.doAuth("POST", "/api/plugins/ufw/rules", "{}", current, testPassword); rec.Code != http.StatusForbidden {
 		t.Fatalf("replayed code accepted: %d", rec.Code)
 	}
-	// But the code opened the window for ordinary actions.
+	// But the code opened the window for ordinary actions (no password).
 	if rec := c.do("POST", "/api/plugins/fail2ban/unban", "{}"); rec.Code != http.StatusNoContent {
 		t.Fatalf("window after step-up: %d", rec.Code)
 	}
@@ -147,17 +160,50 @@ func TestStepUpWindowAndFreshCodes(t *testing.T) {
 	}
 }
 
+func TestStepUpCriticalPassword(t *testing.T) {
+	setup(t)
+	var failures []string
+	c, secret := signedIn(t, &failures)
+	// Move past the login code so the next TOTP is unused.
+	advance(time.Minute)
+	current := code(t, secret)
+
+	// Code alone is not enough for critical actions.
+	rec := c.doCode("POST", "/api/plugins/ufw/rules", "{}", current)
+	if rec.Code != http.StatusForbidden || !strings.Contains(rec.Body.String(), `"password_required":true`) {
+		t.Fatalf("code without password: %d %s", rec.Code, rec.Body.String())
+	}
+
+	// A wrong password counts as a failure and must not consume the code.
+	rec = c.doAuth("POST", "/api/plugins/ufw/rules", "{}", current, "wrong password!!")
+	if rec.Code != http.StatusForbidden || !strings.Contains(rec.Body.String(), "Passwort falsch") ||
+		!strings.Contains(rec.Body.String(), `"password_required":true`) || !strings.Contains(rec.Body.String(), `"remaining":`) {
+		t.Fatalf("wrong password: %d %s", rec.Code, rec.Body.String())
+	}
+	if len(failures) != 1 {
+		t.Fatalf("failures after wrong password = %v", failures)
+	}
+	if rec := c.doAuth("POST", "/api/plugins/ufw/rules", "{}", current, testPassword); rec.Code != http.StatusNoContent {
+		t.Fatalf("same code after wrong password: %d %s", rec.Code, rec.Body.String())
+	}
+
+	// Window actions still need no password.
+	if rec := c.do("POST", "/api/plugins/fail2ban/unban", "{}"); rec.Code != http.StatusNoContent {
+		t.Fatalf("window without password: %d %s", rec.Code, rec.Body.String())
+	}
+}
+
 func TestStepUpFailuresEndSession(t *testing.T) {
 	setup(t)
 	var failures []string
 	c, _ := signedIn(t, &failures)
 	for i := 1; i < maxCodeAttempts; i++ {
-		rec := c.doCode("POST", "/api/plugins/ufw/rules", "{}", "000000")
+		rec := c.doAuth("POST", "/api/plugins/ufw/rules", "{}", "000000", testPassword)
 		if rec.Code != http.StatusForbidden || !strings.Contains(rec.Body.String(), `"remaining":`) {
 			t.Fatalf("attempt %d: %d %s", i, rec.Code, rec.Body.String())
 		}
 	}
-	if rec := c.doCode("POST", "/api/plugins/ufw/rules", "{}", "000000"); rec.Code != http.StatusUnauthorized {
+	if rec := c.doAuth("POST", "/api/plugins/ufw/rules", "{}", "000000", testPassword); rec.Code != http.StatusUnauthorized {
 		t.Fatalf("last attempt: %d", rec.Code)
 	}
 	if rec := c.do("GET", "/api/plugins", ""); rec.Code != http.StatusUnauthorized {
@@ -175,7 +221,7 @@ func TestPendingLoginAttemptLimit(t *testing.T) {
 	mux := http.NewServeMux()
 	Mount(mux, nil)
 	c := &client{t: t, handler: RequireSession(mux), cookies: map[string]*http.Cookie{}}
-	c.do("POST", "/api/auth/login", `{"username":"admin","password":"correct horse battery"}`)
+	c.do("POST", "/api/auth/login", `{"username":"admin","password":"`+testPassword+`"}`)
 	for i := 1; i < maxCodeAttempts; i++ {
 		if rec := c.do("POST", "/api/auth/2fa/authenticate", `{"code":"000000"}`); rec.Code != http.StatusUnauthorized {
 			t.Fatalf("attempt %d: %d", i, rec.Code)
@@ -205,11 +251,11 @@ func TestSessionsRevocable(t *testing.T) {
 
 	// Two fresh sessions; "end all others" keeps only the caller.
 	advance(time.Minute)
-	c.do("POST", "/api/auth/login", `{"username":"admin","password":"correct horse battery"}`)
+	c.do("POST", "/api/auth/login", `{"username":"admin","password":"`+testPassword+`"}`)
 	c.do("POST", "/api/auth/2fa/authenticate", `{"code":"`+code(t, secret)+`"}`)
 	other := &client{t: t, handler: c.handler, cookies: map[string]*http.Cookie{}}
 	advance(time.Minute)
-	other.do("POST", "/api/auth/login", `{"username":"admin","password":"correct horse battery"}`)
+	other.do("POST", "/api/auth/login", `{"username":"admin","password":"`+testPassword+`"}`)
 	if rec := other.do("POST", "/api/auth/2fa/authenticate", `{"code":"`+code(t, secret)+`"}`); rec.Code != http.StatusOK {
 		t.Fatalf("second login: %d %s", rec.Code, rec.Body.String())
 	}

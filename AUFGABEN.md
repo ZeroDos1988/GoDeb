@@ -29,27 +29,9 @@ Diese Liste ist zum Abarbeiten durch einen Agenten (Cursor, Claude Code) gedacht
 
 ## A. Für den Agenten
 
-### 1. Passwort und 2FA bei kritischen Aktionen („sudo mit 2FA“)
+### 1. Passwort und 2FA bei kritischen Aktionen („sudo mit 2FA“) – erledigt 27.10.
 
-**Ziel:** Bei den Aktionen, die heute schon jedes Mal einen frischen Code brauchen (`stepUpFresh` in `backend/auth/stepup.go`), fragt GoDeb zuerst das Passwort und dann den 2FA-Code ab. Alles andere bleibt unverändert:
-- Normale Änderungen: 5-Minuten-Fenster mit Code.
-- Lesen: frei.
-
-**Umsetzung (Vorschlag):**
-- Backend, `checkStepUp`: Bei `stepUpFresh` zusätzlich den Header `X-GoDeb-Password` verlangen.
-  - Fehlt er, antwortet GoDeb mit `403` und `{"step_up_required": true, "critical": true, "password_required": true}`.
-  - Das Passwort mit `CheckPassword(s.Username, …)` prüfen, **bevor** der Code geprüft wird. So verbraucht ein falsches Passwort keinen Code.
-  - Ein falsches Passwort zählt wie ein falscher Code (`onFailure`, `recordFailure`, Sitzungsende beim Limit) und bekommt eine eigene Meldung „Passwort falsch“.
-- Sicherstellen, dass weder die Logging-Middleware (`backend/logging`) noch die Weiterleitung an den Agenten (`backend/agent`, `agent.Routed`) den Header protokollieren. Der Agent braucht den Header nicht, also vor der Weiterleitung entfernen.
-- Frontend, `frontend/src/components/StepUpDialog.tsx` und `frontend/src/lib/api.ts`: Bei `critical` erscheinen ein Passwortfeld (`autocomplete="current-password"`) und das Codefeld. Beide gehen mit derselben Anfrage als Header raus. Die Texte kommen über i18n.
-- Tests in `backend/auth/stepup_test.go`:
-  - ohne Passwort → 403 mit `password_required`;
-  - falsches Passwort → Fehlversuch, Code nicht verbraucht;
-  - richtiges Passwort und Code → OK;
-  - Fenster-Aktionen brauchen weiterhin kein Passwort.
-- Dokumentation: Abschnitt zur 2FA in `DOCUMENTATION.md` ergänzen.
-
-**Fertig, wenn:** Tests grün sind, der Build läuft und lokal (siehe `CLAUDE.md`, „Lokal ohne root starten“) z. B. „Plugin installieren“ Passwort und Code verlangt, eine normale Änderung aber nur den Code.
+Umgesetzt: `X-GoDeb-Password` bei `stepUpFresh`, Prüfung in der Weboberfläche vor dem Code, Header wird vor dem Agenten entfernt, Dialog mit Passwort+Code, Tests und Doku.
 
 ### 2. Update-Hinweise in der Überwachung
 
