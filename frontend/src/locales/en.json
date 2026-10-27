@@ -103,7 +103,10 @@
     "unknown": "Unknown plugin",
     "unknownBody": "No plugins/ folder with a valid manifest.json exists for {{id}}.",
     "notReady": "The folder exists, but the Go handler is not registered.",
-    "noView": "The React view is still missing."
+    "noView": "The React view is still missing.",
+    "crashTitle": "This view crashed",
+    "crashText": "The rest of GoDeb keeps running. Please include the message below if it happens again.",
+    "crashRetry": "Try again"
   },
   "fail2ban": {
     "title": "Fail2ban",

@@ -103,7 +103,10 @@
     "unknown": "Unbekanntes Plugin",
     "unknownBody": "Für {{id}} liegt kein Ordner unter plugins/ mit gültigem manifest.json.",
     "notReady": "Der Ordner ist vorhanden, der Go-Handler ist aber nicht registriert.",
-    "noView": "Die React-Ansicht fehlt noch."
+    "noView": "Die React-Ansicht fehlt noch.",
+    "crashTitle": "Diese Ansicht ist abgestürzt",
+    "crashText": "Der Rest von GoDeb läuft weiter. Bitte die Meldung unten mitschicken, wenn es wieder passiert.",
+    "crashRetry": "Erneut versuchen"
   },
   "fail2ban": {
     "title": "Fail2ban",

@@ -1,10 +1,12 @@
 package logs
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -54,7 +56,7 @@ func TestParseJournal(t *testing.T) {
 
 func TestPlainAndBinaryMessages(t *testing.T) {
 	entries := ParseJournal(`{"MESSAGE":"panic: a=b kaputt"}` + "\n" + `{"MESSAGE":[104,105,255]}` + "\n")
-	if entries[0].Message != "panic: a=b kaputt" || entries[0].Fields != nil {
+	if entries[0].Message != "panic: a=b kaputt" || entries[0].Fields == nil || len(entries[0].Fields) != 0 {
 		t.Fatalf("plain = %+v", entries[0])
 	}
 	if entries[1].Message != "hi�" {
@@ -81,5 +83,24 @@ func TestEntriesRejectsBadFilter(t *testing.T) {
 	mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/plugins/logs/entries?source=ssh", nil))
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d", rec.Code)
+	}
+}
+
+// Lines systemd writes for the unit ("Started …") are plain text. They must
+// come with an empty field list: null made the log view crash to a blank
+// page on real servers.
+func TestPlainLinesHaveEmptyFields(t *testing.T) {
+	out := `{"__REALTIME_TIMESTAMP":"1761170000000000","PRIORITY":"6","UNIT":"godeb.service","MESSAGE":"Started godeb.service - GoDeb web interface."}
+`
+	entries := ParseJournal(out)
+	if len(entries) != 1 || entries[0].Fields == nil || entries[0].Message != "Started godeb.service - GoDeb web interface." {
+		t.Fatalf("entries = %#v", entries)
+	}
+	data, err := json.Marshal(Filter(entries, "", 10))
+	if err != nil || strings.Contains(string(data), "null") {
+		t.Fatalf("json = %s %v", data, err)
+	}
+	if data, _ := json.Marshal(Filter(ParseJournal(""), "", 10)); string(data) != "[]" {
+		t.Fatalf("empty journal = %s", data)
 	}
 }

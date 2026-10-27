@@ -11,6 +11,7 @@ import type { PluginMeta } from "@/lib/types.ts";
 import { Overview } from "@/pages/Overview.tsx";
 import { PluginManager } from "@/pages/PluginManager.tsx";
 import { SetupSummaryPage } from "@/pages/SetupSummaryPage.tsx";
+import { ErrorBoundary } from "@/components/ErrorBoundary.tsx";
 import { SetupAdmin, SetupWizard, type SetupStatus } from "@/pages/Setup.tsx";
 import { api } from "@/lib/api.ts";
 import { panelFor } from "@/plugins/registry.ts";
@@ -134,7 +135,7 @@ function Dashboard({ username, onLogout }: { username: string; onLogout: () => v
       username={username}
       onLogout={onLogout}
     >
-      {content}
+      <ErrorBoundary resetKey={route}>{content}</ErrorBoundary>
     </Shell>
   );
 }

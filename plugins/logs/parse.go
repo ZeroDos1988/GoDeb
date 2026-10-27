@@ -25,7 +25,7 @@ type Field struct {
 // ParseJournal reads `journalctl --output=json`, one object per line.
 // Lines that are not valid JSON are skipped.
 func ParseJournal(out string) []Entry {
-	var entries []Entry
+	entries := []Entry{}
 	sc := bufio.NewScanner(strings.NewReader(out))
 	sc.Buffer(make([]byte, 64<<10), 1<<20)
 	for sc.Scan() {
@@ -75,7 +75,9 @@ func jsonString(v json.RawMessage) string {
 func splitStructured(line string) (string, []Field) {
 	pairs, ok := parseLogfmt(line)
 	if !ok {
-		return line, nil
+		// Plain lines (systemd's "Started …", panics) have no fields. An
+		// empty list, not null: the UI iterates it.
+		return line, []Field{}
 	}
 	msg := ""
 	fields := make([]Field, 0, len(pairs))

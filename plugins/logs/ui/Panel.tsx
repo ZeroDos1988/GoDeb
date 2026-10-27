@@ -141,7 +141,7 @@ export default function Panel() {
                     </span>
                     <span className="min-w-0 font-medium break-words text-white">{entry.message}</span>
                   </div>
-                  {entry.fields.length > 0 ? (
+                  {entry.fields?.length ? (
                     <div className="mt-1 flex flex-wrap gap-1">
                       {entry.fields.map((f, j) => (
                         <span key={j} className="max-w-full rounded-xl bg-white/5 px-2 py-0.5 font-mono text-[11px] break-all text-white/70">
