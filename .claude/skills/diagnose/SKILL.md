@@ -31,19 +31,19 @@ Jede `FAIL`- und `WARN`-Zeile einzeln bewerten: echter Befund oder Grenze des Sk
 
 ## 4. Server (VPS und Heim-VM)
 
-Du hast keinen Zugang zu den Servern. Gib dem Nutzer **einen** Befehlsblock zum Kopieren, den er auf jedem Server als Benutzer mit sudo ausführt, und bitte um die Ausgabe (Text oder Screenshot):
+Du hast keinen Zugang zu den Servern. Bitte den Nutzer, auf jedem Server Folgendes auszuführen und die Ausgabe zu schicken (Text oder Screenshot). `godeb doctor` gibt es ab v0.2.8, die Ausgabe enthält keine Geheimnisse:
 
 ```sh
-godeb version
-systemctl --failed --no-pager
-systemctl is-active godeb godeb-agent wg-quick@wg0 ufw fail2ban postfix dovecot rspamd 2>/dev/null
+sudo godeb doctor; sudo godeb summary
+```
+
+Ältere Versionen ohne `doctor`:
+
+```sh
+godeb version; systemctl --failed --no-pager
 sudo journalctl -u godeb -u godeb-agent -p warning -b --no-pager | tail -40
-sudo ufw status verbose
-sudo wg show | sed 's/\(preshared key\|private key\): .*/\1: (entfernt)/'
-sudo ss -ltnup | grep -vE '127\.0\.0\.(1|53)|::1'
-apt list --upgradable 2>/dev/null | head -20
-sudo godeb summary
-df -h / | tail -1; free -h | head -2
+sudo ufw status verbose; sudo wg show all latest-handshakes
+sudo ss -ltnup | grep -vE '127\.0\.0\.(1|53)|::1'; apt list --upgradable 2>/dev/null | head -20
 ```
 
 Bewerten: läuft alles, was laut Rolle laufen soll (Hub: wg0 mit Handshake der Clients; Heim-VM: Peer mit Handshake)? Lauscht etwas offen, das nicht soll (Web-UI nur Loopback/wg0, 8443 nur bis zur Einrichtung)? Fehler im Journal? Version gleich dem letzten Release?

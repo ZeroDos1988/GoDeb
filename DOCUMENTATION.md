@@ -309,6 +309,8 @@ sudo godeb summary                               # Übersicht: Adressen, Tunnel,
 sudo godeb user passwd admin
 ```
 
+`sudo godeb doctor` prüft den Server nur lesend und gibt einen Bericht zum Weitergeben aus (ohne Passwörter, Tokens oder private Schlüssel, öffentliche WireGuard-Schlüssel auf 8 Zeichen gekürzt). Er umfasst: Version und verfügbares Paket-Update, `godeb`/`godeb-agent` und fehlgeschlagene Units, Ports außerhalb von Loopback (Warnung bei GoDeb auf allen Adressen und bei Datenbank-, Redis-, Rspamd- oder HTTP-Ports außerhalb des Tunnels), ufw, WireGuard-Handshakes, Let's-Encrypt-Zertifikate (Warnung unter 14 Tagen), die DNS-Einträge aus dem Domains-Plugin, Fehler im Journal seit dem Start, ausstehende (Sicherheits-)Updates und „Neustart nötig“ sowie die Belegung von `/`. Exit-Code 1, wenn ein Befund `FAIL` ist.
+
 Das Passwort muss 12 bis 72 Zeichen lang sein. `sudo` ist nötig: Nur root darf 2FA zurücksetzen oder freigeben, die Weboberfläche kann es nicht.
 
 ### Fail2ban

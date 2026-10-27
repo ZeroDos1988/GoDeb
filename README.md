@@ -124,7 +124,7 @@ Backups macht GoDeb bewusst nicht selbst. Dafür sind die Snapshots der Plattfor
 | 2FA beim Agenten | TOTP-Geheimnisse liegen nur beim root-Agenten, der jede Änderung selbst mit Code prüft. Eine übernommene Weboberfläche kann lesen, aber nichts ändern |
 | Lieferkette | `govulncheck` und `npm audit` in der CI, `systemd-analyze security` als Schwelle (Weboberfläche 1.3) |
 
-Notfall-Befehle wie `godeb user passwd`, `godeb 2fa reset` und `godeb sessions revoke` gibt es nur auf der Kommandozeile mit root-Rechten (`sudo godeb …`).
+Notfall-Befehle wie `godeb user passwd`, `godeb 2fa reset` und `godeb sessions revoke` gibt es nur auf der Kommandozeile mit root-Rechten (`sudo godeb …`). `sudo godeb doctor` prüft den Server nur lesend (Dienste, Ports, Firewall, Tunnel, Zertifikate, DNS, Journal, Updates) und gibt einen Bericht ohne Geheimnisse aus.
 
 Sicherheitslücken bitte vertraulich melden, siehe [SECURITY.md](SECURITY.md).
 
