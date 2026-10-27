@@ -17,6 +17,7 @@ const (
 	godebLabel   = "godeb"
 	godebLabelOK = "1"
 	httpTimeout  = 20 * time.Second
+	maxPages     = 20
 )
 
 // httpDo is replaced in tests.
@@ -98,69 +99,46 @@ func hzRequest(ctx context.Context, token, method, path string, body any) ([]byt
 		}
 		_ = json.Unmarshal(data, &wrap)
 		if wrap.Error.Message == "" {
-			wrap.Error.Message = strings.TrimSpace(string(data))
-			if wrap.Error.Message == "" {
-				wrap.Error.Message = fmt.Sprintf("HTTP %d", resp.StatusCode)
-			}
+			wrap.Error.Message = fmt.Sprintf("HTTP %d", resp.StatusCode)
 		}
 		return data, resp.StatusCode, wrap.Error
 	}
 	return data, resp.StatusCode, nil
 }
 
-func listZones(ctx context.Context, token string) ([]hzZone, error) {
-	data, _, err := hzRequest(ctx, token, http.MethodGet, "/zones?per_page=50", nil)
-	if err != nil {
-		return nil, err
+func validateToken(ctx context.Context, token string) error {
+	if _, _, err := hzRequest(ctx, token, http.MethodGet, "/zones?per_page=1", nil); err != nil {
+		return fmt.Errorf("Token ungültig oder ohne DNS-Recht: %w", err)
 	}
-	var wrap struct {
-		Zones []hzZone `json:"zones"`
-	}
-	if err := json.Unmarshal(data, &wrap); err != nil {
-		return nil, err
-	}
-	return wrap.Zones, nil
+	return nil
 }
 
 func findZone(ctx context.Context, token, name string) (hzZone, error) {
-	zones, err := listZones(ctx, token)
+	data, code, err := hzRequest(ctx, token, http.MethodGet, "/zones/"+url.PathEscape(name), nil)
+	if code == http.StatusNotFound {
+		return hzZone{}, fmt.Errorf("Zone %s nicht in diesem Hetzner-Projekt", name)
+	}
 	if err != nil {
 		return hzZone{}, err
 	}
-	want := strings.TrimSuffix(strings.ToLower(name), ".")
-	for _, z := range zones {
-		if strings.EqualFold(strings.TrimSuffix(z.Name, "."), want) {
-			return z, nil
-		}
-	}
-	return hzZone{}, fmt.Errorf("Zone %s nicht in diesem Hetzner-Projekt", name)
-}
-
-func listRRSets(ctx context.Context, token string, zone hzZone) ([]hzRRSet, error) {
-	path := fmt.Sprintf("/zones/%s/rrsets?per_page=100", url.PathEscape(zoneNameOrID(zone)))
-	data, _, err := hzRequest(ctx, token, http.MethodGet, path, nil)
-	if err != nil {
-		return nil, err
-	}
 	var wrap struct {
-		RRSets []hzRRSet `json:"rrsets"`
+		Zone hzZone `json:"zone"`
 	}
 	if err := json.Unmarshal(data, &wrap); err != nil {
-		return nil, err
+		return hzZone{}, err
 	}
-	return wrap.RRSets, nil
+	if wrap.Zone.Name == "" {
+		wrap.Zone.Name = name
+	}
+	return wrap.Zone, nil
 }
 
-func zoneNameOrID(z hzZone) string {
-	if z.Name != "" {
-		return z.Name
-	}
-	return fmt.Sprintf("%d", z.ID)
+func rrsetPath(zone hzZone, name, typ string) string {
+	return fmt.Sprintf("/zones/%s/rrsets/%s/%s", url.PathEscape(zone.Name), url.PathEscape(name), url.PathEscape(typ))
 }
 
 func getRRSet(ctx context.Context, token string, zone hzZone, name, typ string) (hzRRSet, bool, error) {
-	path := fmt.Sprintf("/zones/%s/rrsets/%s/%s", url.PathEscape(zoneNameOrID(zone)), url.PathEscape(name), url.PathEscape(typ))
-	data, code, err := hzRequest(ctx, token, http.MethodGet, path, nil)
+	data, code, err := hzRequest(ctx, token, http.MethodGet, rrsetPath(zone, name, typ), nil)
 	if code == http.StatusNotFound {
 		return hzRRSet{}, false, nil
 	}
@@ -178,32 +156,21 @@ func getRRSet(ctx context.Context, token string, zone hzZone, name, typ string) 
 
 func createRRSet(ctx context.Context, token string, zone hzZone, name, typ, value string) error {
 	body := map[string]any{
-		"name": name,
-		"type": typ,
-		"ttl":  3600,
-		"labels": map[string]string{
-			godebLabel: godebLabelOK,
-		},
+		"name":    name,
+		"type":    typ,
+		"ttl":     3600,
+		"labels":  map[string]string{godebLabel: godebLabelOK},
 		"records": []hzRecord{{Value: value, Comment: "GoDeb"}},
 	}
-	path := fmt.Sprintf("/zones/%s/rrsets", url.PathEscape(zoneNameOrID(zone)))
-	_, _, err := hzRequest(ctx, token, http.MethodPost, path, body)
+	_, _, err := hzRequest(ctx, token, http.MethodPost, fmt.Sprintf("/zones/%s/rrsets", url.PathEscape(zone.Name)), body)
 	return err
 }
 
-func updateRRSet(ctx context.Context, token string, zone hzZone, name, typ, value string, labels map[string]string) error {
-	if labels == nil {
-		labels = map[string]string{}
-	}
-	labels[godebLabel] = godebLabelOK
-	ttl := 3600
-	body := map[string]any{
-		"ttl":     ttl,
-		"labels":  labels,
-		"records": []hzRecord{{Value: value, Comment: "GoDeb"}},
-	}
-	path := fmt.Sprintf("/zones/%s/rrsets/%s/%s", url.PathEscape(zoneNameOrID(zone)), url.PathEscape(name), url.PathEscape(typ))
-	_, _, err := hzRequest(ctx, token, http.MethodPut, path, body)
+// setRecords replaces the values of an RRSet. PUT on an RRSet only changes
+// its labels, so values go through the set_records action.
+func setRecords(ctx context.Context, token string, zone hzZone, name, typ, value string) error {
+	body := map[string]any{"records": []hzRecord{{Value: value, Comment: "GoDeb"}}}
+	_, _, err := hzRequest(ctx, token, http.MethodPost, rrsetPath(zone, name, typ)+"/actions/set_records", body)
 	return err
 }
 
@@ -212,19 +179,29 @@ func isManaged(rr hzRRSet) bool {
 }
 
 func findServerID(ctx context.Context, token, publicIP string) (int64, error) {
-	data, _, err := hzRequest(ctx, token, http.MethodGet, "/servers?per_page=50", nil)
-	if err != nil {
-		return 0, err
-	}
-	var wrap struct {
-		Servers []hzServer `json:"servers"`
-	}
-	if err := json.Unmarshal(data, &wrap); err != nil {
-		return 0, err
-	}
-	for _, s := range wrap.Servers {
-		if s.PublicNet.IPv4 != nil && s.PublicNet.IPv4.IP == publicIP {
-			return s.ID, nil
+	for page := 1; page <= maxPages; page++ {
+		data, _, err := hzRequest(ctx, token, http.MethodGet, fmt.Sprintf("/servers?per_page=50&page=%d", page), nil)
+		if err != nil {
+			return 0, err
+		}
+		var wrap struct {
+			Servers []hzServer `json:"servers"`
+			Meta    struct {
+				Pagination struct {
+					NextPage *int `json:"next_page"`
+				} `json:"pagination"`
+			} `json:"meta"`
+		}
+		if err := json.Unmarshal(data, &wrap); err != nil {
+			return 0, err
+		}
+		for _, s := range wrap.Servers {
+			if s.PublicNet.IPv4 != nil && s.PublicNet.IPv4.IP == publicIP {
+				return s.ID, nil
+			}
+		}
+		if wrap.Meta.Pagination.NextPage == nil {
+			break
 		}
 	}
 	return 0, fmt.Errorf("Kein Server mit öffentlicher IP %s in diesem Hetzner-Projekt", publicIP)
@@ -233,16 +210,14 @@ func findServerID(ctx context.Context, token, publicIP string) (int64, error) {
 func changePTR(ctx context.Context, token string, serverID int64, ip, ptr string) error {
 	body := map[string]any{
 		"ip":      ip,
-		"dns_ptr": strings.TrimSuffix(ptr, ".") + ".",
+		"dns_ptr": strings.TrimSuffix(ptr, "."),
 	}
-	path := fmt.Sprintf("/servers/%d/actions/change_dns_ptr", serverID)
-	_, _, err := hzRequest(ctx, token, http.MethodPost, path, body)
+	_, _, err := hzRequest(ctx, token, http.MethodPost, fmt.Sprintf("/servers/%d/actions/change_dns_ptr", serverID), body)
 	return err
 }
 
-// tokenPattern: Hetzner tokens are long opaque strings; keep a conservative allowlist.
-var tokenOK = func(s string) bool {
-	s = strings.TrimSpace(s)
+// tokenOK is a conservative allowlist for Hetzner API tokens.
+func tokenOK(s string) bool {
 	if len(s) < 20 || len(s) > 200 {
 		return false
 	}

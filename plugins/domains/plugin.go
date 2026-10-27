@@ -266,8 +266,7 @@ func handleApply(w http.ResponseWriter, r *http.Request) {
 		core.WriteError(w, http.StatusBadRequest, "Keine Einträge von Plugins für diese Domain")
 		return
 	}
-	publicIP := core.DefaultRoute(r.Context()).Src
-	recs, err := applyZone(r.Context(), token, name, needs, s.ServerID, publicIP)
+	recs, err := applyZone(r.Context(), token, name, needs, s.ServerID)
 	if err != nil {
 		core.WriteError(w, http.StatusBadRequest, err.Error())
 		return

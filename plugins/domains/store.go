@@ -1,6 +1,7 @@
 package domains
 
 import (
+	"sync"
 	"time"
 
 	"gorm.io/gorm"
@@ -24,13 +25,25 @@ type domainRow struct {
 
 func (domainRow) TableName() string { return "domains_zones" }
 
+var (
+	migrateMu sync.Mutex
+	migrated  = map[string]bool{}
+)
+
+// store migrates once per database file; tests switch files via env.
 func store() (*gorm.DB, error) {
 	gdb, err := db.AgentGorm()
 	if err != nil {
 		return nil, err
 	}
-	if err := gdb.AutoMigrate(&settingsRow{}, &domainRow{}); err != nil {
-		return nil, err
+	path := db.AgentPath()
+	migrateMu.Lock()
+	defer migrateMu.Unlock()
+	if !migrated[path] {
+		if err := gdb.AutoMigrate(&settingsRow{}, &domainRow{}); err != nil {
+			return nil, err
+		}
+		migrated[path] = true
 	}
 	return gdb, nil
 }

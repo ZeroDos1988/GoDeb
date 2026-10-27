@@ -12,53 +12,54 @@ func init() {
 	domains.RegisterNeeds(dnsNeeds)
 }
 
-// dnsNeeds publishes the DNS records the mail server needs for every
-// configured mail domain. The domains plugin shows or applies them.
+// dnsNeeds publishes the DNS records the mail server needs. MX, SPF, DKIM
+// and DMARC belong to each mail domain; A and PTR of the mail host exist
+// once, in the zone that contains the host name.
 func dnsNeeds() ([]domains.Need, error) {
 	s, ok, err := loadSettings()
-	if err != nil {
+	if err != nil || !ok {
 		return nil, err
-	}
-	if !ok {
-		return nil, nil
 	}
 	list, _, err := loadAll()
 	if err != nil {
 		return nil, err
 	}
 	ip := strings.TrimSpace(core.DefaultRoute(context.Background()).Src)
+	hostZone := zoneOfHost(s.Hostname, list)
+	seen := map[string]bool{}
 	var out []domains.Need
 	for _, d := range list {
 		for _, r := range expectedRecords(s, d, ip) {
 			zone := d.Name
-			// A/PTR for the mail hostname belong to the zone that owns the host.
 			if r.Kind == "a" || r.Kind == "ptr" {
-				if z := zoneOfHost(s.Hostname); z != "" {
-					zone = z
-				}
+				zone = hostZone
 			}
-			if r.Kind == "ptr" {
-				// Attach PTR to the mail domain so the domains UI can apply it
-				// together with the zone's forward records.
-				zone = d.Name
+			key := zone + "|" + r.Name + "|" + r.Type
+			if seen[key] {
+				continue
 			}
-			out = append(out, domains.Need{
-				Zone:   zone,
-				Name:   r.Name,
-				Type:   r.Type,
-				Value:  r.Value,
-				Kind:   r.Kind,
-				Source: "mail",
-			})
+			seen[key] = true
+			out = append(out, domains.Need{Zone: zone, Name: r.Name, Type: r.Type, Value: r.Value, Kind: r.Kind, Source: "mail"})
 		}
 	}
 	return out, nil
 }
 
-func zoneOfHost(host string) string {
+// zoneOfHost picks the longest mail domain the host lies in, otherwise the
+// host name without its first label.
+func zoneOfHost(host string, list []Domain) string {
 	host = strings.TrimSuffix(strings.ToLower(host), ".")
-	if i := strings.Index(host, "."); i > 0 && i+1 < len(host) {
-		return host[i+1:]
+	best := ""
+	for _, d := range list {
+		if (host == d.Name || strings.HasSuffix(host, "."+d.Name)) && len(d.Name) > len(best) {
+			best = d.Name
+		}
 	}
-	return ""
+	if best != "" {
+		return best
+	}
+	if _, rest, ok := strings.Cut(host, "."); ok && strings.Contains(rest, ".") {
+		return rest
+	}
+	return host
 }
