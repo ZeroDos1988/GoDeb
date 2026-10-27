@@ -10,6 +10,7 @@ import (
 
 	"godeb/backend/agent"
 	"godeb/backend/core"
+	"godeb/backend/pluginmgr"
 )
 
 func init() {
@@ -161,6 +162,10 @@ func runScheduler(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-t.C:
+		}
+		if pluginmgr.IsDisabled("apt") {
+			// Switched off in the plugin manager: no automatic installs.
+			continue
 		}
 		s, err := loadSettings()
 		if err != nil {

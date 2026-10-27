@@ -16,7 +16,7 @@
   },
   "pluginManager": {
     "title": "Plugins",
-    "lead": "Alle Plugins sind mitgeliefert. Ein deaktiviertes Plugin verschwindet aus der Navigation, seine API antwortet nicht mehr und seine Dienste werden gestoppt. Aktivieren setzt die nötigen Pakete voraus.",
+    "lead": "Alle Plugins sind mitgeliefert. Ein deaktiviertes Plugin verschwindet aus der Navigation, seine API antwortet nicht mehr, und GoDeb erledigt dafür nichts mehr im Hintergrund (z. B. automatische Updates). Die Systemdienste dahinter laufen weiter: WireGuard, Firewall oder Postfix bleiben unberührt. Aktivieren setzt die nötigen Pakete voraus.",
     "loading": "Lade Plugins …",
     "empty": "Keine plugin.json im Ordner plugins/.",
     "installed": "installiert",

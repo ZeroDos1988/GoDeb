@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -39,7 +40,7 @@ func TestReadAllValidatesContracts(t *testing.T) {
 	}
 }
 
-func TestInstallEnableDisableUsesDeclaredUnitsOnly(t *testing.T) {
+func TestInstallEnableDisableLeavesSystemServicesAlone(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("GODEB_DB", filepath.Join(dir, "godeb.db"))
 	t.Setenv("GODEB_MASTER_KEY", filepath.Join(dir, "master.key"))
@@ -71,9 +72,11 @@ func TestInstallEnableDisableUsesDeclaredUnitsOnly(t *testing.T) {
 			return core.CommandResult{Stdout: "ok"}
 		}
 	}
-	t.Cleanup(func() { execute = func(ctx context.Context, timeout time.Duration, name string, args ...string) core.CommandResult {
-		return core.RunAdminTimeout(ctx, timeout, name, args...)
-	} })
+	t.Cleanup(func() {
+		execute = func(ctx context.Context, timeout time.Duration, name string, args ...string) core.CommandResult {
+			return core.RunAdminTimeout(ctx, timeout, name, args...)
+		}
+	})
 
 	before, err := Scan(context.Background(), dir)
 	if err != nil {
@@ -95,9 +98,6 @@ func TestInstallEnableDisableUsesDeclaredUnitsOnly(t *testing.T) {
 	if err := enable(context.Background(), dir, desc); err != nil {
 		t.Fatal(err)
 	}
-	if !contains(calls, "systemctl enable --now fail2ban.service") {
-		t.Fatalf("calls = %v", calls)
-	}
 	after, err := Scan(context.Background(), dir)
 	if err != nil {
 		t.Fatal(err)
@@ -107,9 +107,6 @@ func TestInstallEnableDisableUsesDeclaredUnitsOnly(t *testing.T) {
 	}
 	if err := disable(context.Background(), dir, desc); err != nil {
 		t.Fatal(err)
-	}
-	if !contains(calls, "systemctl disable --now fail2ban.service") {
-		t.Fatalf("calls = %v", calls)
 	}
 	off, err := Scan(context.Background(), dir)
 	if err != nil {
@@ -129,6 +126,13 @@ func TestInstallEnableDisableUsesDeclaredUnitsOnly(t *testing.T) {
 	}
 	if IsDisabled("fail2ban") {
 		t.Fatal("re-enabled plugin still disabled")
+	}
+	// Switching a plugin on or off only shows or hides it: wg-quick@wg0 or
+	// ufw must keep running, and a missing unit must not block it.
+	for _, c := range calls {
+		if strings.HasPrefix(c, "systemctl enable") || strings.HasPrefix(c, "systemctl disable") || strings.HasPrefix(c, "systemctl stop") {
+			t.Fatalf("plugin switch touched a system service: %v", calls)
+		}
 	}
 }
 

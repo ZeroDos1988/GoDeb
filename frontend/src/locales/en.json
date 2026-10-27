@@ -16,7 +16,7 @@
   },
   "pluginManager": {
     "title": "Plugins",
-    "lead": "All plugins ship with GoDeb. A disabled plugin disappears from the navigation, its API stops answering and its services are stopped. Enabling needs its packages installed.",
+    "lead": "All plugins ship with GoDeb. A disabled plugin disappears from the navigation, its API stops answering and GoDeb does no background work for it (e.g. automatic updates). The system services behind it keep running: WireGuard, the firewall or Postfix are left alone. Enabling needs its packages installed.",
     "loading": "Loading plugins …",
     "empty": "No plugin.json in the plugins/ folder.",
     "installed": "installed",

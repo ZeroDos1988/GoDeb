@@ -590,7 +590,7 @@ Das Repo liegt auf GitHub Pages unter `https://zerodos1988.github.io/GoDeb` (Sui
 
 ### Plugins abschalten
 
-Alle Plugins werden mitgeliefert. Im Plugin-Manager lässt sich jedes abschalten: Es verschwindet aus der Navigation, seine Routen unter `/api/plugins/<id>/` antworten mit 404, und seine systemd-Dienste werden gestoppt. Der Plugin-Manager selbst bleibt erreichbar, um es wieder einzuschalten. Der Zustand steht in der Tabelle `plugin_states` (`disabled`) der Agent-Datenbank. Auf dem VPS etwa „Spielserver“ abschalten, auf der Heim-VM „Portweiterleitung“.
+Alle Plugins werden mitgeliefert. Im Plugin-Manager lässt sich jedes abschalten: Es verschwindet aus der Navigation, seine Routen unter `/api/plugins/<id>/` antworten mit 404, und GoDeb erledigt dafür nichts mehr im Hintergrund (automatische Updates, Überwachung). Die Systemdienste dahinter bleiben unberührt: Abschalten von WireGuard oder UFW stoppt weder den Tunnel noch die Firewall, und ein nicht installierter Dienst (Postfix beim Mail-Gateway) verhindert das Abschalten nicht mehr. Der Plugin-Manager selbst bleibt erreichbar, um es wieder einzuschalten. Der Zustand steht in der Tabelle `plugin_states` (`disabled`) der Agent-Datenbank. Auf dem VPS etwa „Spielserver“ abschalten, auf der Heim-VM „Portweiterleitung“.
 
 Postfix und OpenDKIM richtet nicht das Paket-Skript ein, sondern die Mail-Gateway-Ansicht, nachdem die Relay-Domain eingetragen ist. Fehlt eines der Pakete, installiert GoDeb sie nicht selbst. Auf dem Host:
 

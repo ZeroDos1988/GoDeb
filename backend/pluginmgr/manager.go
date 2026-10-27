@@ -265,6 +265,8 @@ func install(ctx context.Context, _ string, desc Descriptor) error {
 	return updateState(desc.ID, func(r *stateRow) { r.Installed = true })
 }
 
+// enable shows the plugin again. Its packages must be installed; the
+// system services it manages are left as they are.
 func enable(ctx context.Context, _ string, desc Descriptor) error {
 	for _, pkg := range desc.AptDependencies {
 		ok, err := packageInstalled(ctx, pkg)
@@ -275,23 +277,16 @@ func enable(ctx context.Context, _ string, desc Descriptor) error {
 			return fmt.Errorf("Paket %s ist nicht installiert", pkg)
 		}
 	}
-	for _, unit := range desc.SystemdServices {
-		res := execute(ctx, time.Minute, "systemctl", "enable", "--now", unit)
-		if res.Err != nil {
-			return fmt.Errorf("systemctl enable --now %s: %s", unit, res.Detail())
-		}
-	}
 	return updateState(desc.ID, func(r *stateRow) { r.Installed, r.Enabled, r.Disabled = true, true, false })
 }
 
-func disable(ctx context.Context, _ string, desc Descriptor) error {
-	for _, unit := range desc.SystemdServices {
-		// systemctl has no `stop --disable`. `disable --now` stops the unit and disables it.
-		res := execute(ctx, time.Minute, "systemctl", "disable", "--now", unit)
-		if res.Err != nil {
-			return fmt.Errorf("systemctl disable --now %s: %s", unit, res.Detail())
-		}
-	}
+// disable hides the plugin: no sidebar entry, its routes answer 404 and
+// GoDeb's own background work for it (update checks, monitoring) pauses.
+// The system services behind it keep running. Stopping wg-quick@wg0 or ufw
+// here would cut the admin off the tunnel or open the firewall, and a unit
+// that is not installed (postfix for the mail gateway) made switching off
+// fail altogether.
+func disable(_ context.Context, _ string, desc Descriptor) error {
 	return updateState(desc.ID, func(r *stateRow) { r.Enabled, r.Disabled = false, true })
 }
 
