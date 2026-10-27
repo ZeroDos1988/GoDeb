@@ -2,23 +2,18 @@
 
 Stand: 27.10.2026. Reihenfolge = Priorität. `[x]` erledigt, `[ ]` offen. Neue Ideen kommen hierher (passende Phase oder Phase 7), getroffene Entscheidungen unten unter „Entscheidungen“.
 
-## Aktueller Stand (Übergabe 27.10.)
+## Aktueller Stand (27.10., nach v0.2.7)
 
 Für einen neuen Chat: zuerst `/diagnose` (Skill in `.claude/skills/diagnose`, Skript `scripts/diagnose.sh`), dann hier weiterlesen.
 
 - **Veröffentlicht** (alle öffentlich, nur unter ZeroDos1988):
-  - `ZeroDos1988/GoDeb`: GPL-3.0, letztes Release **v0.2.6** (25.10., Vorabversion) im APT-Repo `https://zerodos1988.github.io/GoDeb`. Jeder Tag `vX.Y.Z` baut Release und APT-Repo automatisch; den Release-Text danach von Hand im Stil der vorigen Releases ersetzen und als Vorabversion markieren.
+  - `ZeroDos1988/GoDeb`: GPL-3.0, Release **v0.2.7** (27.10., Vorabversion) im APT-Repo `https://zerodos1988.github.io/GoDeb`: Mailserver, Dienste-Seite, Plugin-Ausblendung ohne Stoppen, Protokoll-Fix. Jeder Tag `vX.Y.Z` baut Release und APT-Repo automatisch; den Release-Text danach von Hand im Stil der vorigen Releases ersetzen und als Vorabversion markieren.
   - `ZeroDos1988/godeb-tunnel-android` (Release 1.1.0), `ZeroDos1988/godeb-tunnel-arch` (1.0.1). Privat: `godeb-wireguard-windows`.
-- **Auf `main`, noch nicht veröffentlicht** (nächstes Release v0.2.7):
-  - Plugins abschalten blendet nur aus, stoppt keine Systemdienste mehr (vorher scheiterte es beim Mail-Gateway und hätte WireGuard/UFW gestoppt).
-  - Protokoll: schwarze Seite bei normalen systemd-Zeilen behoben; jede Ansicht hat jetzt einen Fehlerschutz statt einer leeren Seite.
-  - Dienste-Seite wie bei HestiaCP (Plugin `systemd`, jetzt „Dienste“).
-  - Mailserver, Plugin `mail` (erste Fassung, siehe Phase 7). Auf echten Servern **noch nicht getestet**; die Konfiguration ist gegen die echten Debian-13-Werkzeuge geprüft (`scripts/check-mail-config.sh`).
-- **Auf den Servern:** Hetzner-VPS seit 25.10. aus dem APT-Repo (zuletzt gemeldet v0.2.x); Heim-VM noch nicht neu eingerichtet. Rückmeldungen des Nutzers vom Handy: Plugins ließen sich nicht abschalten, Protokoll schwarz (beides behoben).
+- **Auf den Servern:** Hetzner-VPS zuletzt mit älterer 0.2.x; Heim-VM noch nicht neu eingerichtet. **v0.2.7 auf dem VPS noch nicht eingespielt.**
 - **Nächste Schritte, in dieser Reihenfolge:**
-  1. v0.2.7 veröffentlichen, auf dem VPS über „Alle aktualisieren“ einspielen (erster echter Test des Selbst-Updates) und Servertest: Dienste-Seite, Protokoll, Plugins abschalten, automatische Updates.
+  1. Auf dem VPS v0.2.7 über APT → „Alle aktualisieren“ einspielen (erster echter Test des Selbst-Updates) und prüfen: `godeb version` = 0.2.7, Dienste-Seite, Protokoll, Plugins abschalten, automatische Updates.
   2. Mailserver auf dem VPS einrichten: vorher A-Eintrag `mail.<domain>`, Reverse-DNS bei Hetzner, Freigabe von ausgehend 25/465 bei Hetzner (siehe „Entscheidungen“). Dann Domain, Postfach, Empfang und Versand mit Thunderbird/Handy testen, Ergebnis bei mail-tester.com.
-  3. Domains und DNS als Plugin (Phase 7), zuerst über die Hetzner-API.
+  3. Domains und DNS als Plugin (Phase 7), zuerst über die Hetzner-Cloud-API.
   4. Heim-VM mit v0.2.7 neu anbinden (Beitrittscode), Enshrouded, Portweiterleitung.
   5. Danach: Mail-Ausbau (Webmail, Abwesenheitsnotiz, Autoconfig), VPS nur als Mail-Relay mit Postfächern auf der Heim-VM, Phase 8 (Heim-VM als Gateway), Windows-Client.
 
