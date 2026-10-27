@@ -76,10 +76,7 @@ func load2FA(username string) (twoFactorFile, error) {
 // to the agent database, root-only (/etc/godeb/master.key), unless
 // GODEB_AGENT_MASTER_KEY says otherwise. The web process never reads it.
 func twoFactorKeyPath() string {
-	if p := os.Getenv("GODEB_AGENT_MASTER_KEY"); p != "" {
-		return p
-	}
-	return filepath.Join(filepath.Dir(db.AgentPath()), "master.key")
+	return db.AgentKeyPath()
 }
 
 // loadLocal2FA reads the enrollment from conn (the agent database, or the

@@ -49,6 +49,8 @@ type accountRow struct {
 
 func (accountRow) TableName() string { return "mailserver_accounts" }
 
+func init() { db.RegisterAgentSecret("mailserver_accounts", "address", "hash") }
+
 var (
 	migrateOnce sync.Once
 	migrateErr  error

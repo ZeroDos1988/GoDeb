@@ -17,6 +17,8 @@ type settingsRow struct {
 
 func (settingsRow) TableName() string { return "domains_settings" }
 
+func init() { db.RegisterAgentSecret("domains_settings", "id", "token") }
+
 type domainRow struct {
 	Name    string `gorm:"primaryKey"`
 	Mode    string

@@ -10,27 +10,28 @@ import (
 	"gorm.io/gorm/schema"
 )
 
-// registerVaultCallbacks seals struct fields tagged vault:"secret" before
-// GORM writes them and opens them again after a read or a successful write.
-func registerVaultCallbacks(gdb *gorm.DB) {
+// registerVaultCallbacks seals struct fields tagged vault:"secret" with the
+// key at keyPath before GORM writes them and opens them again after a read
+// or a successful write.
+func registerVaultCallbacks(gdb *gorm.DB, keyPath string) {
 	gdb.Callback().Create().Before("gorm:create").Register("godeb:vault_seal_create", func(tx *gorm.DB) {
-		applyVault(tx, true)
+		applyVault(tx, keyPath, true)
 	})
 	gdb.Callback().Update().Before("gorm:update").Register("godeb:vault_seal_update", func(tx *gorm.DB) {
-		applyVault(tx, true)
+		applyVault(tx, keyPath, true)
 	})
 	gdb.Callback().Create().After("gorm:create").Register("godeb:vault_open_create", func(tx *gorm.DB) {
-		applyVault(tx, false)
+		applyVault(tx, keyPath, false)
 	})
 	gdb.Callback().Update().After("gorm:update").Register("godeb:vault_open_update", func(tx *gorm.DB) {
-		applyVault(tx, false)
+		applyVault(tx, keyPath, false)
 	})
 	gdb.Callback().Query().After("gorm:query").Register("godeb:vault_open_query", func(tx *gorm.DB) {
-		applyVault(tx, false)
+		applyVault(tx, keyPath, false)
 	})
 }
 
-func applyVault(tx *gorm.DB, seal bool) {
+func applyVault(tx *gorm.DB, keyPath string, seal bool) {
 	if tx.Error != nil || tx.Statement == nil || tx.Statement.Schema == nil {
 		return
 	}
@@ -46,12 +47,12 @@ func applyVault(tx *gorm.DB, seal bool) {
 			if field.StructField.Tag.Get("vault") != "secret" {
 				continue
 			}
-			transformField(tx, ctx, field, record, seal)
+			transformField(tx, ctx, field, record, keyPath, seal)
 		}
 	})
 }
 
-func transformField(tx *gorm.DB, ctx context.Context, field *schema.Field, record reflect.Value, seal bool) {
+func transformField(tx *gorm.DB, ctx context.Context, field *schema.Field, record reflect.Value, keyPath string, seal bool) {
 	raw, isZero := field.ValueOf(ctx, record)
 	if isZero {
 		return
@@ -65,9 +66,9 @@ func transformField(tx *gorm.DB, ctx context.Context, field *schema.Field, recor
 		err  error
 	)
 	if seal {
-		next, err = security.Seal(text)
+		next, err = security.SealWith(keyPath, text)
 	} else {
-		next, err = security.Open(text)
+		next, err = security.OpenWith(keyPath, text)
 	}
 	if err != nil {
 		_ = tx.AddError(err)

@@ -20,6 +20,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
+	"godeb/backend/security"
 	"godeb/backend/state"
 )
 
@@ -57,6 +58,16 @@ func AgentPath() string {
 		return path
 	}
 	return DefaultAgentPath
+}
+
+// AgentKeyPath is the key that seals secrets in the agent database (2FA,
+// plugin secrets): GODEB_AGENT_MASTER_KEY, otherwise master.key next to the
+// agent database (/etc/godeb/master.key). The web process never reads it.
+func AgentKeyPath() string {
+	if p := os.Getenv("GODEB_AGENT_MASTER_KEY"); p != "" {
+		return p
+	}
+	return filepath.Join(filepath.Dir(AgentPath()), "master.key")
 }
 
 // Open returns the web database, creating the file and applying migrations.
@@ -112,7 +123,12 @@ func open(path string) (*handle, error) {
 	if err != nil {
 		return nil, fmt.Errorf("GORM %s: %w", path, err)
 	}
-	registerVaultCallbacks(gdb)
+	web := path == Path()
+	keyPath := security.KeyPath()
+	if !web {
+		keyPath = AgentKeyPath()
+	}
+	registerVaultCallbacks(gdb, keyPath)
 	conn, err := gdb.DB()
 	if err != nil {
 		return nil, err
@@ -126,12 +142,15 @@ func open(path string) (*handle, error) {
 		conn.Close()
 		return nil, err
 	}
-	if path == Path() {
+	if web {
 		// Only the web database holds sealed account secrets.
 		if err := sealLegacySecrets(conn); err != nil {
 			conn.Close()
 			return nil, err
 		}
+	} else if err := rekeyAgentSecrets(conn, keyPath, security.KeyPath()); err != nil {
+		conn.Close()
+		return nil, err
 	}
 	if err := os.Chmod(path, 0o600); err != nil {
 		conn.Close()

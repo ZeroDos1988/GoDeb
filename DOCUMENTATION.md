@@ -30,7 +30,7 @@ Browser --wg0 10.8.0.1:8080 / 127.0.0.1:8080-->  godeb.service  (Benutzer godeb,
 | Oberfläche | `frontend/` | Vite, React 19, Tailwind 4, Hash-Routen |
 | Paket | `package/debian/` | Struktur für `dpkg-deb` |
 | Web-Daten | `/var/lib/godeb/` (Benutzer `godeb`) | `godeb.db` (Konten, Sitzungen, Themes, OIDC), `master.key`, `auth/`, `setup.json`, `setup-token`, `access.json`, `tls/` |
-| Agent-Daten | `/etc/godeb/` (nur root) | `godeb.db` (WireGuard-IPAM, Mail-Relay, Plugin-Status, 2FA), `master.key` (versiegelt die 2FA), `trust.*`, `portforward.*`, `smtp.json`, `android/` |
+| Agent-Daten | `/etc/godeb/` (nur root) | `godeb.db` (WireGuard-IPAM, Mail-Relay, Plugin-Status, 2FA), `master.key` (versiegelt 2FA und Plugin-Secrets wie Mail-Passwort-Hashes und den Hetzner-Token), `trust.*`, `portforward.*`, `smtp.json`, `android/` |
 
 ### Aufteilung Weboberfläche und Agent
 
@@ -58,7 +58,7 @@ Der Build erzwingt `CGO_ENABLED=0` und `-tags netgo`. Das Paket legt das Program
 | `GODEB_DB` | `/var/lib/godeb/godeb.db` | Datenbank der Weboberfläche, Modus `0600` |
 | `GODEB_AGENT_DB` | `/etc/godeb/godeb.db` | Datenbank des Agenten; ohne die Variable, aber mit `GODEB_DB` dieselbe Datei (Entwicklung) |
 | `GODEB_MASTER_KEY` | `/var/lib/godeb/master.key` | Schlüssel für Passwort-Hashes und OIDC-Geheimnisse |
-| `GODEB_AGENT_MASTER_KEY` | `master.key` neben der Agent-Datenbank | Schlüssel für die 2FA-Geheimnisse |
+| `GODEB_AGENT_MASTER_KEY` | `master.key` neben der Agent-Datenbank | Schlüssel für alle Secrets der Agent-Datenbank (2FA, `vault:"secret"`-Felder der Plugins). Bis v0.2.7 versiegelte der Agent Plugin-Secrets versehentlich mit dem Web-Schlüssel; beim Start schlüsselt er solche Werte einmalig um (`db.RegisterAgentSecret`) |
 | `GODEB_AGENT_SOCKET` | leer | Socket des Agenten; gesetzt leitet die Weboberfläche weiter (Dienst: `/run/godeb-agent/agent.sock`) |
 | `GODEB_WEB_USER` | `godeb` | Benutzer der Weboberfläche: darf an den Socket, bekommt die Dateien unter `/var/lib/godeb` |
 | `GODEB_STATE_DIR` | `/var/lib/godeb` | Verzeichnis der Weboberfläche |

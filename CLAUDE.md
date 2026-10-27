@@ -35,7 +35,7 @@ GoDeb läuft als zwei Prozesse desselben Programms: die Weboberfläche (`godeb.s
 - Externe Befehle nur über `core.Run*`/`core.RunAdmin*`: kein `sh -c`, Argumente als Liste, Secrets über stdin.
 - Jede Eingabe, die in einem Befehl, Pfad oder einer Konfigdatei landet, gegen eine enge Regex/Allowlist prüfen. Vorhandene Muster (`unitPattern`, `clientName`, …) wiederverwenden.
 - Dateien nur über `core.ReadAdminFile`/`WriteAdminFile` (Pfad-Allowlist) oder mit eigener Allowlist im Plugin. Secrets mit Modus `0600`.
-- Sensible DB-Felder mit `security.Seal`/`Open` (AES-256-GCM, Schlüssel `/var/lib/godeb/master.key`); 2FA-Geheimnisse mit dem Schlüssel des Agenten (`/etc/godeb/master.key`, `SealWith`).
+- Sensible DB-Felder mit `vault:"secret"` (AES-256-GCM). Die Web-DB versiegelt mit `/var/lib/godeb/master.key`, die Agent-DB mit `/etc/godeb/master.key` (`db.AgentKeyPath`, auch für 2FA). Neue Secret-Spalten in der Agent-DB zusätzlich mit `db.RegisterAgentSecret` anmelden.
 - Zustandsändernde Endpunkte nur mit POST/PUT, nie mit GET.
 - Neue Abhängigkeiten nur mit Begründung. Danach `govulncheck ./...` bzw. `npm audit`.
 

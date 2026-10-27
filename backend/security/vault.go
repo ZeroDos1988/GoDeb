@@ -99,13 +99,24 @@ func OpenWith(keyPath, stored string) (string, error) {
 	if stored == "" || !IsSealed(stored) {
 		return stored, nil
 	}
-	raw, err := base64.StdEncoding.DecodeString(strings.TrimPrefix(stored, prefix))
-	if err != nil {
-		return "", fmt.Errorf("Vault-Daten: %w", err)
-	}
 	key, err := masterKey(keyPath)
 	if err != nil {
 		return "", err
+	}
+	return OpenWithKey(key, stored)
+}
+
+// OpenWithKey is Open with a key already in memory.
+func OpenWithKey(key []byte, stored string) (string, error) {
+	if stored == "" || !IsSealed(stored) {
+		return stored, nil
+	}
+	if len(key) != keySize {
+		return "", ErrKeyLength
+	}
+	raw, err := base64.StdEncoding.DecodeString(strings.TrimPrefix(stored, prefix))
+	if err != nil {
+		return "", fmt.Errorf("Vault-Daten: %w", err)
 	}
 	block, err := aes.NewCipher(key)
 	if err != nil {
