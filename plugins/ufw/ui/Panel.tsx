@@ -93,7 +93,7 @@ export default function Panel() {
         rules.length === 0 ? (
           <p className="text-sm text-muted">{t("ufw.empty")}</p>
         ) : (
-          <DataTable head={[t("ufw.to"), t("ufw.action"), t("ufw.from"), ""]}>
+          <DataTable mobileCards head={[t("ufw.to"), t("ufw.action"), t("ufw.from"), ""]}>
             {rules.map((entry) => (
               <tr key={`${entry.to}-${entry.action}-${entry.from}`}>
                 <td className="px-3 py-2 font-mono text-xs">{entry.to}</td>

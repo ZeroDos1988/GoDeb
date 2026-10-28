@@ -52,11 +52,11 @@ Jeden Unterpunkt einzeln committen:
 - [x] **Mail-Queue**: Postfix-Queue anzeigen, einzelne Mails löschen oder erneut senden. Die Queue-IDs gegen eine Regex prüfen – 28.10.
 - Danach mit `scripts/check-mail-config.sh` gegen die echten Debian-13-Werkzeuge prüfen.
 
-### 5. Mobil-Feinschliff (ROADMAP Phase 6)
+### 5. Mobil-Feinschliff (ROADMAP Phase 6) – erledigt 28.10.
 
-- Kompakte Kopfzeile mit Menü-Button statt der Seitenleiste auf dem Handy.
-- Touch-Ziele mindestens 44 px. Unter `sm` Tabellen als Karten (WireGuard-Peers, UFW-Regeln).
-- Playwright-Smoke-Test mit iPhone- und Pixel-Viewport in der CI (`.github/workflows`): prüft `scrollWidth == innerWidth` auf allen Seiten, die API wird per `page.route` mit Beispieldaten bedient.
+- [x] Kompakte Kopfzeile mit Menü-Button statt der Seitenleiste auf dem Handy.
+- [x] Touch-Ziele mindestens 44 px. Unter `sm` Tabellen als Karten (WireGuard-Peers, UFW-Regeln).
+- [x] Playwright-Smoke-Test mit iPhone- und Pixel-Viewport in der CI (`.github/workflows`): prüft `scrollWidth == innerWidth` auf allen Seiten, die API wird per `page.route` mit Beispieldaten bedient.
 
 ### 6. Webseiten und Reverse-Proxy (neues Plugin, nginx) **(Frage)**
 

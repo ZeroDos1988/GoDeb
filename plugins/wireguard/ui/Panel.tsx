@@ -249,7 +249,7 @@ export default function Panel() {
                 <span className="block text-xs text-white/50">{t("wg.deleteAfterDownloadHint")}</span>
               </span>
             </label>
-            <DataTable head={[t("wg.name"), t("wg.ip"), t("wg.publicKey"), t("wg.endpoint"), t("wg.handshake"), t("wg.transfer"), ""]}>
+            <DataTable mobileCards head={[t("wg.name"), t("wg.ip"), t("wg.publicKey"), t("wg.endpoint"), t("wg.handshake"), t("wg.transfer"), ""]}>
               {peers.map((peer, index) => (
                 <tr key={`${peer.publicKey || "peer"}-${index}`}>
                   <td className="px-3 py-2">

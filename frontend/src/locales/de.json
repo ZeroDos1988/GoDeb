@@ -8,7 +8,10 @@
     "footer": "Metadaten in SQLite. Laufzeitdaten kommen aus dem Betriebssystem.",
     "noPlugins": "Noch keine Plugins im Ordner plugins/.",
     "serverAdmin": "Serververwaltung",
-    "sessions": "Sitzungen"
+    "sessions": "Sitzungen",
+    "menu": "Navigation",
+    "openMenu": "Menü öffnen",
+    "closeMenu": "Menü schließen"
   },
   "user": {
     "menu": "Konto {{name}}: Menü öffnen",

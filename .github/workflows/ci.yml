@@ -34,6 +34,12 @@ jobs:
           npm ci
           npm run build
 
+      - name: Playwright (Mobil-Smoke)
+        working-directory: frontend
+        run: |
+          npx playwright install --with-deps chromium
+          npm run test:e2e
+
       - name: npm audit
         working-directory: frontend
         run: npm audit --audit-level=moderate

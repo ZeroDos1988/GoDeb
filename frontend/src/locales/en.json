@@ -8,7 +8,10 @@
     "footer": "Metadata lives in SQLite. Runtime state comes from the operating system.",
     "noPlugins": "No plugins in the plugins/ folder yet.",
     "serverAdmin": "Server administration",
-    "sessions": "Sessions"
+    "sessions": "Sessions",
+    "menu": "Navigation",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
   },
   "user": {
     "menu": "Account {{name}}: open menu",
