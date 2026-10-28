@@ -258,3 +258,19 @@ func TestHandlersAndTokenSealed(t *testing.T) {
 		t.Fatalf("delete: %d", rec.Code)
 	}
 }
+
+func TestZoneFor(t *testing.T) {
+	list := []Domain{{Name: "example.com"}, {Name: "sub.example.com"}}
+	for host, want := range map[string]string{
+		"example.com":          "example.com",
+		"www.example.com":      "example.com",
+		"a.sub.example.com":    "sub.example.com",
+		"WWW.Other.org.":       "other.org",
+		"other.org":            "other.org",
+		"deep.www.unknown.net": "www.unknown.net",
+	} {
+		if got := zoneFor(host, list); got != want {
+			t.Errorf("zoneFor(%q) = %q, want %q", host, got, want)
+		}
+	}
+}

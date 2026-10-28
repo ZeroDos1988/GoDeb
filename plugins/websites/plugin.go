@@ -38,10 +38,10 @@ func handleStatus(w http.ResponseWriter, r *http.Request) {
 		nginx = "unknown"
 	}
 	core.WriteJSON(w, http.StatusOK, map[string]any{
-		"sites":  sites,
-		"nginx":  nginx,
+		"sites":   sites,
+		"nginx":   nginx,
 		"wwwRoot": wwwRoot,
-		"mocked": nginx == "unknown" || nginx == "inactive" && len(sites) == 0,
+		"mocked":  nginx == "unknown" || nginx == "inactive" && len(sites) == 0,
 	})
 }
 
@@ -161,7 +161,7 @@ func dnsNeeds() ([]domains.Need, error) {
 		}
 		seen[key] = true
 		out = append(out, domains.Need{
-			Zone: s.Domain, Name: s.Domain, Type: "A", Value: ip, Kind: "a", Source: "websites",
+			Zone: domains.ZoneFor(s.Domain), Name: s.Domain, Type: "A", Value: ip, Kind: "a", Source: "websites",
 		})
 	}
 	return out, nil

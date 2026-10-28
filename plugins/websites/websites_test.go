@@ -1,6 +1,8 @@
 package websites
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -45,5 +47,59 @@ func TestRenderNginx(t *testing.T) {
 	pc := renderNginx(proxy)
 	if !strings.Contains(pc, "proxy_pass http://10.8.0.2:9090/") {
 		t.Fatalf("%s", pc)
+	}
+}
+
+func TestCreateDocRootNoFollow(t *testing.T) {
+	base := t.TempDir()
+	outside := filepath.Join(t.TempDir(), "victim")
+	if err := os.WriteFile(outside, []byte("keep"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	// Fresh directory: placeholder written, nothing else.
+	fresh := filepath.Join(base, "fresh")
+	if err := createDocRoot(fresh, "fresh.example.com"); err != nil {
+		t.Fatal(err)
+	}
+	if b, err := os.ReadFile(filepath.Join(fresh, "index.html")); err != nil || !strings.Contains(string(b), "fresh.example.com") {
+		t.Fatalf("index: %q %v", b, err)
+	}
+
+	// Existing directory with a planted symlink: left untouched.
+	planted := filepath.Join(base, "planted")
+	if err := os.Mkdir(planted, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, filepath.Join(planted, "index.html")); err != nil {
+		t.Fatal(err)
+	}
+	if err := createDocRoot(planted, "planted.example.com"); err != nil {
+		t.Fatal(err)
+	}
+	if b, _ := os.ReadFile(outside); string(b) != "keep" {
+		t.Fatalf("wrote through symlink: %q", b)
+	}
+
+	// The docroot itself being a symlink is refused.
+	link := filepath.Join(base, "link")
+	if err := os.Symlink(t.TempDir(), link); err != nil {
+		t.Fatal(err)
+	}
+	if err := createDocRoot(link, "link.example.com"); err == nil {
+		t.Fatal("symlinked docroot accepted")
+	}
+}
+
+func TestCertEmail(t *testing.T) {
+	for _, ok := range []string{"admin@example.com", "A.B+c@Mail.Example.org"} {
+		if !emailPattern.MatchString(ok) {
+			t.Errorf("rejected %q", ok)
+		}
+	}
+	for _, bad := range []string{"--agree-tos", "a@b", "a b@example.com", "a@example.com\n"} {
+		if emailPattern.MatchString(bad) {
+			t.Errorf("accepted %q", bad)
+		}
 	}
 }

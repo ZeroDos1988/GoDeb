@@ -17,29 +17,28 @@ const (
 
 // Site is one vhost managed by GoDeb.
 type Site struct {
-	Name       string `json:"name"`       // directory / unit id
-	Domain     string `json:"domain"`     // server_name
-	Mode       string `json:"mode"`       // static | proxy
-	PHP        bool   `json:"php"`        // enable PHP-FPM for static
-	ProxyURL   string `json:"proxyUrl"`   // http://127.0.0.1:8080
-	TLS        bool   `json:"tls"`        // use Let's Encrypt cert if present
-	Public     bool   `json:"public"`     // open 80/443 in ufw
-	Enabled    bool   `json:"enabled"`
-	Created    string `json:"created"`
-	Root       string `json:"root"`       // resolved document root
-	HomeLink   string `json:"homeLink"`   // symlink in the web user's home
+	Name     string `json:"name"`     // directory / unit id
+	Domain   string `json:"domain"`   // server_name
+	Mode     string `json:"mode"`     // static | proxy
+	PHP      bool   `json:"php"`      // enable PHP-FPM for static
+	ProxyURL string `json:"proxyUrl"` // http://127.0.0.1:8080
+	TLS      bool   `json:"tls"`      // use Let's Encrypt cert if present
+	Public   bool   `json:"public"`   // open 80/443 in ufw
+	Enabled  bool   `json:"enabled"`
+	Created  string `json:"created"`
+	Root     string `json:"root"` // resolved document root
 }
 
 var (
 	namePattern   = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,31}$`)
+	emailPattern  = regexp.MustCompile(`(?i)^[A-Za-z0-9._%+-]{1,64}@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$`)
 	domainPattern = regexp.MustCompile(`^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$`)
 )
 
 const (
-	wwwRoot     = "/var/www/godeb"
-	nginxAvail  = "/etc/nginx/sites-available"
+	wwwRoot      = "/var/www/godeb"
+	nginxAvail   = "/etc/nginx/sites-available"
 	nginxEnabled = "/etc/nginx/sites-enabled"
-	homeWebRel  = "www" // ~/www/<name> -> /var/www/godeb/<name>
 )
 
 func cleanSite(s Site) (Site, error) {
@@ -85,12 +84,11 @@ func cleanSite(s Site) (Site, error) {
 		s.ProxyURL = ""
 	}
 	s.Root = filepath.Join(wwwRoot, s.Name)
-	s.HomeLink = filepath.Join(homeWebRel, s.Name)
 	return s, nil
 }
 
-func confName(name string) string { return "godeb-" + name + ".conf" }
-func confPath(name string) string { return filepath.Join(nginxAvail, confName(name)) }
+func confName(name string) string    { return "godeb-" + name + ".conf" }
+func confPath(name string) string    { return filepath.Join(nginxAvail, confName(name)) }
 func enabledPath(name string) string { return filepath.Join(nginxEnabled, confName(name)) }
 
 func certPaths(domain string) (cert, key string) {

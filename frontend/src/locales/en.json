@@ -502,7 +502,7 @@
   },
   "websites": {
     "title": "Websites",
-    "description": "nginx vhosts with optional PHP-FPM or reverse proxy. Files under /var/www/godeb/<name>, symlink under the web user's ~/www/<name>. Ports 80/443 open when public access or a certificate is requested.",
+    "description": "nginx vhosts with optional PHP-FPM or reverse proxy. Files under /var/www/godeb/<name> (owned by root, maintained via SSH/SFTP). Ports 80/443 open when public access or a certificate is requested.",
     "root": "Document root",
     "empty": "No website yet.",
     "name": "Name",

@@ -2,6 +2,7 @@ package domains
 
 import (
 	"context"
+	"strings"
 	"sync"
 )
 
@@ -68,4 +69,30 @@ func CheckAll(ctx context.Context) ([]Record, error) {
 		return nil, err
 	}
 	return recordsFor(ctx, needs), nil
+}
+
+// ZoneFor returns the zone a host belongs to, so plugins can fill Need.Zone
+// for subdomains: the longest configured zone containing host, otherwise
+// host without its first label (www.example.com -> example.com) when that
+// still has a dot, otherwise host itself.
+func ZoneFor(host string) string {
+	list, _ := listDomains()
+	return zoneFor(host, list)
+}
+
+func zoneFor(host string, list []Domain) string {
+	host = strings.TrimSuffix(strings.ToLower(strings.TrimSpace(host)), ".")
+	best := ""
+	for _, d := range list {
+		if (host == d.Name || strings.HasSuffix(host, "."+d.Name)) && len(d.Name) > len(best) {
+			best = d.Name
+		}
+	}
+	if best != "" {
+		return best
+	}
+	if _, rest, ok := strings.Cut(host, "."); ok && strings.Contains(rest, ".") {
+		return rest
+	}
+	return host
 }

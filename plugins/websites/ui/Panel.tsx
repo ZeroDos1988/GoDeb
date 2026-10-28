@@ -14,7 +14,6 @@ type Site = {
   public: boolean;
   enabled: boolean;
   root: string;
-  homeLink: string;
 };
 
 type Status = {
