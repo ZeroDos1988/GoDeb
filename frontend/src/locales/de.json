@@ -531,7 +531,7 @@
     "delete": "Löschen",
     "confirmDelete": "Timer {{name}} löschen?",
     "add": "Timer anlegen",
-    "addHint": "Kein Shell-Befehl. Erlaubt: feste Binaries (true, logrotate, certbot renew, systemctl reload …) oder Skripte in den Allowlist-Verzeichnissen.",
+    "addHint": "Kein Shell-Befehl. Erlaubt: feste Binaries (true, logrotate, certbot renew, systemctl reload …; certbot ohne Hooks, logrotate nur mit Konfigurationen unter /etc) oder Skripte in den Allowlist-Verzeichnissen.",
     "name": "Name",
     "calendar": "Zeitplan (OnCalendar)",
     "command": "Befehl (Argumente durch Leerzeichen)",

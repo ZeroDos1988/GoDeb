@@ -47,8 +47,11 @@ WantedBy=timers.target
 `, escapeUnit(desc), req.Calendar, serviceName(req.Name))
 }
 
+// escapeUnit escapes text for a unit file line; % starts a systemd
+// specifier (%h, %u, …), so it is doubled.
 func escapeUnit(s string) string {
 	s = strings.ReplaceAll(s, `\`, `\\`)
+	s = strings.ReplaceAll(s, "%", "%%")
 	s = strings.ReplaceAll(s, "\n", " ")
 	return s
 }
@@ -57,6 +60,7 @@ func escapeUnit(s string) string {
 func shellQuote(args []string) []string {
 	out := make([]string, len(args))
 	for i, a := range args {
+		a = strings.ReplaceAll(a, "%", "%%")
 		if strings.ContainsAny(a, " \t\"'\\") {
 			out[i] = `"` + strings.ReplaceAll(a, `"`, `\"`) + `"`
 		} else {

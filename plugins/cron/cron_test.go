@@ -67,3 +67,34 @@ func TestRenderUnits(t *testing.T) {
 		}
 	}
 }
+
+func TestCleanJobHooks(t *testing.T) {
+	for _, cmd := range [][]string{
+		{"/usr/bin/certbot", "renew", "--deploy-hook=/tmp/x"},
+		{"/usr/bin/certbot", "renew", "--post-hook", "/tmp/x"},
+		{"/usr/bin/certbot", "certonly"},
+		{"/usr/sbin/logrotate", "/tmp/evil.conf"},
+		{"/usr/sbin/logrotate", "-f", "/var/lib/godeb/x.conf"},
+		{"/usr/sbin/logrotate", "/etc/logrotate.conf", "/tmp/evil.conf"},
+		{"/usr/sbin/service", "ssh", "stop"},
+	} {
+		if _, err := cleanJob(JobRequest{Name: "x", Calendar: "daily", Command: cmd}); err == nil {
+			t.Errorf("accepted %v", cmd)
+		}
+	}
+	for _, cmd := range [][]string{
+		{"/usr/bin/certbot", "renew", "--quiet"},
+		{"/usr/sbin/logrotate", "-f", "/etc/logrotate.d/nginx"},
+	} {
+		if _, err := cleanJob(JobRequest{Name: "x", Calendar: "daily", Command: cmd}); err != nil {
+			t.Errorf("rejected %v: %v", cmd, err)
+		}
+	}
+}
+
+func TestRenderEscapesSpecifiers(t *testing.T) {
+	svc := renderService(JobRequest{Name: "d", Calendar: "daily", Command: []string{"/etc/godeb/scripts/run", "50%h"}, Description: "100% %u"})
+	if !strings.Contains(svc, "ExecStart=/etc/godeb/scripts/run 50%%h") || !strings.Contains(svc, "Description=100%% %%u") {
+		t.Fatalf("%s", svc)
+	}
+}
