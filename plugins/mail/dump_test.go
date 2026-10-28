@@ -40,6 +40,10 @@ func TestDumpConfig(t *testing.T) {
 	write(dovecotDeny, deny)
 	write(dovecotConf, dovecotConfig(s))
 	write(spamSieve, spamSieveScript)
+	write("vacation.sieve", vacationSieve(Account{
+		Domain: "example.com", Local: "info", Aliases: []string{"kontakt"}, Vacation: true, VacationDays: 7,
+		VacationSubject: `Abwesend "Büro"`, VacationBody: "Hallo,\n\n.punkt am Zeilenanfang\nBis bald.",
+	}))
 	for p, body := range rspamdFiles(s, domains) {
 		write(p, body)
 	}

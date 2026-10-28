@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -128,12 +129,17 @@ func removeMailbox(domain, local string) error {
 			return err
 		}
 	}
-	dir := filepath.Join(root(vmailDir), domain, local)
-	base := filepath.Clean(root(vmailDir)) + string(os.PathSeparator)
-	if !strings.HasPrefix(filepath.Clean(dir)+string(os.PathSeparator), base) || filepath.Clean(dir) == filepath.Clean(root(vmailDir)) {
-		return errors.New("Pfad außerhalb von /var/vmail")
+	// Through an os.Root: vmail owns the tree and could plant a symlink
+	// (e.g. <domain> -> /) that a plain RemoveAll would follow.
+	r, err := openVmail()
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil
+		}
+		return err
 	}
-	return os.RemoveAll(dir)
+	defer r.Close()
+	return r.RemoveAll(filepath.Join(domain, local))
 }
 
 // admin and adminTimeout run system commands; tests replace them.

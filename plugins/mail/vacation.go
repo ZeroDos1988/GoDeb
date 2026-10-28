@@ -1,7 +1,11 @@
 package mail
 
 import (
+	"crypto/rand"
+	"encoding/hex"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -92,17 +96,37 @@ func vacationSieve(a Account) string {
 	b.WriteString(header)
 	b.WriteString(`require ["vacation"];` + "\n")
 	fmt.Fprintf(&b, "vacation :days %d :subject %s :addresses [%s] %s;\n",
-		days, sieveQuote(a.VacationSubject), list.String(), sieveQuote(a.VacationBody))
+		days, sieveQuote(a.VacationSubject), list.String(), sieveText(a.VacationBody))
 	return b.String()
 }
 
+// sieveQuote builds a quoted Sieve string (RFC 5228 2.4.2). Sieve knows only
+// the escapes \\ and \", so line breaks become spaces; a subject is one line.
 func sieveQuote(s string) string {
 	s = strings.ReplaceAll(s, `\`, `\\`)
 	s = strings.ReplaceAll(s, `"`, `\"`)
-	s = strings.ReplaceAll(s, "\r\n", `\n`)
-	s = strings.ReplaceAll(s, "\n", `\n`)
-	s = strings.ReplaceAll(s, "\r", `\n`)
+	s = strings.ReplaceAll(s, "\r\n", " ")
+	s = strings.ReplaceAll(s, "\n", " ")
+	s = strings.ReplaceAll(s, "\r", " ")
 	return `"` + s + `"`
+}
+
+// sieveText builds a multi-line Sieve string: "text:", the lines with a
+// leading dot doubled, and a lone dot as terminator.
+func sieveText(s string) string {
+	s = strings.ReplaceAll(s, "\r\n", "\n")
+	s = strings.ReplaceAll(s, "\r", "\n")
+	var b strings.Builder
+	b.WriteString("text:\n")
+	for _, line := range strings.Split(s, "\n") {
+		if strings.HasPrefix(line, ".") {
+			b.WriteString(".")
+		}
+		b.WriteString(line)
+		b.WriteString("\n")
+	}
+	b.WriteString(".\n")
+	return b.String()
 }
 
 func mailboxHome(domain, local string) string {
@@ -117,12 +141,38 @@ func personalSievePath(domain, local string) string {
 func syncVacation(accounts []Account) error {
 	for _, a := range accounts {
 		if a.ForwardOnly {
-			_ = os.Remove(personalSievePath(a.Domain, a.Local))
+			_ = removeInVmail(sieveRel(a.Domain, a.Local))
 			continue
 		}
 		if err := writeVacation(a); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+// /var/vmail and everything below belong to the mailbox user vmail. The
+// agent (root) only works there through an os.Root, so a symlink planted by
+// a compromised mail process cannot lead it to other files.
+func openVmail() (*os.Root, error) {
+	return os.OpenRoot(root(vmailDir))
+}
+
+func sieveRel(domain, local string) string {
+	return filepath.Join(domain, local, ".dovecot.sieve")
+}
+
+func removeInVmail(rel string) error {
+	r, err := openVmail()
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	defer r.Close()
+	if err := r.Remove(rel); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return err
 	}
 	return nil
 }
@@ -134,70 +184,105 @@ func writeVacation(a Account) error {
 	if _, err := NormalizeLocal(a.Local); err != nil {
 		return err
 	}
-	home := mailboxHome(a.Domain, a.Local)
-	active := personalSievePath(a.Domain, a.Local)
 	script := vacationSieve(a)
 	if script == "" {
-		_ = os.Remove(active)
+		return removeInVmail(sieveRel(a.Domain, a.Local))
+	}
+	r, err := openVmail()
+	if errors.Is(err, fs.ErrNotExist) {
+		// Mail server not installed yet; the install job creates /var/vmail
+		// and the next apply writes the script.
 		return nil
 	}
-	if err := ensureMailboxHome(home); err != nil {
-		return err
-	}
-	return writeOwned(active, script, 0o600, "vmail", "vmail")
-}
-
-func ensureMailboxHome(home string) error {
-	base := filepath.Clean(root(vmailDir)) + string(os.PathSeparator)
-	clean := filepath.Clean(home)
-	if !strings.HasPrefix(clean+string(os.PathSeparator), base) {
-		return fmt.Errorf("Pfad außerhalb von /var/vmail")
-	}
-	if err := os.MkdirAll(clean, 0o750); err != nil {
-		return err
-	}
-	return chownPath(clean, "vmail", "vmail")
-}
-
-// writeOwned writes a file under /var/vmail owned by the mailbox user.
-func writeOwned(full, body string, mode os.FileMode, owner, group string) error {
-	if err := os.MkdirAll(filepath.Dir(full), 0o750); err != nil {
-		return err
-	}
-	tmp, err := os.CreateTemp(filepath.Dir(full), ".godeb-*")
 	if err != nil {
 		return err
 	}
-	defer os.Remove(tmp.Name())
-	if _, err := tmp.WriteString(body); err != nil {
-		tmp.Close()
+	defer r.Close()
+	if err := ensureMailboxHome(r, a.Domain, a.Local); err != nil {
 		return err
 	}
-	if err := tmp.Close(); err != nil {
-		return err
-	}
-	if err := os.Chmod(tmp.Name(), mode); err != nil {
-		return err
-	}
-	if err := chownPath(tmp.Name(), owner, group); err != nil {
-		return err
-	}
-	return os.Rename(tmp.Name(), full)
+	return writeOwned(r, sieveRel(a.Domain, a.Local), script, 0o600, "vmail", "vmail")
 }
 
-func chownPath(path, owner, group string) error {
+// ensureMailboxHome creates <domain>/<local> below the vmail root, owned by
+// vmail. Lchown never follows a link.
+func ensureMailboxHome(r *os.Root, domain, local string) error {
+	uid, gid, err := lookupOwner("vmail", "vmail")
+	if err != nil {
+		return err
+	}
+	for _, rel := range []string{domain, filepath.Join(domain, local)} {
+		if err := r.Mkdir(rel, 0o750); err != nil && !errors.Is(err, fs.ErrExist) {
+			return err
+		}
+		fi, err := r.Lstat(rel)
+		if err != nil {
+			return err
+		}
+		if !fi.IsDir() {
+			return fmt.Errorf("%s ist kein Verzeichnis", rel)
+		}
+		if uid >= 0 {
+			if err := r.Lchown(rel, uid, gid); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// writeOwned replaces rel below r atomically with a file owned by the
+// mailbox user. Mode and owner are set through the open file.
+func writeOwned(r *os.Root, rel, body string, mode os.FileMode, owner, group string) error {
+	uid, gid, err := lookupOwner(owner, group)
+	if err != nil {
+		return err
+	}
+	suffix := make([]byte, 8)
+	if _, err := rand.Read(suffix); err != nil {
+		return err
+	}
+	tmp := filepath.Join(filepath.Dir(rel), ".godeb-"+hex.EncodeToString(suffix))
+	f, err := r.OpenFile(tmp, os.O_WRONLY|os.O_CREATE|os.O_EXCL, mode)
+	if err != nil {
+		return err
+	}
+	defer r.Remove(tmp)
+	if _, err := f.WriteString(body); err != nil {
+		f.Close()
+		return err
+	}
+	if err := f.Chmod(mode); err != nil {
+		f.Close()
+		return err
+	}
+	if uid >= 0 {
+		if err := f.Chown(uid, gid); err != nil {
+			f.Close()
+			return err
+		}
+	}
+	if err := f.Close(); err != nil {
+		return err
+	}
+	return r.Rename(tmp, rel)
+}
+
+// lookupOwner resolves owner and group; -1 when not running as root (tests),
+// where chown is skipped.
+func lookupOwner(owner, group string) (int, int, error) {
 	if os.Geteuid() != 0 {
-		return nil
+		return -1, -1, nil
 	}
 	u, err := user.Lookup(owner)
 	if err != nil {
-		return fmt.Errorf("Benutzer %s fehlt: %w", owner, err)
+		return 0, 0, fmt.Errorf("Benutzer %s fehlt: %w", owner, err)
 	}
 	g, err := user.LookupGroup(group)
 	if err != nil {
-		return fmt.Errorf("Gruppe %s fehlt: %w", group, err)
+		return 0, 0, fmt.Errorf("Gruppe %s fehlt: %w", group, err)
 	}
 	uid, _ := strconv.Atoi(u.Uid)
 	gid, _ := strconv.Atoi(g.Gid)
-	return os.Chown(path, uid, gid)
+	return uid, gid, nil
 }

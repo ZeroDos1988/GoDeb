@@ -71,6 +71,7 @@ echo "==> Dovecot"
 run /usr/bin/doveconf -c /t/out/etc/dovecot/dovecot.conf -n >/dev/null
 cp "$T/out/etc/dovecot/dovecot.conf" "$R/etc/dovecot/dovecot.conf"
 run /usr/bin/sievec /t/out/etc/dovecot/godeb/spam.sieve
+run /usr/bin/sievec /t/out/vacation.sieve
 hash=$(sed -n 's/^info@example.com:\([^:]*\):.*/\1/p' "$T/out/etc/dovecot/godeb/users")
 run /usr/bin/doveadm pw -t "$hash" -p 'Correct-Horse-9' >/dev/null
 echo "    dovecot.conf gültig, Sieve kompiliert, Argon2id-Hash geprüft"
