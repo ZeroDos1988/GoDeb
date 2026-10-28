@@ -790,7 +790,10 @@
       "spf": "SPF: who may send",
       "dkim": "DKIM: signature",
       "dmarc": "DMARC: policy",
+      "mtasts": "MTA-STS: TXT",
+      "tlsrpt": "TLS-RPT: reports",
       "a": "A: mail server address",
+      "mtasts-host": "A: mta-sts host",
       "ptr": "PTR: reverse DNS"
     },
     "dnsHelp": {
@@ -798,9 +801,14 @@
       "spf": "Allows only this mail server to send for the domain.",
       "dkim": "Public key receivers use to check this server's signature.",
       "dmarc": "Receivers should treat mail failing SPF/DKIM as spam.",
+      "mtasts": "Points to the MTA-STS policy. id changes when the policy changes.",
+      "tlsrpt": "Where other servers send TLS failure reports (mailto). Create a mailbox or catch-all for tls-reports@.",
       "a": "The mail server hostname must point to this IP (once for all domains).",
+      "mtasts-host": "Hostname for https://mta-sts.…/.well-known/mta-sts.txt. Serving comes with the web server plugin.",
       "ptr": "Set at the hosting provider (Hetzner: server → networking → reverse DNS). Without a matching PTR mail often lands in spam."
     },
+    "mtaSTSPolicy": "MTA-STS policy",
+    "mtaSTSPolicyHint": "File for https://{{host}}/.well-known/mta-sts.txt (mode=testing until the web server serves it). Stored under /etc/godeb/mta-sts/.",
     "dnsStatus": {
       "ok": "correct",
       "missing": "missing",

@@ -34,6 +34,7 @@ func dnsNeeds() ([]domains.Need, error) {
 			if r.Kind == "a" || r.Kind == "ptr" {
 				zone = hostZone
 			}
+			// mtasts-host stays in the mail domain zone (mta-sts.<domain>).
 			key := zone + "|" + r.Name + "|" + r.Type
 			if seen[key] {
 				continue

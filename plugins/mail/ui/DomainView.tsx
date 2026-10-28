@@ -26,6 +26,8 @@ type DomainData = {
   domain: Domain;
   accounts: Account[];
   records: DnsRecord[];
+  mtaSTS?: string;
+  mtaSTSHost?: string;
   client: {
     host: string;
     imapPort: number;
@@ -96,7 +98,14 @@ export function DomainView({
           {tab === "accounts" ? (
             <Accounts data={data} onChanged={reload} />
           ) : null}
-          {tab === "dns" ? <Dns name={name} initial={data.records} /> : null}
+          {tab === "dns" ? (
+            <Dns
+              name={name}
+              initial={data.records}
+              policy={data.mtaSTS ?? ""}
+              policyHost={data.mtaSTSHost ?? `mta-sts.${name}`}
+            />
+          ) : null}
           {tab === "settings" ? (
             <DomainSettings
               data={data}
@@ -590,9 +599,21 @@ function Credentials({
   );
 }
 
-function Dns({ name, initial }: { name: string; initial: DnsRecord[] }) {
+function Dns({
+  name,
+  initial,
+  policy,
+  policyHost,
+}: {
+  name: string;
+  initial: DnsRecord[];
+  policy: string;
+  policyHost: string;
+}) {
   const { t } = useTranslation();
   const [records, setRecords] = useState(initial);
+  const [mtaSTS, setMtaSTS] = useState(policy);
+  const [host, setHost] = useState(policyHost);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -600,10 +621,14 @@ function Dns({ name, initial }: { name: string; initial: DnsRecord[] }) {
     setBusy(true);
     setError("");
     try {
-      const res = await api<{ records: DnsRecord[] }>(
-        `${base}/domains/${encodeURIComponent(name)}/dns`,
-      );
+      const res = await api<{
+        records: DnsRecord[];
+        mtaSTS?: string;
+        mtaSTSHost?: string;
+      }>(`${base}/domains/${encodeURIComponent(name)}/dns`);
       setRecords(res.records);
+      if (res.mtaSTS) setMtaSTS(res.mtaSTS);
+      if (res.mtaSTSHost) setHost(res.mtaSTSHost);
     } catch (err) {
       setError(errorText(err, t("mail.failed")));
     } finally {
@@ -668,6 +693,20 @@ function Dns({ name, initial }: { name: string; initial: DnsRecord[] }) {
           </li>
         ))}
       </ul>
+      {mtaSTS ? (
+        <section className={card}>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold">{t("mail.mtaSTSPolicy")}</h2>
+            <CopyButton text={mtaSTS} label={t("common.copy")} />
+          </div>
+          <p className="mt-1 text-xs text-white/60">
+            {t("mail.mtaSTSPolicyHint", { host })}
+          </p>
+          <pre className="mt-3 overflow-x-auto rounded-2xl bg-slate-950/60 p-3 font-mono text-xs whitespace-pre-wrap">
+            {mtaSTS}
+          </pre>
+        </section>
+      ) : null}
     </div>
   );
 }

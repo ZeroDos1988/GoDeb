@@ -10,7 +10,7 @@ import (
 
 // Record is one DNS entry the admin has to create, with the live result.
 type Record struct {
-	Kind   string `json:"kind"` // mx, spf, dkim, dmarc, a, ptr
+	Kind   string `json:"kind"` // mx, spf, dkim, dmarc, mtasts, tlsrpt, a, mtasts-host, ptr
 	Name   string `json:"name"`
 	Type   string `json:"type"`
 	Value  string `json:"value"`
@@ -39,10 +39,15 @@ func expectedRecords(s Settings, d Domain, publicIP string) []Record {
 	if d.DKIMPublic != "" {
 		recs = append(recs, Record{Kind: "dkim", Name: d.Selector + "._domainkey." + d.Name, Type: "TXT", Value: dkimRecordValue(d.DKIMPublic)})
 	}
-	recs = append(recs, Record{Kind: "dmarc", Name: "_dmarc." + d.Name, Type: "TXT", Value: "v=DMARC1; p=quarantine; adkim=s; aspf=s"})
+	recs = append(recs,
+		Record{Kind: "dmarc", Name: "_dmarc." + d.Name, Type: "TXT", Value: "v=DMARC1; p=quarantine; adkim=s; aspf=s"},
+		Record{Kind: "mtasts", Name: "_mta-sts." + d.Name, Type: "TXT", Value: mtaSTSRecord(d.Name, s)},
+		Record{Kind: "tlsrpt", Name: "_smtp._tls." + d.Name, Type: "TXT", Value: tlsRPTRecord(d.Name)},
+	)
 	if publicIP != "" {
 		recs = append(recs,
 			Record{Kind: "a", Name: s.Hostname, Type: "A", Value: publicIP},
+			Record{Kind: "mtasts-host", Name: "mta-sts." + d.Name, Type: "A", Value: publicIP},
 			Record{Kind: "ptr", Name: publicIP, Type: "PTR", Value: s.Hostname + "."},
 		)
 	}
@@ -81,10 +86,13 @@ func checkRecords(ctx context.Context, recs []Record) []Record {
 				r.Status = "wrong"
 			}
 			r.Found = strings.Join(found, ", ")
-		case "spf", "dkim", "dmarc":
+		case "spf", "dkim", "dmarc", "mtasts", "tlsrpt":
 			txts, err := dnsResolver.LookupTXT(ctx, r.Name)
 			r.Status = statusFrom(err)
-			prefix := map[string]string{"spf": "v=spf1", "dkim": "v=DKIM1", "dmarc": "v=DMARC1"}[r.Kind]
+			prefix := map[string]string{
+				"spf": "v=spf1", "dkim": "v=DKIM1", "dmarc": "v=DMARC1",
+				"mtasts": "v=STSv1", "tlsrpt": "v=TLSRPTv1",
+			}[r.Kind]
 			for _, t := range txts {
 				if !strings.HasPrefix(strings.TrimSpace(t), prefix) {
 					continue
@@ -95,7 +103,7 @@ func checkRecords(ctx context.Context, recs []Record) []Record {
 					r.Status = "ok"
 				}
 			}
-		case "a":
+		case "a", "mtasts-host":
 			ips, err := dnsResolver.LookupHost(ctx, r.Name)
 			r.Status = statusFrom(err)
 			r.Found = strings.Join(ips, ", ")
@@ -154,6 +162,14 @@ func txtMatches(kind, found, want string) bool {
 		// add other senders.
 		f := norm(found)
 		return strings.Contains(f, " mx") && (strings.HasSuffix(f, "-all") || strings.HasSuffix(f, "~all"))
+	}
+	if kind == "mtasts" {
+		f := norm(found)
+		return strings.HasPrefix(f, "v=stsv1;") && strings.Contains(f, "id=")
+	}
+	if kind == "tlsrpt" {
+		f := norm(found)
+		return strings.HasPrefix(f, "v=tlsrptv1;") && strings.Contains(f, "rua=mailto:")
 	}
 	return strings.HasPrefix(norm(found), "v=dmarc1; p=quarantine") || strings.HasPrefix(norm(found), "v=dmarc1; p=reject") || norm(found) == norm(want)
 }

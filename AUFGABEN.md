@@ -46,7 +46,7 @@ Umgesetzt in `plugins/apt/metrics.go`: Warnung bei offenen Sicherheitsupdates nu
 Jeden Unterpunkt einzeln committen:
 - [x] **Abwesenheitsnotiz** per Sieve (Pigeonhole) pro Postfach, in der UI ein- und ausschaltbar – 28.10.
 - **Autoconfig (Thunderbird) und Autodiscover (Outlook)** für die Maildomains. Braucht einen Webserver, also nach Aufgabe 6 oder als kleiner eigener Endpunkt; vorher fragen.
-- **MTA-STS und TLS-RPT**: Richtlinie und DNS-Einträge, über `domains.RegisterNeeds` melden.
+- [x] **MTA-STS und TLS-RPT**: Richtlinie und DNS-Einträge, über `domains.RegisterNeeds` melden – 28.10. (HTTPS-Auslieferung der Richtlinie mit Webserver-Plugin).
 - **Quota-Warnungen** (Dovecot-Quota-Warning) und Belegung pro Postfach in der UI.
 - **Spam lernen**: Verschieben in den Junk-Ordner bzw. aus ihm heraus trainiert Rspamd (imapsieve).
 - **Mail-Queue**: Postfix-Queue anzeigen, einzelne Mails löschen oder erneut senden. Die Queue-IDs gegen eine Regex prüfen.

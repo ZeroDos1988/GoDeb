@@ -185,6 +185,9 @@ func apply(ctx context.Context) ([]string, error) {
 	if err := syncVacation(accounts); err != nil {
 		return log, err
 	}
+	if err := syncMTASTS(s, domains); err != nil {
+		return log, err
+	}
 	if res := admin(ctx, "sievec", root(spamSieve)); res.Err != nil {
 		log = append(log, "sievec: "+res.Detail())
 	}

@@ -36,7 +36,16 @@ export type Account = {
 };
 
 export type DnsRecord = {
-  kind: "mx" | "spf" | "dkim" | "dmarc" | "a" | "ptr";
+  kind:
+    | "mx"
+    | "spf"
+    | "dkim"
+    | "dmarc"
+    | "mtasts"
+    | "tlsrpt"
+    | "a"
+    | "mtasts-host"
+    | "ptr";
   name: string;
   type: string;
   value: string;

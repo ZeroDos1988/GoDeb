@@ -36,7 +36,7 @@ type Need struct {
 	Name   string `json:"name"`   // FQDN or IP for PTR
 	Type   string `json:"type"`   // A, MX, TXT, PTR
 	Value  string `json:"value"`  // as shown to the admin / sent to the API
-	Kind   string `json:"kind"`   // mx, spf, dkim, dmarc, a, ptr
+	Kind   string `json:"kind"`   // mx, spf, dkim, dmarc, mtasts, tlsrpt, a, mtasts-host, ptr
 	Source string `json:"source"` // "mail", …
 }
 

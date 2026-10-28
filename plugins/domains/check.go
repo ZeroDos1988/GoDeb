@@ -31,9 +31,9 @@ func recordsFor(ctx context.Context, needs []Need) []Record {
 		switch n.Kind {
 		case "mx":
 			checkMX(ctx, &r)
-		case "spf", "dkim", "dmarc":
+		case "spf", "dkim", "dmarc", "mtasts", "tlsrpt":
 			checkTXT(ctx, &r)
-		case "a":
+		case "a", "mtasts-host":
 			checkA(ctx, &r)
 		case "ptr":
 			checkPTR(ctx, &r)
@@ -66,7 +66,10 @@ func checkMX(ctx context.Context, r *Record) {
 func checkTXT(ctx context.Context, r *Record) {
 	txts, err := dnsResolver.LookupTXT(ctx, r.Name)
 	r.Status = statusFrom(err)
-	prefix := map[string]string{"spf": "v=spf1", "dkim": "v=DKIM1", "dmarc": "v=DMARC1"}[r.Kind]
+	prefix := map[string]string{
+		"spf": "v=spf1", "dkim": "v=DKIM1", "dmarc": "v=DMARC1",
+		"mtasts": "v=STSv1", "tlsrpt": "v=TLSRPTv1",
+	}[r.Kind]
 	for _, t := range txts {
 		if !strings.HasPrefix(strings.TrimSpace(t), prefix) {
 			continue
@@ -131,6 +134,14 @@ func txtMatches(kind, found, want string) bool {
 	if kind == "spf" {
 		f := norm(found)
 		return strings.Contains(f, " mx") && (strings.HasSuffix(f, "-all") || strings.HasSuffix(f, "~all"))
+	}
+	if kind == "mtasts" {
+		f := norm(found)
+		return strings.HasPrefix(f, "v=stsv1;") && strings.Contains(f, "id=")
+	}
+	if kind == "tlsrpt" {
+		f := norm(found)
+		return strings.HasPrefix(f, "v=tlsrptv1;") && strings.Contains(f, "rua=mailto:")
 	}
 	return strings.HasPrefix(norm(found), "v=dmarc1; p=quarantine") || strings.HasPrefix(norm(found), "v=dmarc1; p=reject") || norm(found) == norm(want)
 }

@@ -271,8 +271,10 @@ func handleDomain(w http.ResponseWriter, r *http.Request) {
 	core.WriteJSON(w, http.StatusOK, map[string]any{
 		"domain":   d,
 		"accounts": list,
-		"records":  expectedRecords(s, d, core.DefaultRoute(r.Context()).Src),
-		"client":   map[string]any{"host": s.Hostname, "imapPort": 993, "smtpPort": 465, "submissionPort": 587},
+		"records":    expectedRecords(s, d, core.DefaultRoute(r.Context()).Src),
+		"mtaSTS":     mtaSTSPolicy(s),
+		"mtaSTSHost": "mta-sts." + d.Name,
+		"client":     map[string]any{"host": s.Hostname, "imapPort": 993, "smtpPort": 465, "submissionPort": 587},
 	})
 }
 
@@ -282,7 +284,11 @@ func handleDNS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s, _, _ := loadSettings()
-	core.WriteJSON(w, http.StatusOK, map[string]any{"records": checkRecords(r.Context(), expectedRecords(s, d, core.DefaultRoute(r.Context()).Src))})
+	core.WriteJSON(w, http.StatusOK, map[string]any{
+		"records":    checkRecords(r.Context(), expectedRecords(s, d, core.DefaultRoute(r.Context()).Src)),
+		"mtaSTS":     mtaSTSPolicy(s),
+		"mtaSTSHost": "mta-sts." + d.Name,
+	})
 }
 
 func handleEditDomain(w http.ResponseWriter, r *http.Request) {
