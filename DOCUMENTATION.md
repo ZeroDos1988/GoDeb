@@ -202,7 +202,7 @@ Für einen Testserver. Was vor dem produktiven Einsatz noch fehlt, steht unter �
 
 - x86 (CX/CPX) oder ARM (CAX): Das Paket gibt es für `amd64` und `arm64`. Spielserver (Plugin Steam) laufen nur auf x86, weil SteamCMD und die Windows-Server unter Wine nur dafür existieren. Für GoDeb allein reicht ein kleiner Typ mit 2 GB RAM. Im Zielbild läuft Enshrouded nicht auf dem VPS, sondern auf der Heim-VM (siehe „Zielbild: VPS und Heim-VM“). Soll es doch auf dem VPS laufen, braucht er mindestens 8 GB RAM, und die Serverdateien belegen knapp 8 GB auf der Platte.
 - Image **Debian 13**, eigenen SSH-Schlüssel hinterlegen.
-- Eine Hetzner-Cloud-Firewall ist optional. Wenn sie aktiv ist, muss sie eingehend `22/tcp` und `51820/udp` erlauben. Port `8080` bleibt dort zu.
+- Eine Hetzner-Cloud-Firewall ist für den Test optional, für den Produktivbetrieb empfohlen (Ports siehe „Produktivbetrieb (Checkliste)“). Mindestens eingehend `22/tcp` und `51820/udp`; Port `8080` bleibt dort zu.
 
 **Auf dem Server** (`ssh <benutzer>@<server-ip>`, ein Konto mit `sudo`), aus dem APT-Repo (siehe „APT-Repo“). Ein frischer Hetzner-Server kennt zunächst nur root; wer sich als root anmeldet, lässt `sudo` in allen Befehlen weg.
 
@@ -603,6 +603,51 @@ sudo godeb trust show
 sudo nft list table ip godeb_portforward         # Hub: aktive Portweiterleitungen
 ```
 
+### Produktivbetrieb (Checkliste)
+
+Einmal vor dem Produktivbetrieb abhaken, danach nach jeder größeren Änderung. Hintergrund: `ROADMAP.md`, „Produktionsreife“.
+
+- **Hetzner-Backups** für den VPS einschalten (Server → Backups; täglich, 7 Stände) und **vor jedem GoDeb-Update einen Snapshot** ziehen. Zu Hause dasselbe mit Proxmox (Backup-Job plus Snapshot vor Updates). Ein tägliches Backup heißt: Mails und Spielstände der letzten bis zu 24 Stunden können fehlen.
+- **Hetzner Cloud Firewall** als zweite Schicht vor ufw, eingehend nur: `22/tcp`, `51820/udp`; mit Mailserver `25/tcp`, `465/tcp`, `587/tcp`, `993/tcp`; mit Webseiten oder Zertifikaten `80/tcp`, `443/tcp`; mit Portweiterleitung die Spielports (Enshrouded `15636-15637/udp`). `8080`, `5432` und `6379` nie.
+- **SSH nur mit Schlüssel** (siehe „SSH und Updates“ oben). `godeb doctor` und die Ampel melden Passwort-Login als Warnung.
+- **Mail** vorab: A-Eintrag `mail.<domain>`, Reverse-DNS in der Hetzner-Konsole auf `mail.<domain>`, Freigabe von ausgehend `25/465` bei Hetzner beantragen. Danach mail-tester.com: mindestens 9/10.
+- **Alarme** einschalten (Überwachung → Alarme): ntfy-Thema auf beiden Servern, Mail zusätzlich. Die Heim-VM meldet einen ausgefallenen VPS („Hub von außen“), aber nur per ntfy zuverlässig.
+- **Externe Prüfung** der öffentlichen Dienste (Mail-Ports, Webseiten) mit einem Uptime-Dienst.
+- **Nur gebrauchte Plugins** eingeschaltet lassen (Plugins → Schalter).
+- **Notfallzugang testen**: Backup-Codes ausgedruckt, SSH-Schlüssel auf einem zweiten Gerät, einmal `sudo godeb 2fa reset` an einem Testkonto ausprobiert.
+- **Updates**: Produktivserver nur aus `trixie` (stabile Releases). Vorabversionen höchstens auf der Heim-VM (`godeb-testing.sources`, siehe „APT-Repo“).
+
+### Notfall
+
+Alle Befehle per SSH mit einem Konto mit `sudo`. Geht SSH nicht mehr: Hetzner Cloud Console → Server → „Konsole“ (bzw. Proxmox → VM → Console), dort mit dem Passwort eines lokalen Kontos anmelden.
+
+**Handy mit der 2FA-App verloren:** Ein Backup-Code ersetzt den TOTP-Code bei Anmeldung und Aktionen. Neu einrichten geht nur per SSH:
+
+```sh
+sudo godeb 2fa reset admin          # nächste Anmeldung richtet 2FA neu ein
+sudo godeb sessions revoke admin    # alle offenen Sitzungen beenden
+```
+
+**Weboberfläche nicht erreichbar:**
+
+```sh
+sudo wg show                        # Handshake mit dem Handy? Sonst Tunnel/Endpoint/ufw 51820
+sudo systemctl status godeb godeb-agent
+sudo journalctl -u godeb -u godeb-agent -e
+sudo godeb doctor                   # Gesamtbefund, ohne Geheimnisse
+sudo systemctl restart godeb-agent godeb
+```
+
+Über SSH geht es auch ohne Tunnel: `ssh -L 8080:127.0.0.1:8080 <benutzer>@<server-ip>`, dann `http://127.0.0.1:8080` im Browser.
+
+**Update hat etwas kaputt gemacht:** Am sichersten den Snapshot von vor dem Update zurückspielen. Ältere Versionen bleiben im APT-Repo, ein Zurückgehen ist also möglich (`apt policy godeb` zeigt sie, `sudo apt install --allow-downgrades godeb=<version>`). Datenbanken werden aber nur vorwärts migriert, deshalb ist das nur eine Notlösung bis zum Fix-Release.
+
+**`godeb doctor` meldet eine beschädigte Datenbank:** Server aus dem letzten Backup bzw. Snapshot zurückholen. `master.key` und Datenbank gehören zusammen; einzeln zurückkopiert passen die versiegelten Felder nicht mehr.
+
+**VPS ist weg (gelöscht, kompromittiert):** neuen VPS aus dem Hetzner-Backup erstellen; die IP ändert sich dabei meist. Danach: Endpoint in den Client-Dateien anpassen (WireGuard → Clients neu herunterladen bzw. QR neu scannen), Heim-VM neu verbinden (am Hub Standort neu anlegen; auf der Heim-VM `/etc/wireguard/wg0.conf` beiseitelegen, denn `godeb setup --join -` ersetzt eine abweichende Datei nicht, dann den neuen Beitrittscode einfügen), DNS-Einträge (Domains → Anwenden) und Reverse-DNS auf die neue IP. Ohne Backup: frisch installieren, Ersteinrichtung als Hub, Standort neu anlegen, Postfächer neu anlegen (Mails sind dann verloren). Bei Verdacht auf Einbruch nie das alte System weiterverwenden, sondern neu aufsetzen und alle Passwörter, das Hetzner-API-Token und die WireGuard-Schlüssel erneuern.
+
+**Heim-VM ist weg:** Proxmox-Backup zurückspielen. Ohne Backup: Debian 13 neu, GoDeb installieren, am Hub den Standort löschen und neu anlegen, mit dem neuen Beitrittscode verbinden, Enshrouded neu installieren (Spielstände aus dem Backup nach `/var/lib/godeb-steam/enshrouded/`).
+
 ### Logs
 
 Beide Prozesse schreiben strukturiert (`log/slog`) ins systemd-Journal, mit Stufe als Journal-Priorität. Eine Zeile sieht so aus:
@@ -658,7 +703,7 @@ Jeder Lauf ist die eigene Unit `godeb-apt.service` (`systemd-run`, führt `godeb
 
 ### APT-Repo
 
-Das Repo liegt auf GitHub Pages unter `https://zerodos1988.github.io/GoDeb` (Suite `trixie`, Komponente `main`, `amd64` und `arm64`). Nach jedem Release baut der Workflow `apt-repo.yml` es aus allen veröffentlichten Releases neu (`scripts/build-apt-repo.sh`: `apt-ftparchive`, signiert mit `sq`, vor dem Hochladen mit `sqv` gegen den mitgelieferten Schlüssel geprüft). Von Hand neu veröffentlichen: Actions → „APT-Repo“ → „Run workflow“. Vorabversionen landen mit im Repo; ein gelöschtes Release verschwindet beim nächsten Lauf.
+Das Repo liegt auf GitHub Pages unter `https://zerodos1988.github.io/GoDeb` (Komponente `main`, `amd64` und `arm64`) mit zwei Suiten: `trixie` enthält nur Releases, `trixie-testing` zusätzlich alle Vorabversionen. Solange es noch kein Release ohne Vorab-Kennzeichen gibt (vor 1.0), enthält auch `trixie` die Vorabversionen. Ein neuer Tag wird immer als Vorabversion veröffentlicht; erst das Entfernen des Häkchens „Set as a pre-release“ auf GitHub nimmt ihn in `trixie` auf (der Workflow baut das Repo dann neu). Zum Testen auf einem Server zusätzlich einbinden: `sudo wget -O /etc/apt/sources.list.d/godeb-testing.sources https://zerodos1988.github.io/GoDeb/godeb-testing.sources && sudo apt update`. Nach jedem Release baut der Workflow `apt-repo.yml` es aus allen veröffentlichten Releases neu (`scripts/build-apt-repo.sh`: `apt-ftparchive`, signiert mit `sq`, vor dem Hochladen mit `sqv` gegen den mitgelieferten Schlüssel geprüft). Von Hand neu veröffentlichen: Actions → „APT-Repo“ → „Run workflow“. Vorabversionen landen mit im Repo; ein gelöschtes Release verschwindet beim nächsten Lauf.
 
 - **Paket:** Es bringt `/etc/apt/sources.list.d/godeb.sources` (Conffile) und `/usr/share/keyrings/godeb-archive-keyring.asc` mit. Die Dateien auf der Pages-Seite sind dieselben, wer sie vorher von Hand anlegt, bekommt beim Installieren keine Rückfrage.
 - **Schlüssel:** Primärschlüssel `85BB 4B5E C4EB BC47 DCD1  6D32 FF4E 70E4 D1A7 EBB9` (nur Zertifizierung, bis 2036), Signier-Unterschlüssel `C59E 5F9F EE98 E052 817E  B9AC B93E E13B A71E 8187` (bis 22.10.2028). Die CI hat nur den Unterschlüssel (Secret `APT_SIGNING_KEY`). Vor Ablauf den Unterschlüssel offline verlängern oder ersetzen und die neue Fassung von `package/apt/godeb-archive-keyring.asc` mit einem Release ausliefern.
