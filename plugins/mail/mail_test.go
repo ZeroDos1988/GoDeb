@@ -96,13 +96,22 @@ func TestDovecotConfigIsClosed(t *testing.T) {
 		"auth_allow_cleartext = no", "ssl = required", "port = 0", "deny = yes",
 		"ssl_server_cert_file = /c.pem", "vacation = yes", "active_path = ~/.dovecot.sieve",
 		"quota_storage_percentage = 95", "executable = script /etc/dovecot/godeb/quota-warning",
+		"imap_sieve = yes", "sieve_imapsieve = yes",
+		"imapsieve_from Junk", "sieve_pipe_bin_dir = /etc/dovecot/godeb/bin",
 	} {
 		if !strings.Contains(c, want) {
 			t.Errorf("dovecot.conf lacks %q", want)
 		}
 	}
+	// learn-spam lives in the Junk mailbox block and the sieve file, not necessarily both strings in conf.
+	if !strings.Contains(c, "path = /etc/dovecot/godeb/learn-spam.sieve") {
+		t.Error("learn-spam sieve path missing")
+	}
 	if !strings.Contains(quotaWarningScript, "dovecot-lda") || !strings.HasPrefix(quotaWarningScript, "#!/bin/sh") {
 		t.Error("quota-warning script incomplete")
+	}
+	if !strings.Contains(learnSpamSieveScript, `pipe "learn-spam"`) || !strings.Contains(learnPipeScript("learn_spam"), "learn_spam") {
+		t.Error("spam learn scripts incomplete")
 	}
 	// No PAM, no system users, no includes of Debian's conf.d.
 	for _, bad := range []string{"passdb pam", "driver = pam", "!include", "userdb passwd {", "pop3"} {

@@ -33,6 +33,11 @@ var allowed = map[string]fileSpec{
 	dovecotDeny:     {0o640, "dovecot"},
 	spamSieve:       {0o644, ""},
 	quotaWarningBin: {0o755, ""},
+	learnSpamSieve:  {0o644, ""},
+	learnHamSieve:   {0o644, ""},
+	learnSpamBin:    {0o755, ""},
+	learnHamBin:     {0o755, ""},
+	rspamdCtrlPass:  {0o640, "vmail"},
 	fail2banJail:    {0o644, ""},
 
 	rspamdLocal + "/dkim_signing.conf":     {0o644, ""},
@@ -42,6 +47,7 @@ var allowed = map[string]fileSpec{
 	rspamdLocal + "/redis.conf":            {0o644, ""},
 	rspamdLocal + "/classifier-bayes.conf": {0o644, ""},
 	rspamdLocal + "/antivirus.conf":        {0o644, ""},
+	rspamdCtrlConf:                        {0o644, ""},
 }
 
 // root prefixes every path in tests (GODEB_MAIL_ROOT); empty in production.
@@ -156,16 +162,24 @@ func apply(ctx context.Context) ([]string, error) {
 		return nil, err
 	}
 	log := []string{}
+	pass, err := loadOrMakeRspamdPassword()
+	if err != nil {
+		return nil, err
+	}
 	dom, mbox, ali, snd := postfixMaps(domains, accounts)
 	users, deny := dovecotUsersFile(domains, accounts)
 	files := map[string]string{
 		mapDomains: dom, mapMailboxes: mbox, mapAliases: ali, mapSenders: snd,
 		dovecotConf: dovecotConfig(s), dovecotUsers: users, dovecotDeny: deny,
-		spamSieve: spamSieveScript, quotaWarningBin: quotaWarningScript, fail2banJail: fail2banConfig,
+		spamSieve: spamSieveScript, quotaWarningBin: quotaWarningScript,
+		learnSpamSieve: learnSpamSieveScript, learnHamSieve: learnHamSieveScript,
+		learnSpamBin: learnPipeScript("learn_spam"), learnHamBin: learnPipeScript("learn_ham"),
+		rspamdCtrlPass: pass + "\n", fail2banJail: fail2banConfig,
 	}
 	for p, body := range rspamdFiles(s, domains) {
 		files[p] = body
 	}
+	files[rspamdCtrlConf] = rspamdControllerConfig(pass)
 	for p, body := range files {
 		if err := writeFile(p, body); err != nil {
 			return log, err
@@ -189,8 +203,10 @@ func apply(ctx context.Context) ([]string, error) {
 	if err := syncMTASTS(s, domains); err != nil {
 		return log, err
 	}
-	if res := admin(ctx, "sievec", root(spamSieve)); res.Err != nil {
-		log = append(log, "sievec: "+res.Detail())
+	for _, sieve := range []string{spamSieve, learnSpamSieve, learnHamSieve} {
+		if res := admin(ctx, "sievec", root(sieve)); res.Err != nil {
+			log = append(log, "sievec "+sieve+": "+res.Detail())
+		}
 	}
 	for _, a := range accounts {
 		if vacationSieve(a) == "" {

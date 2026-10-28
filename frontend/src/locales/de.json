@@ -695,7 +695,7 @@
   },
   "mail": {
     "title": "E-Mail",
-    "description": "Mailserver mit Domains, Postfächern, Aliasen, Weiterleitungen, DKIM und Spamfilter (Postfix, Dovecot, Rspamd).",
+    "description": "Mailserver mit Domains, Postfächern, Aliasen, Weiterleitungen, DKIM und Spamfilter (Postfix, Dovecot, Rspamd). Mails in den Junk-Ordner legen trainiert den Filter; herausnehmen als erwünscht.",
     "running": "Läuft …",
     "done": "Fertig.",
     "failed": "Aktion fehlgeschlagen",

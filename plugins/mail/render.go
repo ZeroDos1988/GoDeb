@@ -286,6 +286,12 @@ namespace inbox {
   mailbox Junk {
     special_use = \Junk
     auto = subscribe
+    # Moving mail into Junk trains Rspamd (imapsieve).
+    sieve_script learnspam {
+      type = before
+      cause = copy
+      path = ` + learnSpamSieve + `
+    }
   }
   mailbox Trash {
     special_use = \Trash
@@ -320,6 +326,7 @@ quota user {
 protocol imap {
   mail_plugins {
     imap_quota = yes
+    imap_sieve = yes
   }
 }
 
@@ -345,6 +352,24 @@ sieve_script personal {
 # Absence notes (vacation) for personal scripts written by GoDeb.
 sieve_extensions {
   vacation = yes
+}
+
+sieve_plugins {
+  sieve_imapsieve = yes
+  sieve_extprograms = yes
+}
+sieve_global_extensions {
+  vnd.dovecot.pipe = yes
+}
+sieve_pipe_bin_dir = ` + sievePipeDir + `
+
+# Moving mail out of Junk trains it as wanted (ham).
+imapsieve_from Junk {
+  sieve_script learnham {
+    type = before
+    cause = copy
+    path = ` + learnHamSieve + `
+  }
 }
 
 service imap-login {

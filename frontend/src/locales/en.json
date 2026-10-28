@@ -695,7 +695,7 @@
   },
   "mail": {
     "title": "E-mail",
-    "description": "Mail server with domains, mailboxes, aliases, forwarding, DKIM and spam filter (Postfix, Dovecot, Rspamd).",
+    "description": "Mail server with domains, mailboxes, aliases, forwarding, DKIM and spam filter (Postfix, Dovecot, Rspamd). Moving mail into Junk trains the filter; moving it out marks it as wanted.",
     "running": "Running …",
     "done": "Done.",
     "failed": "Action failed",
