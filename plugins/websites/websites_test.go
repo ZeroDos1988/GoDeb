@@ -103,3 +103,34 @@ func TestCertEmail(t *testing.T) {
 		}
 	}
 }
+
+func TestProxyURLCannotInjectNginx(t *testing.T) {
+	for _, raw := range []string{
+		"http://127.0.0.1:8080/a;}server{listen 81;",
+		"http://127.0.0.1/a%3Bb",
+		"http://127.0.0.1/$host",
+		"http://127.0.0.1/a b",
+		"http://127.0.0.1/a'b",
+		"http://user:pw@127.0.0.1/",
+		"http://127.0.0.1/?",
+	} {
+		if _, err := cleanSite(Site{Name: "p", Domain: "p.example.com", Mode: ModeProxy, ProxyURL: raw}); err == nil {
+			t.Errorf("%q accepted", raw)
+		}
+	}
+	for _, raw := range []string{"http://127.0.0.1:8080", "http://10.8.0.2:9090/app/v1", "https://localhost/a.b_c~d-e/"} {
+		if _, err := cleanSite(Site{Name: "p", Domain: "p.example.com", Mode: ModeProxy, ProxyURL: raw}); err != nil {
+			t.Errorf("%q rejected: %v", raw, err)
+		}
+	}
+}
+
+func TestRenderNginxDeniesDotFiles(t *testing.T) {
+	s, err := cleanSite(Site{Name: "s", Domain: "s.example.com"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if conf := renderNginx(s); !strings.Contains(conf, `location ~ /\.(?!well-known/) {`) {
+		t.Fatalf("static site without dot-file rule:\n%s", conf)
+	}
+}

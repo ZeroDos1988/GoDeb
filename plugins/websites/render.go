@@ -67,15 +67,16 @@ server {
   location / {
     try_files $uri $uri/ =404;
   }
+  # Never serve .git, .env and other dot files; /.well-known stays (ACME).
+  location ~ /\.(?!well-known/) {
+    deny all;
+  }
 `, s.Root)
 	if s.PHP {
 		sock := resolvePHPSock()
 		fmt.Fprintf(&b, `  location ~ \.php$ {
     include snippets/fastcgi-php.conf;
     fastcgi_pass unix:%s;
-  }
-  location ~ /\. {
-    deny all;
   }
 `, sock)
 	}

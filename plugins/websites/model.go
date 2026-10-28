@@ -30,9 +30,13 @@ type Site struct {
 }
 
 var (
-	namePattern   = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,31}$`)
-	emailPattern  = regexp.MustCompile(`(?i)^[A-Za-z0-9._%+-]{1,64}@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$`)
-	domainPattern = regexp.MustCompile(`^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$`)
+	namePattern  = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,31}$`)
+	emailPattern = regexp.MustCompile(`(?i)^[A-Za-z0-9._%+-]{1,64}@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$`)
+	// proxyPathPattern keeps the path of a proxy target to plain URL path
+	// characters: it is written into the nginx config, where ; { } $ and
+	// quotes would start new directives or expand variables.
+	proxyPathPattern = regexp.MustCompile(`^(?:/[A-Za-z0-9._~-]*)*$`)
+	domainPattern    = regexp.MustCompile(`^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$`)
 )
 
 const (
@@ -73,8 +77,11 @@ func cleanSite(s Site) (Site, error) {
 		} else if !ip.IsLoopback() && !ip.IsPrivate() {
 			return s, errors.New("Proxy-Ziel muss Loopback oder privates Netz sein")
 		}
-		if u.RawQuery != "" || u.Fragment != "" {
-			return s, errors.New("Proxy-URL ohne Query/Fragment")
+		if u.RawQuery != "" || u.Fragment != "" || u.ForceQuery || u.User != nil {
+			return s, errors.New("Proxy-URL ohne Query, Fragment und Zugangsdaten")
+		}
+		if u.RawPath != "" || !proxyPathPattern.MatchString(u.Path) {
+			return s, errors.New("Proxy-Pfad: nur Buchstaben, Ziffern und . _ ~ - /")
 		}
 		s.ProxyURL = u.Scheme + "://" + u.Host + strings.TrimSuffix(u.Path, "/")
 		if s.ProxyURL == u.Scheme+"://"+u.Host {
