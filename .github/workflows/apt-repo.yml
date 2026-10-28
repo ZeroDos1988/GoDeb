@@ -34,9 +34,11 @@ jobs:
           mkdir debs
           gh release list --repo "$GITHUB_REPOSITORY" --limit 1000 --exclude-drafts --json tagName --jq '.[].tagName' |
             while read -r tag; do
-              gh release download "$tag" --repo "$GITHUB_REPOSITORY" --pattern 'godeb_*_amd64.deb' --dir debs
+              gh release download "$tag" --repo "$GITHUB_REPOSITORY" --pattern 'godeb_*.deb' --dir debs || true
             done
           ls -l debs
+          # Need at least one package; empty repo is useless.
+          test -n "$(find debs -name 'godeb_*.deb' | head -n 1)"
 
       - name: Repo bauen und signieren
         env:

@@ -73,6 +73,8 @@ type AndroidClient = {
   version?: string;
   modified?: string;
   downloadPath: string;
+  tokenRequired?: boolean;
+  tokenSet?: boolean;
   detail?: string;
 };
 
@@ -119,13 +121,36 @@ export default function Panel() {
     }
     setActionError("");
     try {
-      const blob = await apiBlob(android.data.downloadPath);
+      let path = android.data.downloadPath;
+      if (android.data.tokenRequired) {
+        const tok = await api<{ token?: string }>(`${androidPath}/token`);
+        if (tok.token) {
+          path = `${android.data.downloadPath}?token=${encodeURIComponent(tok.token)}`;
+        }
+      }
+      const blob = await apiBlob(path);
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
       link.download = android.data.filename || "godeb-tunnel.apk";
       link.click();
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (err: unknown) {
+      setActionError(err instanceof Error ? err.message : t("wg.androidDownloadFailed"));
+    }
+  }
+
+  async function setApkToken(action: "generate" | "clear") {
+    setActionError("");
+    try {
+      await api(`${androidPath}/token`, {
+        method: "POST",
+        body: JSON.stringify({ action }),
+      });
+      android.reload();
+      setNotice(
+        action === "generate" ? t("wg.androidTokenOn") : t("wg.androidTokenOff"),
+      );
     } catch (err: unknown) {
       setActionError(err instanceof Error ? err.message : t("wg.androidDownloadFailed"));
     }
@@ -205,6 +230,7 @@ export default function Panel() {
               loading={android.loading}
               onDownload={() => void downloadApk()}
               onRefresh={android.reload}
+              onToken={(action) => void setApkToken(action)}
             />
           ) : null}
 
@@ -325,11 +351,13 @@ function AndroidClientCard({
   loading,
   onDownload,
   onRefresh,
+  onToken,
 }: {
   info?: AndroidClient;
   loading: boolean;
   onDownload: () => void;
   onRefresh: () => void;
+  onToken: (action: "generate" | "clear") => void;
 }) {
   const { t } = useTranslation();
   return (
@@ -358,6 +386,19 @@ function AndroidClientCard({
         ) : (
           <p className="text-white/60">{t("wg.androidUnavailable", { path: androidApkDiskPath })}</p>
         )}
+        <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70">
+          <p>{t("wg.androidTokenHint")}</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button type="button" className={buttonClass} onClick={() => onToken("generate")}>
+              {info?.tokenSet ? t("wg.androidTokenRotate") : t("wg.androidTokenEnable")}
+            </button>
+            {info?.tokenSet ? (
+              <button type="button" className={buttonClass} onClick={() => onToken("clear")}>
+                {t("wg.androidTokenDisable")}
+              </button>
+            ) : null}
+          </div>
+        </div>
         <p className="text-xs text-white/50">{t("wg.androidQrHint")}</p>
       </div>
     </section>

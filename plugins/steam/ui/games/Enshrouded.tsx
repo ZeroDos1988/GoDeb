@@ -29,6 +29,60 @@ type ServerConfig = {
 const presets = ["Default", "Relaxed", "Hard", "Survival", "Custom"];
 const permissions = ["canKickBan", "canAccessInventories", "canEditBase", "canExtendBase"] as const;
 
+const customFactors: { key: string; min: number; max: number; step: number; def: number }[] = [
+  { key: "playerHealthFactor", min: 0.25, max: 4, step: 0.05, def: 1 },
+  { key: "playerManaFactor", min: 0.25, max: 4, step: 0.05, def: 1 },
+  { key: "playerStaminaFactor", min: 0.25, max: 4, step: 0.05, def: 1 },
+  { key: "playerBodyHeatFactor", min: 0.25, max: 4, step: 0.05, def: 1 },
+  { key: "foodBuffDurationFactor", min: 0.25, max: 4, step: 0.05, def: 1 },
+  { key: "hungerTimeFactor", min: 0.25, max: 4, step: 0.05, def: 1 },
+  { key: "playerDamageFromEnemiesFactor", min: 0.25, max: 4, step: 0.05, def: 1 },
+  { key: "enemyDamageFactor", min: 0.25, max: 4, step: 0.05, def: 1 },
+  { key: "enemyHealthFactor", min: 0.25, max: 4, step: 0.05, def: 1 },
+  { key: "miningDamageFactor", min: 0.25, max: 4, step: 0.05, def: 1 },
+  { key: "plantGrowthSpeedFactor", min: 0.25, max: 4, step: 0.05, def: 1 },
+  { key: "resourceDropAmountFactor", min: 0.25, max: 4, step: 0.05, def: 1 },
+];
+
+function CustomSettings({
+  settings,
+  onChange,
+}: {
+  settings: Record<string, number>;
+  onChange: (next: Record<string, number>) => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-3">
+      <p className="text-xs text-white/60">{t("ens.customHint")}</p>
+      <div className="grid gap-3 md:grid-cols-2">
+        {customFactors.map((f) => {
+          const value = typeof settings[f.key] === "number" ? settings[f.key] : f.def;
+          return (
+            <label key={f.key} className="block text-xs text-white/70">
+              <span className="flex justify-between gap-2">
+                <span>{t(`ens.factor.${f.key}`, { defaultValue: f.key })}</span>
+                <span className="font-mono text-white/90">{value.toFixed(2)}</span>
+              </span>
+              <input
+                type="range"
+                min={f.min}
+                max={f.max}
+                step={f.step}
+                value={value}
+                className="mt-1 w-full"
+                onChange={(e) =>
+                  onChange({ ...settings, [f.key]: Number(e.target.value) })
+                }
+              />
+            </label>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // EnshroudedForm edits enshrouded_server.json: name, slots, preset, ports,
 // chat and the user groups with their passwords.
 export function EnshroudedForm({ cfg: raw, update }: ConfigFormProps) {
@@ -65,7 +119,12 @@ export function EnshroudedForm({ cfg: raw, update }: ConfigFormProps) {
           </Field>
         ) : null}
       </div>
-      {cfg.gameSettingsPreset === "Custom" ? <p className="text-xs text-white/60">{t("ens.customHint")}</p> : null}
+      {cfg.gameSettingsPreset === "Custom" ? (
+        <CustomSettings
+          settings={(cfg.gameSettings as Record<string, number> | undefined) ?? {}}
+          onChange={(gameSettings) => update({ gameSettings })}
+        />
+      ) : null}
 
       <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
         <Toggle label={t("ens.voiceChat")} checked={cfg.enableVoiceChat ?? false} onChange={(v) => update({ enableVoiceChat: v })} />

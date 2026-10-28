@@ -54,8 +54,11 @@ jobs:
         # `go run pkg@version` ignores the toolchain line of go.mod, so pin it here.
         run: GOTOOLCHAIN="$(go mod edit -json | jq -r .Toolchain)" go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
 
-      - name: Debian-Paket
+      - name: Debian-Paket (amd64)
         run: ./scripts/build-deb.sh
+
+      - name: Debian-Paket (arm64, Cross)
+        run: TARGET_ARCH=arm64 ./scripts/build-deb.sh
 
       - name: systemd-analyze security
         # Web process (user godeb) must stay low (currently 1.3), the root

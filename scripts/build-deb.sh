@@ -12,11 +12,19 @@ STAGE="$WORK/godeb"
 cp -a "$ROOT/package/debian" "$STAGE"
 sed -i "s/^Version: .*/Version: $VERSION/" "$STAGE/DEBIAN/control"
 
-arch=$(dpkg --print-architecture)
-if [ "$arch" != "amd64" ]; then
-	echo "Buildziel ist amd64, diese Maschine ist $arch" >&2
+# TARGET_ARCH selects the package architecture (amd64 or arm64). Cross-builds
+# use GOARCH; native builds default to the host dpkg architecture.
+host_arch=$(dpkg --print-architecture)
+arch=${TARGET_ARCH:-$host_arch}
+case "$arch" in
+amd64 | arm64) ;;
+*)
+	echo "TARGET_ARCH muss amd64 oder arm64 sein (ist: $arch)" >&2
 	exit 1
-fi
+	;;
+esac
+goarch=$arch
+sed -i "s/^Architecture: .*/Architecture: $arch/" "$STAGE/DEBIAN/control"
 
 rm -rf "$STAGE/usr"
 mkdir -p \
@@ -73,10 +81,12 @@ if [ "$found" -ne 1 ]; then
 	exit 1
 fi
 
-echo "Baue Daemon"
+echo "Baue Daemon ($arch)"
 # go.mod pins the toolchain; `auto` downloads it when the local Go is older.
 export GOTOOLCHAIN="${GOTOOLCHAIN:-auto}"
 export CGO_ENABLED=0
+export GOOS=linux
+export GOARCH="$goarch"
 go build -trimpath -tags netgo -ldflags "-s -w -X main.version=$VERSION" -o "$STAGE/usr/bin/godeb" ./backend
 chmod 0755 "$STAGE/usr/bin/godeb"
 

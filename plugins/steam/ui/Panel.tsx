@@ -184,10 +184,26 @@ function GameView({ id, onChanged }: { id: string; onChanged: () => void }) {
                 {t("steam.start")}
               </button>
             )}
-            <button type="button" className={button} disabled={busy || running || !active} onClick={() => void post("action", { action: "restart" })}>
+            <button
+              type="button"
+              className={button}
+              disabled={busy || running || !active}
+              onClick={() => {
+                if (!window.confirm(t("steam.confirmRestart"))) return;
+                void post("action", { action: "restart" });
+              }}
+            >
               {t("steam.restart")}
             </button>
-            <button type="button" className={button} disabled={busy || running} onClick={() => void post("update")}>
+            <button
+              type="button"
+              className={button}
+              disabled={busy || running}
+              onClick={() => {
+                if (!window.confirm(t("steam.confirmUpdate"))) return;
+                void post("update");
+              }}
+            >
               {t("steam.update")}
             </button>
           </>

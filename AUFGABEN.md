@@ -73,11 +73,11 @@ MariaDB und/oder PostgreSQL installieren, Datenbanken und Benutzer anlegen, einf
 ### 9. Kleinere offene Punkte
 
 - [x] WireGuard: Option „Schlüssel auf dem Gerät erzeugen“ (Public Key einfügen), Client-Dateien nach dem Download optional löschen – 27.10.
-- APK-Download optional mit Token.
+- [x] APK-Download optional mit Token – 28.10.
 - [x] `godeb doctor` und Ampel: SSH nur per Schlüssel und unattended-upgrades (nur melden) – 27.10.
-- Paket auch für `arm64` (Hetzner CAX): `scripts/build-deb.sh`, CI und APT-Repo-Workflow.
-- Steam/Enshrouded: Formular für `gameSettings` beim Preset „Custom“, zeitgesteuerte Updates und Neustarts mit Warnfenster.
-- Volltunnel als bewusste Option im Setup (IP-Forwarding und NAT, eigene nftables-Tabelle wie `portforward`) **(Frage)**.
+- [x] Paket auch für `arm64` (Hetzner CAX): `scripts/build-deb.sh`, CI und APT-Repo-Workflow – 28.10.
+- [x] Steam/Enshrouded: Formular für `gameSettings` beim Preset „Custom“, Warnfenster vor Update/Neustart – 28.10. (zeitgesteuerte Jobs über Plugin „Geplante Aufgaben“ / Skript).
+- Volltunnel als bewusste Option im Setup (IP-Forwarding und NAT, eigene nftables-Tabelle wie `portforward`) – Entscheidung: umsetzen.
 
 ---
 

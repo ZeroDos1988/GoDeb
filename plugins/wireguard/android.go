@@ -1,6 +1,9 @@
 package wireguard
 
 import (
+	"crypto/rand"
+	"crypto/subtle"
+	"encoding/hex"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -14,8 +17,10 @@ const (
 	androidDir      = "/etc/godeb/android"
 	androidAPKName  = "godeb-tunnel.apk"
 	androidVersion  = "version.txt"
+	androidToken    = "download.token"
 	androidAPKPath  = androidDir + "/" + androidAPKName
 	androidVerPath  = androidDir + "/" + androidVersion
+	androidTokPath  = androidDir + "/" + androidToken
 	defaultAPKLabel = "godeb-tunnel.apk"
 	// legacyAPKPath is the file name before the app was renamed to GoDeb
 	// Tunnel; servers set up earlier still serve it.
@@ -34,24 +39,31 @@ func apkPath() string {
 }
 
 type androidClientInfo struct {
-	Available    bool   `json:"available"`
-	Filename     string `json:"filename"`
-	Size         int64  `json:"size,omitempty"`
-	Version      string `json:"version,omitempty"`
-	Modified     string `json:"modified,omitempty"`
-	DownloadPath string `json:"downloadPath"`
-	Detail       string `json:"detail,omitempty"`
+	Available      bool   `json:"available"`
+	Filename       string `json:"filename"`
+	Size           int64  `json:"size,omitempty"`
+	Version        string `json:"version,omitempty"`
+	Modified       string `json:"modified,omitempty"`
+	DownloadPath   string `json:"downloadPath"`
+	TokenRequired  bool   `json:"tokenRequired"`
+	TokenSet       bool   `json:"tokenSet"` // admin UI only; same as TokenRequired
+	Detail         string `json:"detail,omitempty"`
 }
 
 func mountAndroid(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/plugins/wireguard/android", handleAndroidInfo)
 	mux.HandleFunc("GET /api/plugins/wireguard/android/apk", handleAndroidAPK)
+	mux.HandleFunc("GET /api/plugins/wireguard/android/token", handleAndroidTokenGet)
+	mux.HandleFunc("POST /api/plugins/wireguard/android/token", handleAndroidToken)
 }
 
 func handleAndroidInfo(w http.ResponseWriter, r *http.Request) {
+	tok := readAPKToken()
 	info := androidClientInfo{
-		Filename:     defaultAPKLabel,
-		DownloadPath: "/api/plugins/wireguard/android/apk",
+		Filename:      defaultAPKLabel,
+		DownloadPath:  "/api/plugins/wireguard/android/apk",
+		TokenRequired: tok != "",
+		TokenSet:      tok != "",
 	}
 	path := apkPath()
 	st, err := os.Stat(path)
@@ -75,6 +87,16 @@ func handleAndroidInfo(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleAndroidAPK(w http.ResponseWriter, r *http.Request) {
+	if want := readAPKToken(); want != "" {
+		got := strings.TrimSpace(r.URL.Query().Get("token"))
+		if got == "" {
+			got = strings.TrimSpace(r.Header.Get("X-GoDeb-APK-Token"))
+		}
+		if subtle.ConstantTimeCompare([]byte(got), []byte(want)) != 1 {
+			core.WriteError(w, http.StatusUnauthorized, "APK-Token fehlt oder ist falsch")
+			return
+		}
+	}
 	f, err := os.Open(apkPath())
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -94,6 +116,80 @@ func handleAndroidAPK(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Disposition", `attachment; filename="`+defaultAPKLabel+`"`)
 	w.Header().Set("Cache-Control", "no-store")
 	http.ServeContent(w, r, defaultAPKLabel, st.ModTime(), f)
+}
+
+func handleAndroidTokenGet(w http.ResponseWriter, r *http.Request) {
+	tok := readAPKToken()
+	core.WriteJSON(w, http.StatusOK, map[string]any{
+		"tokenSet": tok != "",
+		"token":    tok,
+		"path":     "/api/plugins/wireguard/android/apk",
+	})
+}
+
+func handleAndroidToken(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Action string `json:"action"` // generate | clear
+	}
+	if !core.DecodeJSON(w, r, &req) {
+		return
+	}
+	switch req.Action {
+	case "generate":
+		tok, err := newAPKToken()
+		if err != nil {
+			core.WriteError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		if err := writeAPKToken(tok); err != nil {
+			core.WriteError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		core.WriteJSON(w, http.StatusOK, map[string]any{"ok": true, "tokenSet": true, "token": tok})
+	case "clear":
+		_ = os.Remove(androidTokPath)
+		core.WriteJSON(w, http.StatusOK, map[string]any{"ok": true, "tokenSet": false})
+	default:
+		core.WriteError(w, http.StatusBadRequest, "action muss generate oder clear sein")
+	}
+}
+
+func readAPKToken() string {
+	b, err := os.ReadFile(androidTokPath)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(b))
+}
+
+func newAPKToken() (string, error) {
+	buf := make([]byte, 24)
+	if _, err := rand.Read(buf); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(buf), nil
+}
+
+func writeAPKToken(tok string) error {
+	if err := os.MkdirAll(androidDir, 0o755); err != nil {
+		return err
+	}
+	tmp, err := os.CreateTemp(androidDir, ".token-*")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(tmp.Name())
+	if _, err := tmp.WriteString(tok + "\n"); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	if err := os.Chmod(tmp.Name(), 0o600); err != nil {
+		return err
+	}
+	return os.Rename(tmp.Name(), androidTokPath)
 }
 
 // AndroidAPKPath is the on-disk location expected by the packaging docs.

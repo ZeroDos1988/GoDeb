@@ -126,6 +126,11 @@ func validateEnshrouded(raw []byte) (map[string]any, error) {
 			return nil, fmt.Errorf("gameSettingsPreset muss Default, Relaxed, Hard, Survival oder Custom sein")
 		}
 	}
+	if v, ok := cfg["gameSettings"]; ok {
+		if err := validateGameSettings(v); err != nil {
+			return nil, err
+		}
+	}
 	for _, key := range []string{"enableVoiceChat", "enableTextChat"} {
 		if v, ok := cfg[key]; ok {
 			if _, ok := v.(bool); !ok {
@@ -139,6 +144,46 @@ func validateEnshrouded(raw []byte) (map[string]any, error) {
 		}
 	}
 	return cfg, nil
+}
+
+// Known Custom preset factors (float). Unknown keys are kept as-is if they
+// are numbers in 0.1–10, so newer server fields survive a round-trip.
+func validateGameSettings(v any) error {
+	obj, ok := v.(map[string]any)
+	if !ok {
+		return fmt.Errorf("gameSettings muss ein Objekt sein")
+	}
+	if len(obj) > 64 {
+		return fmt.Errorf("zu viele gameSettings")
+	}
+	for key, raw := range obj {
+		if hasControl(key) || len(key) > 64 {
+			return fmt.Errorf("gameSettings-Schlüssel ungültig")
+		}
+		n, ok := floatValue(raw)
+		if !ok || n < 0.1 || n > 10 {
+			return fmt.Errorf("gameSettings.%s muss eine Zahl zwischen 0,1 und 10 sein", key)
+		}
+	}
+	return nil
+}
+
+func floatValue(v any) (float64, bool) {
+	switch n := v.(type) {
+	case float64:
+		return n, true
+	case float32:
+		return float64(n), true
+	case int:
+		return float64(n), true
+	case int64:
+		return float64(n), true
+	case json.Number:
+		f, err := n.Float64()
+		return f, err == nil
+	default:
+		return 0, false
+	}
 }
 
 func validateGroups(v any) error {
