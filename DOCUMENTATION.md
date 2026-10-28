@@ -286,7 +286,7 @@ sudo godeb sessions revoke admin
 Eine Sitzung allein reicht für keine Änderung am Host. Jede `POST`/`PUT`/`DELETE`-Anfrage auf `/api` verlangt einen TOTP- oder Backup-Code im Header `X-GoDeb-TOTP`. Für die Routen des Agenten prüft der Agent den Code selbst (siehe „Aufteilung Weboberfläche und Agent“), für die übrigen die Weboberfläche über den Agenten. Fehlt er, antwortet der Daemon mit `403` und `step_up_required`. Die Oberfläche zeigt dann den Bestätigungsdialog und schickt die Aktion danach erneut ab. Neue Plugin-Routen sind ohne eigenes Zutun geschützt. Ausnahmen stehen mit Begründung in `noStepUp` (`backend/auth/stepup.go`), derzeit nur Theme/Sprache und das Neueinlesen der Plugin-Liste.
 
 - **Fenster:** Ein bestätigter Code gilt fünf Minuten für normale Aktionen, gespeichert serverseitig an der Sitzung.
-- **Immer neu (kritisch):** Plugin-Manager, OIDC-Anbieter, UFW, systemd, neue WireGuard-Peers, der Beitritt zu einem Hub, die Portweiterleitung, das Mail-Gateway-Setup, Domains-Token bzw. Apply und die Enshrouded-Installation bzw. das Update verlangen bei jeder Anfrage Passwort und Code. Das Passwort kommt im Header `X-GoDeb-Password`; die Weboberfläche prüft es gegen die Konten in `/var/lib/godeb` **bevor** der Code geprüft wird, damit ein falsches Passwort keinen Code verbraucht. Anschließend entfernt sie den Header; der Agent sieht ihn nie. Fehlt das Passwort, antwortet GoDeb mit `403`, `critical: true` und `password_required: true`.
+- **Immer neu (kritisch):** Plugin-Manager, OIDC-Anbieter, UFW, systemd, neue WireGuard-Peers, der Beitritt zu einem Hub, die Portweiterleitung, das Mail-Gateway-Setup, Domains-Token bzw. Apply, der Volltunnel, geplante Aufgaben (Plugin Cron, laufen als root), Webseiten (nginx, PHP, Ports 80/443) und die Enshrouded-Installation bzw. das Update verlangen bei jeder Anfrage Passwort und Code. Das Passwort kommt im Header `X-GoDeb-Password`; die Weboberfläche prüft es gegen die Konten in `/var/lib/godeb` **bevor** der Code geprüft wird, damit ein falsches Passwort keinen Code verbraucht. Anschließend entfernt sie den Header; der Agent sieht ihn nie. Fehlt das Passwort, antwortet GoDeb mit `403`, `critical: true` und `password_required: true`.
 - **Downloads mit privaten Schlüsseln** (`GET …/peers/{id}/config`, `/qr`) brauchen das Fenster, obwohl es Lesezugriffe sind; kein Passwort.
 - Fehlversuche (falscher Code oder falsches Passwort) zählen in dasselbe Limit und dasselbe fail2ban-Log wie beim Login. Die Regel lässt sich in der Oberfläche nicht abschalten.
 
@@ -523,6 +523,8 @@ Alle außer `status` antworten nach dem Abschluss mit `410`.
 | GET, POST | `/api/plugins/wireguard/trust` (`enabled`, `address`, `port`) |
 | POST | `/api/plugins/wireguard/trust/sync` |
 | GET | `/api/plugins/wireguard/trust/info` (ohne Login, für den Hub) |
+| GET, POST | `/api/plugins/wireguard/android/token` (Download-Token der APK; `action`: `generate` oder `clear`) |
+| GET, POST | `/api/plugins/wireguard/volltunnel` (`enabled`; nur auf dem Hub, frischer 2FA-Code) |
 | GET | `/api/plugins/portforward/status` |
 | POST | `/api/plugins/portforward/rules` (`name`, `proto`, `from`, `to`, `target`) |
 | POST | `/api/plugins/portforward/rules/{name}/delete` |
@@ -542,6 +544,15 @@ Alle außer `status` antworten nach dem Abschluss mit `410`.
 | GET | `/api/plugins/mail/domains/{domain}/dns` (Live-Prüfung) |
 | POST | `/api/plugins/mail/domains/{domain}/accounts`, `/api/plugins/mail/domains/{domain}/accounts/{local}` (`local`, `password`, `quotaMB`, `aliases`, `forward`, `forwardOnly`, `suspended`; leeres Passwort behält das alte) |
 | POST | `/api/plugins/mail/domains/{domain}/accounts/{local}/delete` (mit allen Mails) |
+| GET | `/api/plugins/mail/queue` (Postfix-Warteschlange, `postqueue -j`) |
+| POST | `/api/plugins/mail/queue/flush`, `/api/plugins/mail/queue/{id}/retry`, `/api/plugins/mail/queue/{id}/delete` (Queue-ID 6–25 Buchstaben/Ziffern) |
+| GET | `/api/plugins/cron/status` (systemd-Timer, `/etc/cron.d` nur lesend, Allowlist) |
+| POST | `/api/plugins/cron/jobs` (`name`, `calendar`, `command` als Liste, `description`; frischer 2FA-Code), `/api/plugins/cron/jobs/{name}/delete` |
+| GET | `/api/plugins/websites/status` |
+| POST | `/api/plugins/websites/sites`, `/api/plugins/websites/sites/{name}` (`domain`, `mode`: `static` oder `proxy`, `php`, `proxyUrl`, `tls`, `public`, `enabled`; frischer 2FA-Code) |
+| POST | `/api/plugins/websites/sites/{name}/delete`, `/api/plugins/websites/sites/{name}/certificate` (`email`) |
+| GET | `/api/plugins/postgres/status`, `/api/plugins/postgres/databases/{name}/tables`, `/api/plugins/postgres/databases/{name}/tables/{table}` (erste 100 Zeilen, nur lesend) |
+| POST | `/api/plugins/postgres/databases` (`name`, `owner`), `/api/plugins/postgres/roles` (`name`, `password`), jeweils `…/{name}/delete` |
 | GET | `/api/plugins/mailgateway/status` |
 | POST | `/api/plugins/mailgateway/setup` |
 | GET | `/api/plugins/mailgateway/queue` |
@@ -566,6 +577,12 @@ Alle außer `status` antworten nach dem Abschluss mit `410`.
 | GET | `/api/plugins/monitor/sites` (Hub) |
 | GET | `/api/plugins/monitor/site` (ohne Login, nur von der Tunnel-Adresse des Hubs) |
 | GET | `/api/plugins/logs/entries?source=all\|web\|agent&level=error\|warning\|info\|debug&since=15m\|1h\|24h\|7d\|all&lines=&q=` |
+
+**Geplante Aufgaben (Cron):** Neue Aufgaben sind systemd-Timer `godeb-cron-<name>` ohne Shell. Erlaubt sind `true`, `systemctl reload|reload-or-restart|try-reload-or-restart <unit>`, `certbot renew` (nur `--quiet`, `-q`, `--no-random-sleep-on-renew`, keine Hooks), `logrotate [-f]` mit `/etc/logrotate.conf` oder `/etc/logrotate.d/<datei>` sowie Skripte in `/usr/local/sbin` und `/etc/godeb/scripts`. `%` wird für systemd verdoppelt.
+
+**Webseiten:** Das Dokumentverzeichnis `/var/www/godeb/<name>` gehört root und bekommt beim Anlegen eine `index.html`; danach fasst GoDeb den Inhalt nicht mehr an (kein rekursives `chown`). Dateien per SSH/SFTP mit `sudo` pflegen. Fällt `nginx -t` durch, stellt GoDeb die vorherige Konfiguration der Seite wieder her.
+
+**PostgreSQL:** SQL geht per stdin an `runuser -u postgres -- psql`, nie als Argument. Passwörter neuer Rollen erreichen PostgreSQL nur als SCRAM-SHA-256-Verifier; sie sind 10–128 druckbare ASCII-Zeichen.
 
 `POST /api/plugins/mailgateway/setup` erwartet `domain`, `relayHost` und optional `selector`. Der Handler erzeugt ein 2048-Bit-DKIM-Paar, schreibt OpenDKIM und setzt das Postfix-Relay. `dns-check` bewertet PTR, SPF, DKIM und DMARC und liefert die TXT-Zeilen, die beim DNS-Anbieter einzutragen sind. `queue/flush` führt `postqueue -f` aus.
 
