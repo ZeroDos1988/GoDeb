@@ -20,14 +20,18 @@ func cleanIdent(v, kind string) (string, error) {
 	return v, nil
 }
 
+// cleanPassword accepts 10–128 printable ASCII characters without spaces
+// at either end (see scramVerifier for why ASCII).
 func cleanPassword(p string) error {
-	p = strings.TrimSpace(p)
 	if len(p) < 10 || len(p) > 128 {
 		return errors.New("Passwort: 10–128 Zeichen")
 	}
+	if strings.TrimSpace(p) != p {
+		return errors.New("Passwort ohne Leerzeichen am Anfang oder Ende")
+	}
 	for _, r := range p {
-		if r < 32 || r == 127 {
-			return errors.New("Passwort enthält Steuerzeichen")
+		if r < 32 || r > 126 {
+			return errors.New("Passwort: nur druckbare ASCII-Zeichen (keine Umlaute)")
 		}
 	}
 	return nil

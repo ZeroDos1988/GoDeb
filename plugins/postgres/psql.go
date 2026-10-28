@@ -2,19 +2,28 @@ package postgres
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/pbkdf2"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/base64"
 	"fmt"
 	"strings"
 
 	"godeb/backend/core"
 )
 
+// psqlArgs runs psql as the postgres user. runuser ships with util-linux
+// (essential on Debian), sudo may be missing on minimal installs.
 func psqlArgs(extra ...string) []string {
-	args := []string{"-n", "-u", "postgres", "--", "psql", "-v", "ON_ERROR_STOP=1", "-At"}
+	args := []string{"-u", "postgres", "--", "psql", "-X", "-v", "ON_ERROR_STOP=1", "-At"}
 	return append(args, extra...)
 }
 
+// psql sends sql on stdin, never as an argument: arguments are visible in
+// /proc/*/cmdline and end up in the log when the command fails.
 func psql(ctx context.Context, sql string) (string, error) {
-	res := core.RunAdmin(ctx, "sudo", psqlArgs("-c", sql)...)
+	res := core.RunAdminInput(ctx, sql, "runuser", psqlArgs()...)
 	if res.Err != nil {
 		return "", fmt.Errorf("%s", res.Detail())
 	}
@@ -25,7 +34,7 @@ func psqlDB(ctx context.Context, dbname, sql string) (string, error) {
 	if _, err := cleanIdent(dbname, "Datenbank"); err != nil {
 		return "", err
 	}
-	res := core.RunAdmin(ctx, "sudo", psqlArgs("-d", dbname, "-c", sql)...)
+	res := core.RunAdminInput(ctx, sql, "runuser", psqlArgs("-d", dbname)...)
 	if res.Err != nil {
 		return "", fmt.Errorf("%s", res.Detail())
 	}
@@ -65,7 +74,10 @@ func browseTable(ctx context.Context, dbname, table string) ([]string, [][]strin
 		return nil, nil, err
 	}
 	sql := fmt.Sprintf(`SELECT * FROM "%s" LIMIT 100;`, tbl)
-	res := core.RunAdmin(ctx, "sudo", psqlArgs("-d", dbname, "-F", "\t", "-A", "-c", sql)...)
+	// Unaligned with header but without the "(n rows)" footer; -t would
+	// drop the column names.
+	args := []string{"-u", "postgres", "--", "psql", "-X", "-v", "ON_ERROR_STOP=1", "-A", "-P", "footer=off", "-F", "\t", "-d", dbname}
+	res := core.RunAdminInput(ctx, sql, "runuser", args...)
 	if res.Err != nil {
 		return nil, nil, fmt.Errorf("%s", res.Detail())
 	}
@@ -102,12 +114,45 @@ func createRole(ctx context.Context, name, password string) error {
 	if err := cleanPassword(password); err != nil {
 		return err
 	}
-	tag := "godebpw"
-	for strings.Contains(password, tag) {
-		tag += "x"
+	verifier, err := scramVerifier(password)
+	if err != nil {
+		return err
 	}
-	_, err = psql(ctx, fmt.Sprintf(`CREATE ROLE "%s" LOGIN PASSWORD $%s$%s$%s$;`, n, tag, password, tag))
+	// Only the SCRAM verifier reaches PostgreSQL, so neither its log nor
+	// pg_stat_statements ever holds the clear password.
+	_, err = psql(ctx, fmt.Sprintf(`CREATE ROLE "%s" LOGIN PASSWORD '%s';`, n, verifier))
 	return err
+}
+
+const scramIterations = 4096
+
+// scramVerifier builds the SCRAM-SHA-256 secret PostgreSQL stores in
+// pg_authid (RFC 5802/7677). cleanPassword limits passwords to printable
+// ASCII, where SASLprep is the identity, so clients compute the same keys.
+func scramVerifier(password string) (string, error) {
+	salt := make([]byte, 16)
+	if _, err := rand.Read(salt); err != nil {
+		return "", err
+	}
+	return scramVerifierSalt(password, salt)
+}
+
+func scramVerifierSalt(password string, salt []byte) (string, error) {
+	salted, err := pbkdf2.Key(sha256.New, password, salt, scramIterations, sha256.Size)
+	if err != nil {
+		return "", err
+	}
+	clientKey := hmacSHA256(salted, "Client Key")
+	storedKey := sha256.Sum256(clientKey)
+	serverKey := hmacSHA256(salted, "Server Key")
+	b64 := base64.StdEncoding.EncodeToString
+	return fmt.Sprintf("SCRAM-SHA-256$%d:%s$%s:%s", scramIterations, b64(salt), b64(storedKey[:]), b64(serverKey)), nil
+}
+
+func hmacSHA256(key []byte, msg string) []byte {
+	m := hmac.New(sha256.New, key)
+	m.Write([]byte(msg))
+	return m.Sum(nil)
 }
 
 func dropDatabase(ctx context.Context, name string) error {
