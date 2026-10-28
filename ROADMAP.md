@@ -159,7 +159,7 @@ Ziel: auf einen Blick sehen, ob der Server gesund ist, ob der Traffic normal aus
 
 ## Ganz hinten (niedrige Priorität)
 
-- [ ] **arm64 im APT-Repo** (Hetzner CAX): Release-Assets `godeb_*_arm64.deb` baut die CI seit v0.2.8, `apt-repo.yml` veröffentlicht aber nur `binary-amd64` (`Architectures: amd64`). Debian 13 unterstützt arm64 offiziell; die eigenen Server laufen auf amd64.
+- [ ] **arm64 im APT-Repo** (Hetzner CAX): Release-Assets `godeb_*_arm64.deb` baut die CI seit v0.2.8, `apt-repo.yml` veröffentlicht aber nur `binary-amd64` (`Architectures: amd64`). Debian 13 unterstützt arm64 offiziell.
 
 ## Entscheidungen
 
