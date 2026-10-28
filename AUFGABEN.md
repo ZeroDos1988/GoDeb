@@ -66,9 +66,9 @@ nginx-vhosts für eigene Webseiten und Reverse-Proxy auf interne Ziele, auch hin
 
 Geplante Aufgaben (systemd-Timer und `/etc/cron.d`) anzeigen. Neue Aufgaben nur als systemd-Timer mit einem Befehl aus einer Allowlist bzw. einem streng geprüften Pfad, kein freier Shell-Befehl.
 
-### 8. Datenbanken (neues Plugin) **(Frage)**
+### 8. Datenbanken (neues Plugin) – erledigt 28.10.
 
-MariaDB und/oder PostgreSQL installieren, Datenbanken und Benutzer anlegen, einfacher Tabellenbetrachter. Zugangsdaten versiegelt (`vault:"secret"`, Agent-DB, `db.RegisterAgentSecret`). Datenbankports nie öffentlich. Vorher fragen: welche Datenbank zuerst, ob ein Schreibzugriff im Betrachter gewünscht ist.
+PostgreSQL (Entscheidung Nutzer). Datenbanken und Benutzer anlegen, Tabellenbetrachter nur lesend. Zugangsdaten versiegelt (`vault:"secret"`, Agent-DB). Ports nie öffentlich.
 
 ### 9. Kleinere offene Punkte
 

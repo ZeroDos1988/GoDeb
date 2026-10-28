@@ -1,0 +1,6 @@
+{
+  "id": "postgres",
+  "name": "PostgreSQL",
+  "apt_dependencies": ["postgresql", "postgresql-client"],
+  "systemd_services": ["postgresql.service"]
+}

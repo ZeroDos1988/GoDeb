@@ -477,6 +477,25 @@
       "description": "Spielserver"
     }
   },
+  "postgres": {
+    "title": "PostgreSQL",
+    "description": "Datenbanken und Login-Rollen. Verbindungen nur über localhost; Ports werden nicht öffentlich geöffnet. Passwörter von GoDeb-Rollen liegen versiegelt in der Agent-DB.",
+    "status": "Dienst",
+    "databases": "Datenbanken",
+    "roles": "Benutzer",
+    "dbName": "Name der Datenbank",
+    "owner": "Besitzer (Rolle)",
+    "roleName": "Benutzername",
+    "password": "Passwort (min. 10)",
+    "createDB": "Datenbank anlegen",
+    "createRole": "Benutzer anlegen",
+    "delete": "Löschen",
+    "confirmDropDB": "Datenbank {{name}} wirklich löschen?",
+    "confirmDropRole": "Rolle {{name}} wirklich löschen?",
+    "browse": "Tabellen",
+    "noTables": "Keine Tabellen in public.",
+    "failed": "Aktion fehlgeschlagen"
+  },
   "websites": {
     "title": "Webseiten",
     "description": "nginx-vhosts mit optionalem PHP-FPM oder Reverse-Proxy. Dateien unter /var/www/godeb/<name>, Symlink unter ~/www/<name> des Web-Users. Port 80/443 werden bei öffentlichem Zugang bzw. Zertifikat geöffnet.",

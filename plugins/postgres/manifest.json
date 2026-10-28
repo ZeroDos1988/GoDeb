@@ -1,0 +1,7 @@
+{
+  "id": "postgres",
+  "name": "PostgreSQL",
+  "description": "Datenbanken und Benutzer",
+  "icon": "server",
+  "order": 50
+}
