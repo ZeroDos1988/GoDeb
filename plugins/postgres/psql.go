@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/csv"
 	"fmt"
 	"strings"
 
@@ -74,23 +75,26 @@ func browseTable(ctx context.Context, dbname, table string) ([]string, [][]strin
 		return nil, nil, err
 	}
 	sql := fmt.Sprintf(`SELECT * FROM "%s" LIMIT 100;`, tbl)
-	// Unaligned with header but without the "(n rows)" footer; -t would
-	// drop the column names.
-	args := []string{"-u", "postgres", "--", "psql", "-X", "-v", "ON_ERROR_STOP=1", "-A", "-P", "footer=off", "-F", "\t", "-d", dbname}
-	res := core.RunAdminInput(ctx, sql, "runuser", args...)
+	// CSV keeps values with tabs or line breaks in one cell and has no
+	// "(n rows)" footer.
+	res := core.RunAdminInput(ctx, sql, "runuser", "-u", "postgres", "--", "psql", "-X", "-v", "ON_ERROR_STOP=1", "--csv", "-d", dbname)
 	if res.Err != nil {
 		return nil, nil, fmt.Errorf("%s", res.Detail())
 	}
-	lines := nonEmptyLines(res.Stdout)
-	if len(lines) == 0 {
+	return parseCSV(res.Stdout)
+}
+
+func parseCSV(out string) ([]string, [][]string, error) {
+	r := csv.NewReader(strings.NewReader(out))
+	r.FieldsPerRecord = -1
+	records, err := r.ReadAll()
+	if err != nil {
+		return nil, nil, fmt.Errorf("Ausgabe von psql nicht lesbar: %w", err)
+	}
+	if len(records) == 0 {
 		return []string{}, [][]string{}, nil
 	}
-	head := strings.Split(lines[0], "\t")
-	rows := make([][]string, 0, len(lines)-1)
-	for _, l := range lines[1:] {
-		rows = append(rows, strings.Split(l, "\t"))
-	}
-	return head, rows, nil
+	return records[0], records[1:], nil
 }
 
 func createDatabase(ctx context.Context, name, owner string) error {

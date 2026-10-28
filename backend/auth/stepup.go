@@ -80,6 +80,11 @@ func stepUpFor(method, raw string) stepUpLevel {
 		if strings.HasPrefix(p, "/api/plugins/wireguard/peers/") && (strings.HasSuffix(p, "/config") || strings.HasSuffix(p, "/qr") || strings.HasSuffix(p, "/code")) {
 			return stepUpWindow
 		}
+		// The table viewer reads application data (often credentials) as
+		// the PostgreSQL superuser.
+		if strings.HasPrefix(p, "/api/plugins/postgres/databases/") {
+			return stepUpWindow
+		}
 		return stepUpNone
 	}
 	if noStepUp[p] {
@@ -92,6 +97,10 @@ func stepUpFor(method, raw string) stepUpLevel {
 		if _, action, ok := strings.Cut(rest, "/"); ok && criticalGameActions[action] {
 			return stepUpFresh
 		}
+	}
+	// Dropping a database or role cannot be undone.
+	if strings.HasPrefix(p, "/api/plugins/postgres/") && strings.HasSuffix(p, "/delete") {
+		return stepUpFresh
 	}
 	// Publishing DNS through the provider rewrites public records.
 	if strings.HasPrefix(p, "/api/plugins/domains/") && strings.HasSuffix(p, "/apply") {

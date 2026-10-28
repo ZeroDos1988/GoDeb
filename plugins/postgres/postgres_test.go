@@ -51,3 +51,16 @@ func TestScramVerifier(t *testing.T) {
 }
 
 const wantScram = "SCRAM-SHA-256$4096:AAECAwQFBgcICQoLDA0ODw==$kQMfaj0tnzSF3JLohG1O/geohIfj4Z/Fg2fuV5saC5Q=:0aq+SMrs7bpmOn1gGaDQ1U95luG0+vapEIapJltla/A="
+
+func TestParseCSVKeepsMultilineValues(t *testing.T) {
+	head, rows, err := parseCSV("id,note\n1,\"a\tb\nc\"\n2,\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(head) != 2 || head[1] != "note" || len(rows) != 2 || rows[0][1] != "a\tb\nc" || rows[1][1] != "" {
+		t.Fatalf("head=%q rows=%q", head, rows)
+	}
+	if head, rows, err := parseCSV(""); err != nil || len(head) != 0 || len(rows) != 0 {
+		t.Fatalf("empty: %q %q %v", head, rows, err)
+	}
+}
