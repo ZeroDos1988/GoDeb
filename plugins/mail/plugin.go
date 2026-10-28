@@ -273,8 +273,8 @@ func handleDomain(w http.ResponseWriter, r *http.Request) {
 	s, _, _ := loadSettings()
 	w.Header().Set("Cache-Control", "no-store")
 	core.WriteJSON(w, http.StatusOK, map[string]any{
-		"domain":   d,
-		"accounts": list,
+		"domain":     d,
+		"accounts":   list,
 		"records":    expectedRecords(s, d, core.DefaultRoute(r.Context()).Src),
 		"mtaSTS":     mtaSTSPolicy(s),
 		"mtaSTSHost": "mta-sts." + d.Name,

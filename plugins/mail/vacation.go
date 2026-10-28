@@ -11,10 +11,10 @@ import (
 )
 
 const (
-	maxVacationSubject = 200
-	maxVacationBody    = 4000
-	minVacationDays    = 1
-	maxVacationDays    = 30
+	maxVacationSubject  = 200
+	maxVacationBody     = 4000
+	minVacationDays     = 1
+	maxVacationDays     = 30
 	defaultVacationDays = 7
 )
 

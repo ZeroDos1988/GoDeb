@@ -43,8 +43,8 @@ func allowlistInfo() map[string]any {
 		bins = append(bins, b)
 	}
 	return map[string]any{
-		"binaries": bins,
-		"scriptDirs": []string{"/usr/local/sbin", "/etc/godeb/scripts"},
+		"binaries":     bins,
+		"scriptDirs":   []string{"/usr/local/sbin", "/etc/godeb/scripts"},
 		"calendarHint": "daily, weekly, *-*-* 03:00:00, Mon *-*-* 06:00:00",
 	}
 }

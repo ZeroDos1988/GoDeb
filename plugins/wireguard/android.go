@@ -39,15 +39,15 @@ func apkPath() string {
 }
 
 type androidClientInfo struct {
-	Available      bool   `json:"available"`
-	Filename       string `json:"filename"`
-	Size           int64  `json:"size,omitempty"`
-	Version        string `json:"version,omitempty"`
-	Modified       string `json:"modified,omitempty"`
-	DownloadPath   string `json:"downloadPath"`
-	TokenRequired  bool   `json:"tokenRequired"`
-	TokenSet       bool   `json:"tokenSet"` // admin UI only; same as TokenRequired
-	Detail         string `json:"detail,omitempty"`
+	Available     bool   `json:"available"`
+	Filename      string `json:"filename"`
+	Size          int64  `json:"size,omitempty"`
+	Version       string `json:"version,omitempty"`
+	Modified      string `json:"modified,omitempty"`
+	DownloadPath  string `json:"downloadPath"`
+	TokenRequired bool   `json:"tokenRequired"`
+	TokenSet      bool   `json:"tokenSet"` // admin UI only; same as TokenRequired
+	Detail        string `json:"detail,omitempty"`
 }
 
 func mountAndroid(mux *http.ServeMux) {

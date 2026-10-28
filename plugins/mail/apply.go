@@ -24,10 +24,10 @@ type fileSpec struct {
 // allowed lists every file the plugin writes. DKIM keys are checked by
 // directory and name pattern in writeDKIM.
 var allowed = map[string]fileSpec{
-	mapDomains:   {0o644, ""},
-	mapMailboxes: {0o640, "postfix"},
-	mapAliases:   {0o640, "postfix"},
-	mapSenders:   {0o640, "postfix"},
+	mapDomains:      {0o644, ""},
+	mapMailboxes:    {0o640, "postfix"},
+	mapAliases:      {0o640, "postfix"},
+	mapSenders:      {0o640, "postfix"},
 	dovecotConf:     {0o644, ""},
 	dovecotUsers:    {0o640, "dovecot"},
 	dovecotDeny:     {0o640, "dovecot"},
@@ -47,7 +47,7 @@ var allowed = map[string]fileSpec{
 	rspamdLocal + "/redis.conf":            {0o644, ""},
 	rspamdLocal + "/classifier-bayes.conf": {0o644, ""},
 	rspamdLocal + "/antivirus.conf":        {0o644, ""},
-	rspamdCtrlConf:                        {0o644, ""},
+	rspamdCtrlConf:                         {0o644, ""},
 }
 
 // root prefixes every path in tests (GODEB_MAIL_ROOT); empty in production.

@@ -161,8 +161,8 @@ type HubResult struct {
 type ClientSpec struct {
 	Name       string `json:"name"`
 	Site       bool   `json:"site"`
-	Address    string `json:"address"`  // empty: next free (sites prefer 10.8.0.2)
-	Endpoint   string `json:"endpoint"` // public host or host:port of this hub
+	Address    string `json:"address"`              // empty: next free (sites prefer 10.8.0.2)
+	Endpoint   string `json:"endpoint"`             // public host or host:port of this hub
 	FullTunnel bool   `json:"fullTunnel,omitempty"` // device AllowedIPs 0.0.0.0/0 (hub NAT must be on)
 }
 

@@ -25,8 +25,8 @@ const (
 )
 
 var (
-	volltunnelMu     sync.Mutex
-	volltunnelIface  = regexp.MustCompile(`^[a-z][a-z0-9_.-]{0,14}$`)
+	volltunnelMu    sync.Mutex
+	volltunnelIface = regexp.MustCompile(`^[a-z][a-z0-9_.-]{0,14}$`)
 )
 
 type volltunnelState struct {

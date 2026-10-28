@@ -47,13 +47,13 @@ func handleStatus(w http.ResponseWriter, r *http.Request) {
 		known[a.Name] = true
 	}
 	core.WriteJSON(w, http.StatusOK, map[string]any{
-		"active":   active,
+		"active":    active,
 		"databases": dbs,
-		"roles":    roles,
-		"managed":  known,
-		"mocked":   mocked,
-		"detail":   detail,
-		"listen":   "localhost (Ports nie öffentlich)",
+		"roles":     roles,
+		"managed":   known,
+		"mocked":    mocked,
+		"detail":    detail,
+		"listen":    "localhost (Ports nie öffentlich)",
 	})
 }
 
