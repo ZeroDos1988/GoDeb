@@ -1,21 +1,43 @@
 # Fahrplan
 
-Stand: 27.10.2026. Reihenfolge = Priorität. `[x]` erledigt, `[ ]` offen. Neue Ideen kommen hierher (passende Phase oder Phase 7), getroffene Entscheidungen unten unter „Entscheidungen“.
+Stand: 28.10.2026. Reihenfolge = Priorität. `[x]` erledigt, `[ ]` offen. Neue Ideen kommen hierher (passende Phase oder Phase 7), getroffene Entscheidungen unten unter „Entscheidungen“.
 
-## Aktueller Stand (28.10., nach v0.2.9)
+## Aktueller Stand (28.10., nach v0.2.10)
 
 Für einen neuen Chat: zuerst `/diagnose` (Skill in `.claude/skills/diagnose`, Skript `scripts/diagnose.sh`), dann hier weiterlesen.
 
 - **Veröffentlicht** (alle öffentlich, nur unter ZeroDos1988):
-  - `ZeroDos1988/GoDeb`: GPL-3.0, Release **v0.2.9** (28.10., Vorabversion, Sicherheitsfixes für Webseiten, PostgreSQL und Cron aus v0.2.8) im APT-Repo `https://zerodos1988.github.io/GoDeb` (amd64 und arm64). v0.2.8 brachte Mail-Ausbau, nginx/Webseiten, PostgreSQL, Cron, Mobil-Feinschliff, Volltunnel. Jeder Tag `vX.Y.Z` baut Release und APT-Repo automatisch; den Release-Text danach von Hand im Stil der vorigen Releases ersetzen und als Vorabversion markieren.
+  - `ZeroDos1988/GoDeb`: GPL-3.0, Release **v0.2.10** (28.10., Vorabversion: arm64 im APT-Repo, Spielserver auf arm64 gesperrt) im APT-Repo `https://zerodos1988.github.io/GoDeb` (amd64 und arm64). v0.2.9 brachte die Sicherheitsfixes für Webseiten, PostgreSQL und Cron aus v0.2.8; v0.2.8 Mail-Ausbau, nginx/Webseiten, PostgreSQL, Cron, Mobil-Feinschliff, Volltunnel. Jeder Tag `vX.Y.Z` baut Release und APT-Repo automatisch; den Release-Text danach von Hand im Stil der vorigen Releases ersetzen und als Vorabversion markieren.
   - `ZeroDos1988/godeb-tunnel-android` (Release 1.1.0), `ZeroDos1988/godeb-tunnel-arch` (1.0.1). Privat: `godeb-wireguard-windows`.
-- **Auf den Servern:** Hetzner-VPS zuletzt mit älterer 0.2.x; Heim-VM noch nicht neu eingerichtet. **v0.2.9 auf dem VPS noch nicht eingespielt.**
-- **Nächste Schritte, in dieser Reihenfolge:**
-  1. Auf dem VPS v0.2.9 über APT → „Alle aktualisieren“ einspielen und prüfen: `godeb version` = 0.2.9, Dienste-Seite, Protokoll, Plugins, automatische Updates.
-  2. Mailserver auf dem VPS einrichten: vorher A-Eintrag `mail.<domain>`, Reverse-DNS bei Hetzner, Freigabe von ausgehend 25/465 bei Hetzner (siehe „Entscheidungen“). Dann Domain, Postfach, Empfang und Versand mit Thunderbird/Handy testen, Ergebnis bei mail-tester.com.
-  3. Domains/DNS-Plugin mit echter Zone und Hetzner-Token verifizieren.
-  4. Heim-VM mit v0.2.9 neu anbinden (Beitrittscode), Enshrouded, Portweiterleitung.
-  5. Danach: Phase 8 (Heim-VM als Gateway), Windows-Client, weitere Mail-Optionen nach Bedarf.
+- **Auf den Servern:** Hetzner-VPS zuletzt mit älterer 0.2.x; Heim-VM noch nicht neu eingerichtet. **v0.2.10 auf dem VPS noch nicht eingespielt.**
+- **Nächste Schritte:** der Fahrplan „Produktionsreife“ direkt unten, Stufe P0 von oben nach unten.
+
+## Produktionsreife – Weg zu 1.0 (Prüfung 28.10.)
+
+Funktional ist alles da, was für den Betrieb gewünscht ist; ab jetzt keine neuen Funktionen vor 1.0, nur Tests, Fixes und Betriebssicherheit. Stand der Prüfung: `go test` (30 Pakete), `go vet`, `gofmt`, `govulncheck`, `npm audit`, i18n, API-Doku und Sicherheitsregeln aus `scripts/diagnose.sh` alle grün; systemd-Härtung 1.3 (Weboberfläche) bzw. 7.4 (Agent); HTTP-Server mit `ReadHeaderTimeout` und sauberem Shutdown; SQLite mit `busy_timeout`; Login über fail2ban und 2FA geschützt; Notfallbefehle per SSH vorhanden (`godeb 2fa reset`, `user passwd`, `sessions revoke`). Die größte Lücke: **nichts davon ist auf den echten Servern gelaufen.**
+
+### P0 – vor dem Produktivbetrieb (Pflicht)
+
+- [ ] **Echter Durchlauf auf beiden Servern** (sammelt die offenen Tests aus Phase 2, 3, 3b und 4b): Update von der alten 0.2.x auf dem VPS (Umzug nach `/var/lib/godeb`), Assistent, Agent, Plugins ab-/anschalten, automatische Sicherheitsupdates und ein Selbst-Update von GoDeb über „Alle aktualisieren“; Heim-VM per Beitrittscode, Enshrouded (Wine ohne X-Server, Ports), Portweiterleitung, Handy und Spiel-Client von außen; **beide Seiten neu starten** und prüfen, dass Tunnel, nftables-Tabellen, ufw-Regeln und Dienste von selbst wiederkommen. Jeden Fehler als Fix-Release `0.2.x`.
+- [ ] **Hetzner-Grundschutz:** Backups für den VPS einschalten (täglich, 7 Stände) und vor jedem Update ein Snapshot; Hetzner Cloud Firewall als zweite Schicht vor ufw (nur SSH, `51820/udp`, Mail- und Web-Ports, die Spielports); SSH nur mit Schlüssel und unattended-upgrades (das Setup richtet beides noch nicht ein, `godeb doctor` meldet es). Für Mail vorab: Reverse-DNS, Freigabe von Port 25/465, Ergebnis bei mail-tester.com mindestens 9/10.
+- [ ] **Wiederherstellung einmal üben, nicht nur aufschreiben:** Handy weg (`godeb 2fa reset` per SSH mit Backup-Codes bzw. SSH-Schlüssel), VPS aus einem Snapshot zurückholen, Heim-VM neu aufsetzen und wieder beitreten. Daraus ein kurzes Kapitel „Notfall“ in `DOCUMENTATION.md` (Runbook mit fertigen Befehlen).
+- [ ] **Überwachung von außen:** Fällt der VPS ganz aus, kann er selbst keinen Alarm schicken. Die Heim-VM soll den Hub prüfen (Tunnel-Handshake, Web-UI, Mail-Ports) und über ntfy melden, umgekehrt meldet der Hub schon heute die Heim-VM. Zusätzlich die öffentlichen Dienste (Mail, Webseiten) mit einem externen Uptime-Dienst prüfen.
+- [ ] **Sicherheitsdurchsicht der jüngsten Plugins:** Webseiten, PostgreSQL, Cron und Mail-Queue sind erst seit 28.10. da, v0.2.9 musste dort schon eine kritische Lücke schließen, und die Testabdeckung ist niedrig (`postgres` 13 %, `websites` 22 %, `portforward` 23 %, `certbot` 24 %). Vor dem Einsatz: gezielte Prüfung (Symlinks, Pfade, Befehlsargumente, 2FA-Stufe) und Tests für jeden Agenten-Pfad. Bis dahin auf dem Produktivsystem nur die Plugins einschalten, die wirklich gebraucht werden.
+- [ ] **Feature-Freeze und 1.0:** Wenn P0 erledigt ist und das System zwei Wochen ohne Eingriff gelaufen ist, `v1.0.0` als erste **nicht** vorläufige Version. Danach auf `1.0.x` nur Fixes.
+
+### P1 – in den ersten Wochen Betrieb
+
+- [ ] **Stabile und Test-Suite im APT-Repo:** Heute landet jede Vorabversion im selben Repo wie alles andere. Ab 1.0: Suite `trixie` nur mit freigegebenen Versionen, Vorabversionen in `trixie-testing` (Heim-VM darf testen, VPS nicht).
+- [ ] **Update-Test in der CI:** Debian-13-Container mit systemd, vorige Version aus dem Repo installieren, auf das neue Paket aktualisieren, prüfen, dass beide Dienste starten, die Datenbanken migrieren und `godeb doctor` nichts Neues meldet. Für amd64 und (per QEMU) arm64.
+- [ ] **Abhängigkeiten aktuell halten ohne neue Releases zu vergessen:** Dependabot (Go-Module, npm, GitHub Actions) und ein wöchentlicher CI-Lauf mit `govulncheck`/`npm audit` auch ohne Push. Ein Fund heißt Fix-Release.
+- [ ] **Datenbanken prüfen:** `PRAGMA quick_check` für `godeb.db` (Web und Agent) und `metrics.db` in `godeb doctor` und der Ampel; Platzbedarf von `metrics.db` nach ein paar Wochen ansehen.
+- [ ] **Grenzwerte der Überwachung** nach ein paar Wochen echter Daten einstellen (Grundlinie, Platte, Alarme), damit Alarme selten und dann ernst sind.
+- [ ] **Fristen im Kalender:** Signier-Unterschlüssel des APT-Repos läuft 2028 ab; Android-Keystore sichern; Let's-Encrypt-Erneuerung einmal per Ampel bestätigt sehen.
+- [ ] Tunnel-Clients: Windows/Arch auf `godeb-trust-v1` (heute kein Auto-Disconnect dort), Handy-Test des Auto-Disconnect (Phase 5). Nur nötig, wenn diese Clients produktiv genutzt werden.
+
+### P2 – danach (nice to have)
+
+Alles aus Phase 4 (Savegame-Backup, weitere Spiele), Phase 7 (Webmail, eigener DNS), Phase 8 (Heim-VM als Gateway, gekoppelte Verwaltung, Netzwerk-Scanner), Push direkt in die App, IPv6-Weiterleitung, echte Spieler-IPs. Neue Wünsche kommen weiter in die passende Phase.
 
 ## Leitplanken für alle Phasen
 
@@ -72,7 +94,7 @@ Eine Testinstallation auf einem Hetzner-VPS ist ab 20.10. möglich. Die Anleitun
 - [x] **Client-Schlüssel** (27.10.): Option „Schlüssel auf dem Gerät erzeugen“ (Public Key einfügen); Client-Dateien nach dem Download optional löschen. Mailversand nur mit Warnhinweis (weiterhin).
 - [x] ~~**Master-Key** getrennt von der Datenbank~~ (entschieden 21.10.): entfällt. Gesichert wird die ganze VM (Proxmox bzw. Hetzner), ein VM-Backup enthält Schlüssel und Datenbank ohnehin zusammen; ein systemd-Credential läge auf derselben Platte.
 - [x] **Volltunnel** (28.10.): bewusste Option im Setup und unter WireGuard (`--full-tunnel` / Checkbox). IP-Forwarding und MASQUERADE in eigener nftables-Tabelle `godeb_volltunnel` (wie Portweiterleitung, nicht `before.rules`), dazu `ufw route allow` wg0→öffentlich; Boot-Unit `godeb-volltunnel.service`. Standard aus; Geräte-Clients im Setup bekommen bei Aktivierung `AllowedIPs 0.0.0.0/0`, Standorte nie.
-- [ ] **Unauthentifizierter APK-Download**: nur über den Tunnel erreichbar (Bind-Adresse); optional mit Token. (`/api/trusted` ist seit 20.10. entfernt.)
+- [x] **Unauthentifizierter APK-Download**: nur über den Tunnel erreichbar (Bind-Adresse); optional mit Token (28.10.). (`/api/trusted` ist seit 20.10. entfernt.)
 - [x] ~~**Backups**~~ (entschieden 21.10.): nicht Aufgabe von GoDeb. Proxmox (Heim-VM) und Hetzner (VPS) sichern die ganze Maschine; vor größeren Änderungen einen Snapshot ziehen.
 - [ ] VPS-Spezifika: Setup installiert SSH-nur-Schlüssel und unattended-upgrades noch nicht (steht bisher nur in der Anleitung). Doctor und Ampel melden den Zustand seit 27.10. nur lesend.
 - [x] **Updates aus der Oberfläche, automatische Prüfung und Sicherheitsupdates** (Wunsch und Umsetzung 25.10.): Der Agent prüft alle 10 Minuten (einstellbar) und installiert Pakete aus `trixie-security` selbst; „Alle aktualisieren“ mit frischem 2FA-Code für den Rest, GoDeb inklusive. Jeder Lauf ist eine eigene Unit `godeb-apt.service` (`systemd-run`), damit das Selbst-Update den Neustart des Agenten überlebt.
@@ -96,10 +118,10 @@ Die Portweiterleitung schreibt `/etc/sysctl.d/90-godeb-forward.conf`, `/etc/gode
 
 ## Phase 4 – Spielserver und Enshrouded ausbauen
 
-- [ ] Formular für `gameSettings` beim Preset „Custom“ (wichtigste Faktoren mit Schiebereglern).
+- [x] Formular für `gameSettings` beim Preset „Custom“ (wichtigste Faktoren mit Schiebereglern) – 28.10.
 - [ ] Savegame-Backup vor jedem Update und auf Knopfdruck, Wiederherstellen aus der UI.
-- [ ] Zeitgesteuerte Updates/Neustarts (systemd-Timer) mit Warnfenster.
-- [ ] Spielerzahl/Status per Steam-Query anzeigen.
+- [x] Zeitgesteuerte Updates/Neustarts mit Warnfenster – 28.10. (Warnfenster in der UI, Zeitplan über das Plugin „Geplante Aufgaben“).
+- [x] Spielerzahl/Status per Steam-Query anzeigen (Überwachung M3, 23.10.).
 - [x] Gemeinsames Gerüst „SteamCMD-Spiel“ (20.10.): Plugin `steam` mit Spielen als `Game`-Beschreibung, Enshrouded ist das erste. Weitere Spiele brauchen nur App-ID, Startbefehl, Ports und optional Konfiguration und Formular.
 
 ## Phase 4b – Überwachung (umgesetzt 23.10., Plugin `monitor`)
@@ -132,20 +154,20 @@ Ziel: auf einen Blick sehen, ob der Server gesund ist, ob der Traffic normal aus
 
 ## Phase 6 – Mobile Feinschliff
 
-- [ ] Kompakte Kopfzeile mit Menü-Button statt der vollen Seitenleiste auf dem Handy.
+- [x] Kompakte Kopfzeile mit Menü-Button statt der vollen Seitenleiste auf dem Handy – 28.10.
 - [x] **Benutzermenü wie bei GitHub** (Wunsch und Umsetzung 25.10.): Avatar oben rechts mit Sprache, Darstellung, Sitzungen, Einrichtungsübersicht, Abmelden und Version. Die Sprache folgt standardmäßig dem Browser („Auto“); Login und Ersteinrichtung haben eine eigene Sprachwahl.
-- [ ] Touch-Ziele mindestens 44 px, Tabellen als Karten unter `sm` (WireGuard-Peers, UFW-Regeln).
-- [ ] Playwright-Smoke-Test mit iPhone- und Pixel-Viewport in CI (prüft `scrollWidth == innerWidth`).
+- [x] Touch-Ziele mindestens 44 px, Tabellen als Karten unter `sm` (WireGuard-Peers, UFW-Regeln) – 28.10.
+- [x] Playwright-Smoke-Test mit iPhone- und Pixel-Viewport in CI (prüft `scrollWidth == innerWidth`) – 28.10.
 
 ## Phase 7 – Weitere Plugins (Wunschliste, 20.10.)
 
-- [ ] **Webseiten und Reverse-Proxy** (nginx): eigene Webseiten hosten und interne Dienste veröffentlichen, mit Let's-Encrypt-Zertifikaten (vorhandenes Certbot-Plugin). Auf dem VPS als Eingang, Ziele auch hinter dem Tunnel (z. B. die Heim-VM).
+- [x] **Webseiten und Reverse-Proxy** (nginx, Plugin `websites`, 28.10.): eigene Webseiten hosten und interne Dienste veröffentlichen, mit Let's-Encrypt-Zertifikaten (vorhandenes Certbot-Plugin). Auf dem VPS als Eingang, Ziele auch hinter dem Tunnel (z. B. die Heim-VM).
 - [x] **Vollwertiger Mailserver nach dem Vorbild von HestiaCP** (Wunsch und erste Fassung 27.10., Plugin `mail`, auf dem VPS): Domains, Postfächer, Aliase, Weiterleitungen, Catch-all, Sperren, DKIM, DNS-Prüfung, Spamfilter, Let's Encrypt, optional ClamAV. Entschieden: Postfächer erst auf dem VPS, Rspamd statt SpamAssassin, ClamAV abschaltbar. Erledigt 28.10.: Abwesenheitsnotiz (Sieve); MTA-STS/TLS-RPT (DNS + Richtlinie); Quota-Warnungen; Spam/Ham-Lernen (imapsieve); Mail-Queue. Noch offen: Webmail (Roundcube), Autoconfig/Autodiscover, HTTPS für MTA-STS/Autoconfig (Webserver), Statistik, Befunde in der Überwachung. Danach: VPS nur als Relay (Ein- und Ausgang), Postfächer und Virenscanner auf der Heim-VM. Ursprünglicher Wunsch: Maildomains, Postfächer mit Passwort und Quota, Aliase und Weiterleitungen, Catch-all, DKIM/SPF/DMARC mit fertigen DNS-Einträgen, TLS über Let's Encrypt, IMAP/SMTP-Submission (Postfix + Dovecot), Spamfilter, optional Webmail, Autoconfig für Mailprogramme. Baut auf dem Mail-Gateway auf (Eingang und Versand über den VPS, weil Heimanschlüsse für Port 25 und PTR nicht taugen). Offene Entscheidungen: Standort (VPS oder Heim-VM), Spamfilter (Rspamd oder SpamAssassin), Virenscanner (ClamAV braucht etwa 1,5 GB RAM), Webmail (Roundcube braucht PHP und einen Webserver).
 - [x] **Dienste-Seite wie bei HestiaCP** (Wunsch und Umsetzung 27.10.): statt der Liste aller systemd-Units eine kuratierte Übersicht der Serverdienste (SSH, Firewall, Fail2ban, WireGuard, Postfix, Dovecot, Spielserver, GoDeb selbst) mit Beschreibung, Status, Laufzeit, CPU und RAM sowie Start/Stopp/Neustart; die vollständige Unit-Liste bleibt als zweiter Reiter. Oben die Eckdaten des Servers (Hostname, OS, Kernel, Laufzeit, Last).
 - [x] **Domains und DNS** (Wunsch 27.10., erste Fassung 27.10., Plugin `domains`): Domains einmal eintragen; Mail meldet MX, SPF, DKIM, DMARC, A und PTR. Betriebsarten **Manuell** (zeigen und prüfen) und **Hetzner Cloud-API** (Token versiegelt, nur RRSets mit Label `godeb=1`, PTR über `change_dns_ptr`). Noch offen: Anbindung weiterer Plugins (Webseiten), eigener primärer DNS auf dem VPS (Knot/PowerDNS mit Hetzner als Secondary). Erledigt 27.10.: Hinweis in der Domain-Ansicht, wenn die Zone im Hetzner-Projekt fehlt oder die API nicht lesbar ist.
 - [x] **`godeb doctor`** (Idee und Umsetzung 27.10., `backend/doctor`): Server-Diagnose als ein Befehl (Dienste, offene Ports, Firewall, Tunnel-Handshakes, Zertifikate, DNS der Maildomains, Fehler im Journal, Updates, Speicher), Ausgabe ohne Geheimnisse zum Weitergeben. Ersetzt den Befehlsblock im Skill `/diagnose`. Dieselben Befunde auf der Startseite über `GET /api/doctor` (Agent: `/internal/doctor`, nur lesend).
 - [x] **Cron-Aufgaben** (28.10., Plugin `cron`): systemd-Timer und `/etc/cron.d` anzeigen; neue Aufgaben nur als GoDeb-Timer mit Allowlist-Befehl oder Skript unter `/usr/local/sbin` bzw. `/etc/godeb/scripts`.
-- [ ] **Datenbanken**: Datenbankserver installieren (z. B. MariaDB, PostgreSQL), Datenbanken und Benutzer anlegen, dazu ein eingebauter Admin-Client zum Ansehen von Tabellen und Daten. Zugangsdaten mit `security.Seal`, Datenbankports nie öffentlich.
+- [x] **Datenbanken** (28.10., Plugin `postgres`, entschieden: nur PostgreSQL): Datenbankserver installieren, Datenbanken und Benutzer anlegen, dazu ein eingebauter Admin-Client zum Ansehen von Tabellen und Daten. Zugangsdaten mit `security.Seal`, Datenbankports nie öffentlich.
 
 ## Phase 8 – Hub und Standorte enger koppeln (Ideen 23.10.)
 
