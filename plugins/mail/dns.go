@@ -48,6 +48,8 @@ func expectedRecords(s Settings, d Domain, publicIP string) []Record {
 		recs = append(recs,
 			Record{Kind: "a", Name: s.Hostname, Type: "A", Value: publicIP},
 			Record{Kind: "mtasts-host", Name: "mta-sts." + d.Name, Type: "A", Value: publicIP},
+			Record{Kind: "autoconfig", Name: "autoconfig." + d.Name, Type: "A", Value: publicIP},
+			Record{Kind: "autodiscover", Name: "autodiscover." + d.Name, Type: "A", Value: publicIP},
 			Record{Kind: "ptr", Name: publicIP, Type: "PTR", Value: s.Hostname + "."},
 		)
 	}
@@ -103,7 +105,7 @@ func checkRecords(ctx context.Context, recs []Record) []Record {
 					r.Status = "ok"
 				}
 			}
-		case "a", "mtasts-host":
+		case "a", "mtasts-host", "autoconfig", "autodiscover":
 			ips, err := dnsResolver.LookupHost(ctx, r.Name)
 			r.Status = statusFrom(err)
 			r.Found = strings.Join(ips, ", ")

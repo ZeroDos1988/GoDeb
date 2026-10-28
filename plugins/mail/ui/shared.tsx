@@ -45,6 +45,8 @@ export type DnsRecord = {
     | "tlsrpt"
     | "a"
     | "mtasts-host"
+    | "autoconfig"
+    | "autodiscover"
     | "ptr";
   name: string;
   type: string;

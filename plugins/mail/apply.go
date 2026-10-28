@@ -203,6 +203,15 @@ func apply(ctx context.Context) ([]string, error) {
 	if err := syncMTASTS(s, domains); err != nil {
 		return log, err
 	}
+	if err := syncAutoconfig(s, domains); err != nil {
+		log = append(log, "autoconfig: "+err.Error())
+	} else if _, err := os.Stat("/usr/sbin/nginx"); err == nil {
+		if res := admin(ctx, "nginx", "-t"); res.Err != nil {
+			log = append(log, "nginx -t: "+res.Detail())
+		} else if res := adminTimeout(ctx, time.Minute, "systemctl", "reload", "nginx"); res.Err != nil {
+			log = append(log, "nginx: "+res.Detail())
+		}
+	}
 	for _, sieve := range []string{spamSieve, learnSpamSieve, learnHamSieve} {
 		if res := admin(ctx, "sievec", root(sieve)); res.Err != nil {
 			log = append(log, "sievec "+sieve+": "+res.Detail())

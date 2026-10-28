@@ -33,7 +33,7 @@ func recordsFor(ctx context.Context, needs []Need) []Record {
 			checkMX(ctx, &r)
 		case "spf", "dkim", "dmarc", "mtasts", "tlsrpt":
 			checkTXT(ctx, &r)
-		case "a", "mtasts-host":
+		case "a", "mtasts-host", "autoconfig", "autodiscover":
 			checkA(ctx, &r)
 		case "ptr":
 			checkPTR(ctx, &r)

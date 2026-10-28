@@ -860,6 +860,8 @@
       "tlsrpt": "TLS-RPT: reports",
       "a": "A: mail server address",
       "mtasts-host": "A: mta-sts host",
+      "autoconfig": "A: Autoconfig (Thunderbird)",
+      "autodiscover": "A: Autodiscover (Outlook)",
       "ptr": "PTR: reverse DNS"
     },
     "dnsHelp": {
@@ -870,7 +872,9 @@
       "mtasts": "Points to the MTA-STS policy. id changes when the policy changes.",
       "tlsrpt": "Where other servers send TLS failure reports (mailto). Create a mailbox or catch-all for tls-reports@.",
       "a": "The mail server hostname must point to this IP (once for all domains).",
-      "mtasts-host": "Hostname for https://mta-sts.…/.well-known/mta-sts.txt. Serving comes with the web server plugin.",
+      "mtasts-host": "Hostname for https://mta-sts.…/.well-known/mta-sts.txt (nginx, websites/mail plugin).",
+      "autoconfig": "Thunderbird fetches IMAP/SMTP settings from here.",
+      "autodiscover": "Outlook fetches IMAP/SMTP settings from here.",
       "ptr": "Set at the hosting provider (Hetzner: server → networking → reverse DNS). Without a matching PTR mail often lands in spam."
     },
     "mtaSTSPolicy": "MTA-STS policy",
