@@ -68,8 +68,8 @@ echo "    installiert: $OLD"
 active || { echo "Dienste der vorigen Version laufen nicht" >&2; exit 1; }
 
 echo "==> Update auf $NEW"
-docker cp "$DEB" "$NAME":/tmp/godeb.deb
-ctr sh -c 'DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends -o Dpkg::Options::=--force-confold /tmp/godeb.deb' >/dev/null
+docker cp "$DEB" "$NAME":/root/godeb.deb
+ctr sh -c 'DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends -o Dpkg::Options::=--force-confold /root/godeb.deb' >/dev/null
 active || { echo "Dienste starten nach dem Update nicht" >&2; exit 1; }
 
 got=$(ctr godeb version)
