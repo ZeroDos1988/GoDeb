@@ -88,10 +88,7 @@ PostgreSQL (Entscheidung Nutzer). Datenbanken und Benutzer anlegen, Tabellenbetr
    - Vorher: A-Eintrag `mail.<domain>`, Reverse-DNS, Freigabe für ausgehend 25/465 bei Hetzner beantragen.
    - Dann: Domain und Postfach anlegen, mit Thunderbird und Handy testen, mail-tester.com.
 3. **Domains-Plugin** mit echter Zone und echtem Hetzner-Token prüfen.
-4. **Release v0.2.8** (Sicherheitsfix für Agent-Secrets, Domains, `godeb doctor`, danach Aufgabe A1):
-   - Tag setzen: `git tag v0.2.8 && git push origin v0.2.8`.
-   - Danach den Release-Text im Stil von v0.2.7 schreiben und als Vorabversion markieren.
-   - Der Agent macht das nur auf ausdrücklichen Auftrag.
+4. **Release v0.2.8** – Tag und Vorabversion gesetzt 28.10. (CI baut die `.deb`-Pakete).
 5. **Heim-VM** per Beitrittscode anbinden, Enshrouded installieren, Portweiterleitung am VPS einrichten, im Spiel testen.
 6. **Tunnel-App am Handy:** Auto-Disconnect im Heim-WLAN und Wiederverbinden im Mobilnetz.
 
