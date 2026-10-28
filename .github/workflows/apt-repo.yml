@@ -1,11 +1,14 @@
 name: APT-Repo
 
 # Rebuilds the signed APT repository on GitHub Pages from all published
-# releases. Called by the release job in ci.yml; can be started by hand to
-# republish (e.g. after deleting a release).
+# releases. Called by the release job in ci.yml (new pre-release), run when
+# a pre-release is promoted to a release (trixie), and by hand to republish
+# (e.g. after deleting a release).
 on:
   workflow_call:
   workflow_dispatch:
+  release:
+    types: [released]
 
 permissions:
   contents: read
@@ -30,15 +33,21 @@ jobs:
       - name: Pakete aus den Releases
         env:
           GH_TOKEN: ${{ github.token }}
+        # Every release goes to trixie-testing, releases not marked as
+        # pre-release also to trixie (see scripts/build-apt-repo.sh).
         run: |
-          mkdir debs
-          gh release list --repo "$GITHUB_REPOSITORY" --limit 1000 --exclude-drafts --json tagName --jq '.[].tagName' |
-            while read -r tag; do
-              gh release download "$tag" --repo "$GITHUB_REPOSITORY" --pattern 'godeb_*.deb' --dir debs || true
+          mkdir -p debs/stable debs/testing
+          gh release list --repo "$GITHUB_REPOSITORY" --limit 1000 --exclude-drafts --json tagName,isPrerelease \
+            --jq '.[] | "\(.tagName) \(.isPrerelease)"' |
+            while read -r tag pre; do
+              gh release download "$tag" --repo "$GITHUB_REPOSITORY" --pattern 'godeb_*.deb' --dir debs/testing || true
+              if [ "$pre" = false ]; then
+                gh release download "$tag" --repo "$GITHUB_REPOSITORY" --pattern 'godeb_*.deb' --dir debs/stable || true
+              fi
             done
-          ls -l debs
+          ls -l debs/stable debs/testing
           # Need at least one package; empty repo is useless.
-          test -n "$(find debs -name 'godeb_*.deb' | head -n 1)"
+          test -n "$(find debs/testing -name 'godeb_*.deb' | head -n 1)"
 
       - name: Repo bauen und signieren
         env:
@@ -46,7 +55,7 @@ jobs:
         run: |
           key="$RUNNER_TEMP/signing.pgp"
           (umask 077; printf '%s\n' "$APT_SIGNING_KEY" >"$key")
-          ./scripts/build-apt-repo.sh debs site "$key"
+          ./scripts/build-apt-repo.sh debs/stable debs/testing site "$key"
           rm -f "$key"
 
       - uses: actions/upload-pages-artifact@v3
