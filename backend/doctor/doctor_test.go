@@ -188,3 +188,25 @@ func TestNewReport(t *testing.T) {
 		t.Fatalf("finding = %+v", r.Findings[1])
 	}
 }
+
+func TestCheckDatabases(t *testing.T) {
+	env := Env{
+		Databases: []DBFile{{"Agent", "/etc/godeb/godeb.db"}, {"Messwerte", "/x/metrics.db"}, {"Fehlt", "/none"}},
+		CheckDB: func(_ context.Context, path string) (bool, error) {
+			switch path {
+			case "/x/metrics.db":
+				return true, errors.New("beschädigt: page 3")
+			case "/none":
+				return false, nil
+			}
+			return true, nil
+		},
+	}
+	got := CheckDatabases(context.Background(), env)
+	if len(got) != 2 || got[0].Level != OK || got[1].Level != Fail || !strings.Contains(got[1].Text, "page 3") {
+		t.Fatalf("got %+v", got)
+	}
+	if CheckDatabases(context.Background(), Env{}) != nil {
+		t.Fatal("without CheckDB there must be no finding")
+	}
+}

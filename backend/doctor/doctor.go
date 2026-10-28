@@ -63,6 +63,15 @@ type Env struct {
 	DNS      func(ctx context.Context) ([]DNSRecord, error)
 	Now      func() time.Time
 	Version  string
+	// Databases are the SQLite files this process may check; CheckDB runs
+	// PRAGMA quick_check on one (found=false for a missing file).
+	Databases []DBFile
+	CheckDB   func(ctx context.Context, path string) (found bool, err error)
+}
+
+// DBFile is one SQLite database for checkDatabases.
+type DBFile struct {
+	Name, Path string
 }
 
 // Default returns an Env for the running host.
@@ -87,8 +96,17 @@ func Check(ctx context.Context, env Env) []Finding {
 	var out []Finding
 	for _, c := range []func(context.Context, Env) []Finding{
 		checkVersion, checkServices, checkPorts, checkFirewall, checkWireGuard,
-		checkCerts, checkDNS, checkJournal, checkUpdates, checkDisk, checkHardening,
+		checkCerts, checkDNS, checkJournal, checkUpdates, checkDisk, CheckDatabases, checkHardening,
 	} {
+		out = append(out, c(ctx, env)...)
+	}
+	return out
+}
+
+// CheckOnly runs the given checks, e.g. the web process's own part.
+func CheckOnly(ctx context.Context, env Env, checks ...func(context.Context, Env) []Finding) []Finding {
+	var out []Finding
+	for _, c := range checks {
 		out = append(out, c(ctx, env)...)
 	}
 	return out
@@ -113,6 +131,12 @@ type ReportFinding struct {
 // NewReport turns Check results into the API payload.
 func NewReport(findings []Finding, at time.Time) Report {
 	r := Report{Findings: make([]ReportFinding, 0, len(findings)), Checked: at.Unix()}
+	r.Add(findings)
+	return r
+}
+
+// Add appends findings and updates the counters.
+func (r *Report) Add(findings []Finding) {
 	for _, f := range findings {
 		r.Findings = append(r.Findings, ReportFinding{Area: f.Area, Level: f.Level.String(), Text: f.Text, Details: f.Details})
 		switch f.Level {
@@ -122,7 +146,6 @@ func NewReport(findings []Finding, at time.Time) Report {
 			r.Warns++
 		}
 	}
-	return r
 }
 
 // Write prints the report grouped by area and returns the number of
@@ -561,6 +584,25 @@ func checkDisk(_ context.Context, env Env) []Finding {
 		f.Level = Warn
 	}
 	return []Finding{f}
+}
+
+// checkDatabases runs quick_check on GoDeb's SQLite files. A damaged file
+// is a failure: restore the machine from a snapshot (see "Notfall").
+func CheckDatabases(ctx context.Context, env Env) []Finding {
+	if env.CheckDB == nil {
+		return nil
+	}
+	var out []Finding
+	for _, d := range env.Databases {
+		found, err := env.CheckDB(ctx, d.Path)
+		switch {
+		case err != nil:
+			out = append(out, Finding{Area: "Datenbanken", Level: Fail, Text: fmt.Sprintf("%s (%s): %v", d.Name, d.Path, err)})
+		case found:
+			out = append(out, Finding{Area: "Datenbanken", Level: OK, Text: fmt.Sprintf("%s in Ordnung", d.Name)})
+		}
+	}
+	return out
 }
 
 // checkHardening only reports; it never changes SSH or unattended-upgrades.
