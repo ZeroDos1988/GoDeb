@@ -104,6 +104,11 @@ func TestStepUpLevels(t *testing.T) {
 		{"POST", "/api/plugins/wireguard/trust", stepUpFresh},
 		{"POST", "/api/plugins/wireguard/trust/sync", stepUpWindow},
 		{"POST", "/api/plugins/portforward/rules", stepUpFresh},
+		{"POST", "/api/plugins/cron/jobs", stepUpFresh},
+		{"POST", "/api/plugins/cron/jobs/x/delete", stepUpFresh},
+		{"POST", "/api/plugins/websites/sites", stepUpFresh},
+		{"POST", "/api/plugins/websites/sites/blog/certificate", stepUpFresh},
+		{"POST", "/api/plugins/postgres/databases", stepUpWindow},
 		{"POST", "/api/plugins/portforward/rules/enshrouded/delete", stepUpFresh},
 		{"GET", "/api/plugins/portforward/status", stepUpNone},
 	}

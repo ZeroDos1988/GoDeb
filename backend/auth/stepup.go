@@ -46,6 +46,8 @@ var criticalPrefixes = []string{
 	"/api/plugins/mail/install",     // installs packages, opens ports, rewrites Postfix and Dovecot
 	"/api/plugins/mail/clamav",      // installs or removes packages
 	"/api/plugins/mail/certificate", // opens port 80 for certbot
+	"/api/plugins/cron/",            // scheduled jobs run as root
+	"/api/plugins/websites/",        // nginx and PHP, opens ports 80/443
 }
 
 // criticalGameActions always need a fresh code below /api/plugins/steam/games/
@@ -58,8 +60,8 @@ var criticalExact = map[string]bool{
 	"/api/plugins/wireguard/join":       true, // replaces how this host reaches the tunnel
 	"/api/plugins/wireguard/trust":      true, // decides where phones switch their tunnel off
 	"/api/plugins/wireguard/volltunnel": true, // NAT: client internet egress through the hub
-	"/api/plugins/apt/upgrade":     true, // installs every pending update, GoDeb included
-	"/api/plugins/domains/token":   true, // Cloud-API token that can change every DNS zone
+	"/api/plugins/apt/upgrade":          true, // installs every pending update, GoDeb included
+	"/api/plugins/domains/token":        true, // Cloud-API token that can change every DNS zone
 }
 
 // noStepUp lists state-changing routes that skip the second factor.
