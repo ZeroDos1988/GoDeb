@@ -73,11 +73,24 @@ jobs:
           path: godeb_*.deb
           retention-days: 14
 
+  # Installs the latest release from the APT repo in a Debian 13 container
+  # with systemd and updates it to the package just built.
+  upgrade:
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: godeb-deb
+      - name: Update-Test (amd64)
+        run: ./scripts/upgrade-test.sh godeb_*_amd64.deb
+
   # A pushed tag vX.Y.Z publishes the package as a GitHub release. Tags are
   # set by hand; nothing here creates them.
   release:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: build
+    needs: [build, upgrade]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
