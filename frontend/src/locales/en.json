@@ -29,7 +29,8 @@
     "install": "Install",
     "working": "Working …",
     "deps": "Packages",
-    "units": "Units"
+    "units": "Units",
+    "unsupported": "Not available on this server (only {{archs}})."
   },
   "common": {
     "refresh": "Refresh",

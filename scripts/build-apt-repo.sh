@@ -22,36 +22,44 @@ KEY=$3
 
 SUITE=trixie
 COMPONENT=main
-ARCH=amd64
+ARCHS="amd64 arm64"
 
-set -- "$DEBS"/godeb_*_"$ARCH".deb
+set -- "$DEBS"/godeb_*_amd64.deb
 if [ ! -e "$1" ]; then
-	echo "Keine Pakete in $DEBS" >&2
+	echo "Keine amd64-Pakete in $DEBS" >&2
 	exit 1
 fi
 
 rm -rf "$OUT/dists" "$OUT/pool"
 pool="pool/$COMPONENT/g/godeb"
-mkdir -p "$OUT/$pool" "$OUT/dists/$SUITE/$COMPONENT/binary-$ARCH"
-for deb in "$@"; do
-	if [ "$(dpkg-deb -f "$deb" Package)" != godeb ]; then
-		echo "Kein GoDeb-Paket: $deb" >&2
-		exit 1
-	fi
-	cp "$deb" "$OUT/$pool/"
+mkdir -p "$OUT/$pool"
+count=0
+for arch in $ARCHS; do
+	for deb in "$DEBS"/godeb_*_"$arch".deb; do
+		[ -e "$deb" ] || continue
+		if [ "$(dpkg-deb -f "$deb" Package)" != godeb ] || [ "$(dpkg-deb -f "$deb" Architecture)" != "$arch" ]; then
+			echo "Kein GoDeb-Paket für $arch: $deb" >&2
+			exit 1
+		fi
+		cp "$deb" "$OUT/$pool/"
+		count=$((count + 1))
+	done
 done
 
 cd "$OUT"
-packages="dists/$SUITE/$COMPONENT/binary-$ARCH/Packages"
-apt-ftparchive packages "pool/$COMPONENT" >"$packages"
-gzip -9nk "$packages"
+for arch in $ARCHS; do
+	mkdir -p "dists/$SUITE/$COMPONENT/binary-$arch"
+	packages="dists/$SUITE/$COMPONENT/binary-$arch/Packages"
+	apt-ftparchive --arch "$arch" packages "pool/$COMPONENT" >"$packages"
+	gzip -9nk "$packages"
+done
 
 apt-ftparchive \
 	-o APT::FTPArchive::Release::Origin=GoDeb \
 	-o APT::FTPArchive::Release::Label=GoDeb \
 	-o APT::FTPArchive::Release::Suite=stable \
 	-o APT::FTPArchive::Release::Codename="$SUITE" \
-	-o APT::FTPArchive::Release::Architectures="$ARCH" \
+	-o APT::FTPArchive::Release::Architectures="$ARCHS" \
 	-o APT::FTPArchive::Release::Components="$COMPONENT" \
 	-o APT::FTPArchive::Release::Description="GoDeb for Debian 13" \
 	release "dists/$SUITE" >"$OUT/Release.tmp"
@@ -80,7 +88,7 @@ cat >"$OUT/index.html" <<EOF
 <meta charset="utf-8">
 <title>GoDeb APT-Repository</title>
 <h1>GoDeb APT-Repository</h1>
-<p>Für Debian 13 (Trixie), amd64. Mit einem Konto mit sudo (als root ohne <code>sudo</code>):</p>
+<p>Für Debian 13 (Trixie), amd64 und arm64. Mit einem Konto mit sudo (als root ohne <code>sudo</code>):</p>
 <pre>sudo wget -O /usr/share/keyrings/godeb-archive-keyring.asc https://zerodos1988.github.io/GoDeb/godeb-archive-keyring.asc
 sudo wget -O /etc/apt/sources.list.d/godeb.sources https://zerodos1988.github.io/GoDeb/godeb.sources
 sudo apt update
@@ -89,4 +97,4 @@ sudo apt install --no-install-recommends godeb</pre>
 <p>Quellcode und Anleitung: <a href="https://github.com/ZeroDos1988/GoDeb">github.com/ZeroDos1988/GoDeb</a></p>
 </html>
 EOF
-echo "Fertig: $OUT ($# Pakete)"
+echo "Fertig: $OUT ($count Pakete)"

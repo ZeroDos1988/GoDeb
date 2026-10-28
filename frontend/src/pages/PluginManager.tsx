@@ -14,6 +14,8 @@ type ManagedPlugin = {
   name: string;
   aptDependencies: string[];
   systemdServices: string[];
+  supported: boolean;
+  architectures: string[];
   dependenciesReady: boolean;
   installed: boolean;
   enabled: boolean;
@@ -72,7 +74,7 @@ export function PluginManager({ onChanged }: { onChanged?: () => void }) {
                 </div>
                 <Toggle
                   checked={plugin.enabled}
-                  disabled={working || (!plugin.enabled && !plugin.dependenciesReady)}
+                  disabled={working || (!plugin.enabled && (!plugin.dependenciesReady || !plugin.supported))}
                   label={plugin.name}
                   onChange={(next) => void run(plugin.id, next ? "enable" : "disable")}
                 />
@@ -95,7 +97,12 @@ export function PluginManager({ onChanged }: { onChanged?: () => void }) {
                   {t("pluginManager.deps")}: {plugin.aptDependencies.join(", ")}
                 </p>
               ) : null}
-              {!plugin.dependenciesReady ? (
+              {!plugin.supported ? (
+                <p className="mt-4 text-xs text-amber-200">
+                  {t("pluginManager.unsupported", { archs: plugin.architectures.join(", ") })}
+                </p>
+              ) : null}
+              {plugin.supported && !plugin.dependenciesReady ? (
                 <button
                   type="button"
                   disabled={working}

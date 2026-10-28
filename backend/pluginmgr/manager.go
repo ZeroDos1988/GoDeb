@@ -11,6 +11,8 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -37,6 +39,17 @@ type Descriptor struct {
 	Name            string   `json:"name"`
 	AptDependencies []string `json:"apt_dependencies"`
 	SystemdServices []string `json:"systemd_services"`
+	// Architectures limits the plugin to these dpkg architectures (e.g.
+	// SteamCMD only exists for amd64). Empty means every architecture.
+	Architectures []string `json:"architectures"`
+}
+
+// hostArch is the dpkg architecture of this build. Tests replace it.
+var hostArch = runtime.GOARCH
+
+// Supported reports whether the plugin runs on this machine's architecture.
+func (d Descriptor) Supported() bool {
+	return len(d.Architectures) == 0 || slices.Contains(d.Architectures, hostArch)
 }
 
 // ServiceStatus is one systemd unit declared by a plugin.
@@ -52,6 +65,8 @@ type Plugin struct {
 	Name              string          `json:"name"`
 	AptDependencies   []string        `json:"aptDependencies"`
 	SystemdServices   []string        `json:"systemdServices"`
+	Supported         bool            `json:"supported"`
+	Architectures     []string        `json:"architectures"`
 	DependenciesReady bool            `json:"dependenciesReady"`
 	Installed         bool            `json:"installed"`
 	Enabled           bool            `json:"enabled"`
@@ -203,8 +218,16 @@ func Load(pluginsDir, id string) (Descriptor, error) {
 			return Descriptor{}, fmt.Errorf("systemd-Unit %q ist ungültig", unit)
 		}
 	}
+	for _, arch := range desc.Architectures {
+		if arch != "amd64" && arch != "arm64" {
+			return Descriptor{}, fmt.Errorf("Architektur %q ist ungültig", arch)
+		}
+	}
 	if desc.AptDependencies == nil {
 		desc.AptDependencies = []string{}
+	}
+	if desc.Architectures == nil {
+		desc.Architectures = []string{}
 	}
 	if desc.SystemdServices == nil {
 		desc.SystemdServices = []string{}
@@ -243,6 +266,8 @@ func describe(ctx context.Context, desc Descriptor, remembered stateRow) (Plugin
 		Name:              desc.Name,
 		AptDependencies:   desc.AptDependencies,
 		SystemdServices:   desc.SystemdServices,
+		Supported:         desc.Supported(),
+		Architectures:     desc.Architectures,
 		DependenciesReady: ready,
 		Installed:         installed && ready,
 		Enabled:           !remembered.Disabled,
@@ -250,7 +275,15 @@ func describe(ctx context.Context, desc Descriptor, remembered stateRow) (Plugin
 	}, nil
 }
 
+// errUnsupported explains why a plugin cannot be installed on this machine.
+func errUnsupported(desc Descriptor) error {
+	return fmt.Errorf("%s läuft nur auf %s, dieser Server ist %s", desc.Name, strings.Join(desc.Architectures, ", "), hostArch)
+}
+
 func install(ctx context.Context, _ string, desc Descriptor) error {
+	if !desc.Supported() {
+		return errUnsupported(desc)
+	}
 	if len(desc.AptDependencies) > 0 {
 		update := execute(ctx, 5*time.Minute, "apt-get", "update")
 		if update.Err != nil {
@@ -268,6 +301,9 @@ func install(ctx context.Context, _ string, desc Descriptor) error {
 // enable shows the plugin again. Its packages must be installed; the
 // system services it manages are left as they are.
 func enable(ctx context.Context, _ string, desc Descriptor) error {
+	if !desc.Supported() {
+		return errUnsupported(desc)
+	}
 	for _, pkg := range desc.AptDependencies {
 		ok, err := packageInstalled(ctx, pkg)
 		if err != nil {

@@ -29,7 +29,8 @@
     "install": "Installieren",
     "working": "Arbeite …",
     "deps": "Pakete",
-    "units": "Units"
+    "units": "Units",
+    "unsupported": "Läuft auf diesem Server nicht (nur {{archs}})."
   },
   "common": {
     "refresh": "Aktualisieren",

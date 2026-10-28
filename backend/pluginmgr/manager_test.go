@@ -179,3 +179,41 @@ func contains(list []string, want string) bool {
 	}
 	return false
 }
+
+func TestArchitectureRestriction(t *testing.T) {
+	dir := t.TempDir()
+	writePlugin(t, dir, "steam", `{"id":"steam","name":"Steam","apt_dependencies":["lib32gcc-s1"],"architectures":["amd64"]}`)
+	writePlugin(t, dir, "badarch", `{"id":"badarch","name":"Bad","architectures":["i386"]}`)
+	if _, err := Load(dir, "badarch"); err == nil {
+		t.Fatal("unknown architecture was accepted")
+	}
+	desc, err := Load(dir, "steam")
+	if err != nil {
+		t.Fatal(err)
+	}
+	old := hostArch
+	t.Cleanup(func() { hostArch = old })
+
+	hostArch = "amd64"
+	if !desc.Supported() {
+		t.Fatal("amd64 plugin not supported on amd64")
+	}
+	hostArch = "arm64"
+	if desc.Supported() {
+		t.Fatal("amd64 plugin supported on arm64")
+	}
+	called := false
+	execute = func(ctx context.Context, timeout time.Duration, name string, args ...string) core.CommandResult {
+		called = true
+		return core.CommandResult{}
+	}
+	if err := install(context.Background(), dir, desc); err == nil || !strings.Contains(err.Error(), "arm64") {
+		t.Fatalf("install on arm64: err = %v", err)
+	}
+	if called {
+		t.Fatal("install ran apt on an unsupported architecture")
+	}
+	if !(Descriptor{}).Supported() {
+		t.Fatal("plugin without architectures must run everywhere")
+	}
+}

@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -92,11 +93,24 @@ func requireRoot() error {
 	return nil
 }
 
+// requireAmd64 stops early on other architectures: SteamCMD and the Wine
+// servers it installs only exist for x86, and apt would otherwise fail with
+// a missing lib32gcc-s1.
+func requireAmd64() error {
+	if runtime.GOARCH != "amd64" {
+		return fmt.Errorf("Spielserver über SteamCMD laufen nur auf amd64, dieser Server ist %s", runtime.GOARCH)
+	}
+	return nil
+}
+
 // install sets up a game with one click: APT packages, the service account,
 // SteamCMD, the server files, a Wine prefix for Windows servers, a default
 // configuration, the systemd unit and the firewall.
 func install(ctx context.Context, g *Game, j *jobHandle) error {
 	if err := requireRoot(); err != nil {
+		return err
+	}
+	if err := requireAmd64(); err != nil {
 		return err
 	}
 	j.step("Systempakete")
