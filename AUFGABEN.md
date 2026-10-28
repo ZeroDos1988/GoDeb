@@ -44,7 +44,7 @@ Umgesetzt in `plugins/apt/metrics.go`: Warnung bei offenen Sicherheitsupdates nu
 ### 4. Mail-Ausbau (Plugin `mail`, Dovecot **2.4**-Syntax)
 
 Jeden Unterpunkt einzeln committen:
-- **Abwesenheitsnotiz** per Sieve (Pigeonhole) pro Postfach, in der UI ein- und ausschaltbar.
+- [x] **Abwesenheitsnotiz** per Sieve (Pigeonhole) pro Postfach, in der UI ein- und ausschaltbar – 28.10.
 - **Autoconfig (Thunderbird) und Autodiscover (Outlook)** für die Maildomains. Braucht einen Webserver, also nach Aufgabe 6 oder als kleiner eigener Endpunkt; vorher fragen.
 - **MTA-STS und TLS-RPT**: Richtlinie und DNS-Einträge, über `domains.RegisterNeeds` melden.
 - **Quota-Warnungen** (Dovecot-Quota-Warning) und Belegung pro Postfach in der UI.

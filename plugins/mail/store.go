@@ -35,16 +35,20 @@ type domainRow struct {
 func (domainRow) TableName() string { return "mailserver_domains" }
 
 type accountRow struct {
-	Address     string `gorm:"primaryKey"`
-	Domain      string `gorm:"index"`
-	Local       string
-	Hash        string `vault:"secret"`
-	QuotaMB     int
-	Aliases     string // JSON list
-	Forward     string // JSON list
-	ForwardOnly bool
-	Suspended   bool
-	Created     string
+	Address         string `gorm:"primaryKey"`
+	Domain          string `gorm:"index"`
+	Local           string
+	Hash            string `vault:"secret"`
+	QuotaMB         int
+	Aliases         string // JSON list
+	Forward         string // JSON list
+	ForwardOnly     bool
+	Suspended       bool
+	Vacation        bool
+	VacationSubject string
+	VacationBody    string
+	VacationDays    int
+	Created         string
 }
 
 func (accountRow) TableName() string { return "mailserver_accounts" }
@@ -119,7 +123,12 @@ func loadAll() ([]Domain, []Account, error) {
 }
 
 func fromRow(r accountRow) Account {
-	a := Account{Domain: r.Domain, Local: r.Local, Hash: r.Hash, QuotaMB: r.QuotaMB, ForwardOnly: r.ForwardOnly, Suspended: r.Suspended, Created: r.Created, Aliases: []string{}, Forward: []string{}}
+	a := Account{
+		Domain: r.Domain, Local: r.Local, Hash: r.Hash, QuotaMB: r.QuotaMB,
+		ForwardOnly: r.ForwardOnly, Suspended: r.Suspended, Created: r.Created,
+		Vacation: r.Vacation, VacationSubject: r.VacationSubject, VacationBody: r.VacationBody,
+		VacationDays: r.VacationDays, Aliases: []string{}, Forward: []string{},
+	}
 	_ = json.Unmarshal([]byte(r.Aliases), &a.Aliases)
 	_ = json.Unmarshal([]byte(r.Forward), &a.Forward)
 	if a.Aliases == nil {
@@ -128,13 +137,21 @@ func fromRow(r accountRow) Account {
 	if a.Forward == nil {
 		a.Forward = []string{}
 	}
+	if a.VacationDays == 0 {
+		a.VacationDays = defaultVacationDays
+	}
 	return a
 }
 
 func toRow(a Account) accountRow {
 	al, _ := json.Marshal(a.Aliases)
 	fw, _ := json.Marshal(a.Forward)
-	return accountRow{Address: a.Address(), Domain: a.Domain, Local: a.Local, Hash: a.Hash, QuotaMB: a.QuotaMB, Aliases: string(al), Forward: string(fw), ForwardOnly: a.ForwardOnly, Suspended: a.Suspended, Created: a.Created}
+	return accountRow{
+		Address: a.Address(), Domain: a.Domain, Local: a.Local, Hash: a.Hash, QuotaMB: a.QuotaMB,
+		Aliases: string(al), Forward: string(fw), ForwardOnly: a.ForwardOnly, Suspended: a.Suspended,
+		Vacation: a.Vacation, VacationSubject: a.VacationSubject, VacationBody: a.VacationBody,
+		VacationDays: a.VacationDays, Created: a.Created,
+	}
 }
 
 func saveDomain(d Domain) error {

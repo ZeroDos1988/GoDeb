@@ -27,6 +27,10 @@ export type Account = {
   forward: string[];
   forwardOnly: boolean;
   suspended: boolean;
+  vacation: boolean;
+  vacationSubject: string;
+  vacationBody: string;
+  vacationDays: number;
   created: string;
   usedKB: number;
 };

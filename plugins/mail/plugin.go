@@ -343,13 +343,17 @@ func handleDeleteDomain(w http.ResponseWriter, r *http.Request) {
 }
 
 type accountRequest struct {
-	Local       string   `json:"local"`
-	Password    string   `json:"password"`
-	QuotaMB     int      `json:"quotaMB"`
-	Aliases     []string `json:"aliases"`
-	Forward     []string `json:"forward"`
-	ForwardOnly bool     `json:"forwardOnly"`
-	Suspended   bool     `json:"suspended"`
+	Local           string   `json:"local"`
+	Password        string   `json:"password"`
+	QuotaMB         int      `json:"quotaMB"`
+	Aliases         []string `json:"aliases"`
+	Forward         []string `json:"forward"`
+	ForwardOnly     bool     `json:"forwardOnly"`
+	Suspended       bool     `json:"suspended"`
+	Vacation        bool     `json:"vacation"`
+	VacationSubject string   `json:"vacationSubject"`
+	VacationBody    string   `json:"vacationBody"`
+	VacationDays    int      `json:"vacationDays"`
 }
 
 func handleAddAccount(w http.ResponseWriter, r *http.Request) {
@@ -361,7 +365,12 @@ func handleAddAccount(w http.ResponseWriter, r *http.Request) {
 	if !core.DecodeJSON(w, r, &req) {
 		return
 	}
-	a, err := cleanAccount(Account{Domain: d.Name, Local: req.Local, QuotaMB: req.QuotaMB, Aliases: req.Aliases, Forward: req.Forward, ForwardOnly: req.ForwardOnly, Suspended: req.Suspended, Created: time.Now().UTC().Format(time.RFC3339)})
+	a, err := cleanAccount(Account{
+		Domain: d.Name, Local: req.Local, QuotaMB: req.QuotaMB, Aliases: req.Aliases, Forward: req.Forward,
+		ForwardOnly: req.ForwardOnly, Suspended: req.Suspended,
+		Vacation: req.Vacation, VacationSubject: req.VacationSubject, VacationBody: req.VacationBody,
+		VacationDays: req.VacationDays, Created: time.Now().UTC().Format(time.RFC3339),
+	})
 	if err != nil {
 		core.WriteError(w, http.StatusBadRequest, err.Error())
 		return
@@ -411,7 +420,12 @@ func handleEditAccount(w http.ResponseWriter, r *http.Request) {
 	if !core.DecodeJSON(w, r, &req) {
 		return
 	}
-	a, err := cleanAccount(Account{Domain: old.Domain, Local: old.Local, Hash: old.Hash, QuotaMB: req.QuotaMB, Aliases: req.Aliases, Forward: req.Forward, ForwardOnly: req.ForwardOnly, Suspended: req.Suspended, Created: old.Created})
+	a, err := cleanAccount(Account{
+		Domain: old.Domain, Local: old.Local, Hash: old.Hash, QuotaMB: req.QuotaMB, Aliases: req.Aliases,
+		Forward: req.Forward, ForwardOnly: req.ForwardOnly, Suspended: req.Suspended,
+		Vacation: req.Vacation, VacationSubject: req.VacationSubject, VacationBody: req.VacationBody,
+		VacationDays: req.VacationDays, Created: old.Created,
+	})
 	if err != nil {
 		core.WriteError(w, http.StatusBadRequest, err.Error())
 		return

@@ -325,6 +325,11 @@ sieve_script personal {
   active_path = ~/.dovecot.sieve
 }
 
+# Absence notes (vacation) for personal scripts written by GoDeb.
+sieve_extensions {
+  vacation = yes
+}
+
 service imap-login {
   inet_listener imap {
     port = 0

@@ -92,7 +92,7 @@ func TestMapsAndUsers(t *testing.T) {
 
 func TestDovecotConfigIsClosed(t *testing.T) {
 	c := dovecotConfig(Settings{Hostname: "mail.example.com", CertFile: "/c.pem", KeyFile: "/k.pem"})
-	for _, want := range []string{"auth_allow_cleartext = no", "ssl = required", "port = 0", "deny = yes", "ssl_server_cert_file = /c.pem"} {
+	for _, want := range []string{"auth_allow_cleartext = no", "ssl = required", "port = 0", "deny = yes", "ssl_server_cert_file = /c.pem", "vacation = yes", "active_path = ~/.dovecot.sieve"} {
 		if !strings.Contains(c, want) {
 			t.Errorf("dovecot.conf lacks %q", want)
 		}

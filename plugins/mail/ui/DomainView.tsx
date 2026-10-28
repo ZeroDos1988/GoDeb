@@ -193,11 +193,16 @@ function Accounts({
                 {a.forward.length ? a.forward.join(", ") : "–"}
               </td>
               <td className="px-3 py-2">
-                {a.suspended ? (
-                  <Badge tone="warn">{t("mail.suspended")}</Badge>
-                ) : (
-                  <Badge tone="ok">{t("mail.active")}</Badge>
-                )}
+                <div className="flex flex-wrap gap-1">
+                  {a.suspended ? (
+                    <Badge tone="warn">{t("mail.suspended")}</Badge>
+                  ) : (
+                    <Badge tone="ok">{t("mail.active")}</Badge>
+                  )}
+                  {a.vacation && !a.forwardOnly ? (
+                    <Badge tone="warn">{t("mail.vacationOn")}</Badge>
+                  ) : null}
+                </div>
               </td>
               <td className="px-3 py-2 text-right whitespace-nowrap">
                 <button
@@ -268,6 +273,16 @@ function AccountForm({
   const [forward, setForward] = useState((account?.forward ?? []).join("\n"));
   const [forwardOnly, setForwardOnly] = useState(account?.forwardOnly ?? false);
   const [suspended, setSuspended] = useState(account?.suspended ?? false);
+  const [vacation, setVacation] = useState(account?.vacation ?? false);
+  const [vacationSubject, setVacationSubject] = useState(
+    account?.vacationSubject ?? "",
+  );
+  const [vacationBody, setVacationBody] = useState(
+    account?.vacationBody ?? "",
+  );
+  const [vacationDays, setVacationDays] = useState(
+    account?.vacationDays || 7,
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -283,6 +298,10 @@ function AccountForm({
       forward: lines(forward),
       forwardOnly,
       suspended,
+      vacation: vacation && !forwardOnly,
+      vacationSubject,
+      vacationBody,
+      vacationDays,
     };
     try {
       const url = isNew
@@ -445,7 +464,60 @@ function AccountForm({
             </span>
           </label>
         ) : null}
+        {!forwardOnly ? (
+          <label className="flex items-start gap-2">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4"
+              checked={vacation}
+              onChange={(e) => setVacation(e.target.checked)}
+            />
+            <span>
+              {t("mail.vacation")}
+              <span className="block text-xs text-white/50">
+                {t("mail.vacationHint")}
+              </span>
+            </span>
+          </label>
+        ) : null}
       </div>
+      {vacation && !forwardOnly ? (
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label={t("mail.vacationSubject")}>
+            <input
+              value={vacationSubject}
+              onChange={(e) => setVacationSubject(e.target.value)}
+              maxLength={200}
+              className={input}
+              placeholder={t("mail.vacationSubjectPlaceholder")}
+            />
+          </Field>
+          <Field
+            label={t("mail.vacationDays")}
+            hint={t("mail.vacationDaysHint")}
+          >
+            <input
+              type="number"
+              min={1}
+              max={30}
+              value={vacationDays}
+              onChange={(e) => setVacationDays(Number(e.target.value) || 7)}
+              className={input}
+            />
+          </Field>
+          <Field label={t("mail.vacationBody")}>
+            <textarea
+              value={vacationBody}
+              onChange={(e) => setVacationBody(e.target.value)}
+              required={vacation}
+              maxLength={4000}
+              rows={4}
+              className={input}
+              placeholder={t("mail.vacationBodyPlaceholder")}
+            />
+          </Field>
+        </div>
+      ) : null}
       {error ? <p className="text-sm text-rose-300">{error}</p> : null}
       <div className="flex flex-wrap gap-2">
         <button type="submit" className={primary} disabled={busy}>

@@ -29,15 +29,19 @@ type Domain struct {
 
 // Account is a mailbox (or a forward-only address).
 type Account struct {
-	Domain      string   `json:"domain"`
-	Local       string   `json:"local"`
-	Hash        string   `json:"-"`
-	QuotaMB     int      `json:"quotaMB"` // 0 = unlimited
-	Aliases     []string `json:"aliases"` // further local parts of the same domain
-	Forward     []string `json:"forward"` // full addresses
-	ForwardOnly bool     `json:"forwardOnly"`
-	Suspended   bool     `json:"suspended"`
-	Created     string   `json:"created"`
+	Domain          string   `json:"domain"`
+	Local           string   `json:"local"`
+	Hash            string   `json:"-"`
+	QuotaMB         int      `json:"quotaMB"` // 0 = unlimited
+	Aliases         []string `json:"aliases"` // further local parts of the same domain
+	Forward         []string `json:"forward"` // full addresses
+	ForwardOnly     bool     `json:"forwardOnly"`
+	Suspended       bool     `json:"suspended"`
+	Vacation        bool     `json:"vacation"`
+	VacationSubject string   `json:"vacationSubject"`
+	VacationBody    string   `json:"vacationBody"`
+	VacationDays    int      `json:"vacationDays"` // min days between replies to the same sender
+	Created         string   `json:"created"`
 }
 
 // Address is local@domain.
@@ -168,5 +172,5 @@ func cleanAccount(a Account) (Account, error) {
 	if a.ForwardOnly && len(a.Forward) == 0 {
 		return a, errors.New("„Nur weiterleiten“ braucht mindestens eine Zieladresse")
 	}
-	return a, nil
+	return cleanVacation(a)
 }

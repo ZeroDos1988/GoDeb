@@ -182,8 +182,19 @@ func apply(ctx context.Context) ([]string, error) {
 	if res := admin(ctx, "postconf", append([]string{"-P"}, params...)...); res.Err != nil {
 		return log, fmt.Errorf("postconf -P: %s", res.Detail())
 	}
+	if err := syncVacation(accounts); err != nil {
+		return log, err
+	}
 	if res := admin(ctx, "sievec", root(spamSieve)); res.Err != nil {
 		log = append(log, "sievec: "+res.Detail())
+	}
+	for _, a := range accounts {
+		if vacationSieve(a) == "" {
+			continue
+		}
+		if res := admin(ctx, "sievec", personalSievePath(a.Domain, a.Local)); res.Err != nil {
+			log = append(log, "sievec "+a.Address()+": "+res.Detail())
+		}
 	}
 	for _, unit := range []string{"postfix", "dovecot", "rspamd"} {
 		if res := adminTimeout(ctx, time.Minute, "systemctl", "reload-or-restart", unit); res.Err != nil {
