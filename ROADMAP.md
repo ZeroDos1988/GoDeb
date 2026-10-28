@@ -2,19 +2,19 @@
 
 Stand: 27.10.2026. Reihenfolge = Priorität. `[x]` erledigt, `[ ]` offen. Neue Ideen kommen hierher (passende Phase oder Phase 7), getroffene Entscheidungen unten unter „Entscheidungen“.
 
-## Aktueller Stand (28.10., nach v0.2.8)
+## Aktueller Stand (28.10., nach v0.2.9)
 
 Für einen neuen Chat: zuerst `/diagnose` (Skill in `.claude/skills/diagnose`, Skript `scripts/diagnose.sh`), dann hier weiterlesen.
 
 - **Veröffentlicht** (alle öffentlich, nur unter ZeroDos1988):
-  - `ZeroDos1988/GoDeb`: GPL-3.0, Release **v0.2.8** (28.10., Vorabversion) im APT-Repo `https://zerodos1988.github.io/GoDeb`: Mail-Ausbau, nginx/Webseiten, PostgreSQL, Cron, Mobil-Feinschliff, Volltunnel, arm64. Jeder Tag `vX.Y.Z` baut Release und APT-Repo automatisch; den Release-Text danach von Hand im Stil der vorigen Releases ersetzen und als Vorabversion markieren.
+  - `ZeroDos1988/GoDeb`: GPL-3.0, Release **v0.2.9** (28.10., Vorabversion, Sicherheitsfixes für Webseiten, PostgreSQL und Cron aus v0.2.8) im APT-Repo `https://zerodos1988.github.io/GoDeb` (nur amd64). v0.2.8 brachte Mail-Ausbau, nginx/Webseiten, PostgreSQL, Cron, Mobil-Feinschliff, Volltunnel. Jeder Tag `vX.Y.Z` baut Release und APT-Repo automatisch; den Release-Text danach von Hand im Stil der vorigen Releases ersetzen und als Vorabversion markieren.
   - `ZeroDos1988/godeb-tunnel-android` (Release 1.1.0), `ZeroDos1988/godeb-tunnel-arch` (1.0.1). Privat: `godeb-wireguard-windows`.
-- **Auf den Servern:** Hetzner-VPS zuletzt mit älterer 0.2.x; Heim-VM noch nicht neu eingerichtet. **v0.2.8 auf dem VPS noch nicht eingespielt.**
+- **Auf den Servern:** Hetzner-VPS zuletzt mit älterer 0.2.x; Heim-VM noch nicht neu eingerichtet. **v0.2.9 auf dem VPS noch nicht eingespielt.**
 - **Nächste Schritte, in dieser Reihenfolge:**
-  1. Auf dem VPS v0.2.8 über APT → „Alle aktualisieren“ einspielen und prüfen: `godeb version` = 0.2.8, Dienste-Seite, Protokoll, Plugins, automatische Updates.
+  1. Auf dem VPS v0.2.9 über APT → „Alle aktualisieren“ einspielen und prüfen: `godeb version` = 0.2.9, Dienste-Seite, Protokoll, Plugins, automatische Updates.
   2. Mailserver auf dem VPS einrichten: vorher A-Eintrag `mail.<domain>`, Reverse-DNS bei Hetzner, Freigabe von ausgehend 25/465 bei Hetzner (siehe „Entscheidungen“). Dann Domain, Postfach, Empfang und Versand mit Thunderbird/Handy testen, Ergebnis bei mail-tester.com.
   3. Domains/DNS-Plugin mit echter Zone und Hetzner-Token verifizieren.
-  4. Heim-VM mit v0.2.8 neu anbinden (Beitrittscode), Enshrouded, Portweiterleitung.
+  4. Heim-VM mit v0.2.9 neu anbinden (Beitrittscode), Enshrouded, Portweiterleitung.
   5. Danach: Phase 8 (Heim-VM als Gateway), Windows-Client, weitere Mail-Optionen nach Bedarf.
 
 ## Leitplanken für alle Phasen
@@ -75,7 +75,6 @@ Eine Testinstallation auf einem Hetzner-VPS ist ab 20.10. möglich. Die Anleitun
 - [ ] **Unauthentifizierter APK-Download**: nur über den Tunnel erreichbar (Bind-Adresse); optional mit Token. (`/api/trusted` ist seit 20.10. entfernt.)
 - [x] ~~**Backups**~~ (entschieden 21.10.): nicht Aufgabe von GoDeb. Proxmox (Heim-VM) und Hetzner (VPS) sichern die ganze Maschine; vor größeren Änderungen einen Snapshot ziehen.
 - [ ] VPS-Spezifika: Setup installiert SSH-nur-Schlüssel und unattended-upgrades noch nicht (steht bisher nur in der Anleitung). Doctor und Ampel melden den Zustand seit 27.10. nur lesend.
-- [ ] Paket auch für `arm64` (Hetzner CAX).
 - [x] **Updates aus der Oberfläche, automatische Prüfung und Sicherheitsupdates** (Wunsch und Umsetzung 25.10.): Der Agent prüft alle 10 Minuten (einstellbar) und installiert Pakete aus `trixie-security` selbst; „Alle aktualisieren“ mit frischem 2FA-Code für den Rest, GoDeb inklusive. Jeder Lauf ist eine eigene Unit `godeb-apt.service` (`systemd-run`), damit das Selbst-Update den Neustart des Agenten überlebt.
 - [x] **Update-Hinweise in der Überwachung** (Umsetzung 27.10.): Sicherheitsupdates als Warnung nur bei abgeschalteter Automatik (`plugins/apt/metrics.go`), fehlgeschlagene automatische `godeb-apt`-Läufe als Warnung, „Neustart nötig“ weiter über `rebootCheck`; beides läuft in die Ampel und optional in die Alarme.
 - [x] **Eigenes APT-Repo** (24.10.): signiertes Repo auf GitHub Pages (`zerodos1988.github.io/GoDeb`, Suite `trixie`), nach jedem Release aus allen Releases neu gebaut (`apt-repo.yml`). Das Paket bringt `godeb.sources` und Schlüssel mit, danach kommt GoDeb mit `apt upgrade`. Die CI hat nur den Signier-Unterschlüssel (bis 2028).
@@ -158,6 +157,10 @@ Ziel: auf einen Blick sehen, ob der Server gesund ist, ob der Traffic normal aus
 - [ ] **Heim-VM als Gateway ins Tunnelnetz** (Wunsch 23.10.): Geräte im Heimnetz erreichen den Hub und alle Tunnel-Adressen (z. B. `http://10.8.0.1:8080`) ohne eigenen WireGuard-Client. Im Router wird eine statische Route `10.8.0.0/24 → <LAN-IP der Heim-VM>` eingetragen; GoDeb auf der Heim-VM schaltet IP-Forwarding ein, erlaubt Weiterleitung LAN → `wg0` (eigene nftables-Tabelle wie bei `portforward`, mit SNAT auf die Tunnel-Adresse der Heim-VM, damit der Hub ohne Rückroute antwortet) und erweitert das Tunnelnetz in den AllowedIPs bei Bedarf. Die Übersicht nennt die genaue Route für den Router (FRITZ!Box: Heimnetz → Netzwerk → Statische IPv4-Routen).
 - [ ] **Ausgang ins Internet über den Hub** (Wunsch 23.10., Ausbaustufe des Gateways): Wer die Heim-VM als Standard-Gateway nutzt (einzelne Geräte per DHCP/Hand oder das ganze Heimnetz), geht über den Tunnel und den VPS ins Internet; die öffentliche IP ist dann die des VPS. Heim-VM: `AllowedIPs = 0.0.0.0/0` für den Hub-Peer mit Policy-Routing (nur weitergeleiteter LAN-Verkehr in den Tunnel, die Heim-VM selbst und der WireGuard-Handshake bleiben auf der normalen Leitung), Hub: NAT ins Internet für die Heim-Netze. Bewusst als Option mit Warnhinweis (Bandbreite und Traffic des VPS, Kill-Switch: fällt der Tunnel, kein Ausweichen auf die Heimleitung, wenn gewählt). Baut auf „Volltunnel“ (Phase 3) auf.
 
+## Ganz hinten (niedrige Priorität)
+
+- [ ] **arm64 im APT-Repo** (Hetzner CAX): Release-Assets `godeb_*_arm64.deb` baut die CI seit v0.2.8, `apt-repo.yml` veröffentlicht aber nur `binary-amd64` (`Architectures: amd64`). Debian 13 unterstützt arm64 offiziell; die eigenen Server laufen auf amd64.
+
 ## Entscheidungen
 
 Festgehalten, damit sie nicht wieder neu diskutiert werden.
@@ -172,4 +175,5 @@ Festgehalten, damit sie nicht wieder neu diskutiert werden.
 - **Mailserver zuerst auf dem VPS** (27.10.): Postfächer liegen vorerst auf dem VPS; Ziel bleibt VPS nur als Relay, Postfächer und Virenscanner auf der Heim-VM. Rspamd statt SpamAssassin (leichter, DKIM eingebaut), ClamAV abschaltbar (RAM). Bedienung nach dem Vorbild von HestiaCP, aber moderner. Hetzner sperrt bei Cloud-Servern ausgehend 25 und 465 standardmäßig, unabhängig von der eigenen Domain; Freigabe per Antrag, meist erst nach der ersten bezahlten Rechnung. Ohne Freigabe geht Empfang, Versand nur über einen Relay-Dienst auf Port 587.
 - **Beitrittscode statt Kopplungsdienst** (25.10.): Der Code enthält die Client-Datei selbst. Ein kurzer Code, mit dem die Heim-VM ihre Datei beim Hub abholt, bräuchte einen öffentlich erreichbaren Endpunkt am Hub; das widerspricht „nur über den Tunnel“. Der lange Code wird kopiert, nicht abgetippt.
 - **Zielgruppe und Umfang** (27.10.): Ein Admin, der seine eigenen Server privat betreibt. Vorbild ist HestiaCP (Bedienung) bzw. Plesk (Funktionsumfang), aber mit den aktuellen Paketen aus Debian 13 statt eigener Paketstände und ohne Mandanten: keine Rechte pro Domain, keine Reseller- oder Kundenkonten. Mehrere Admin-Konten gibt es, alle mit denselben Rechten.
+- **arm64 nachrangig** (28.10.): Nutzerentscheidung, steht unter „Ganz hinten“.
 - **Releases per Git-Tag** (22.10., ergänzt 23.10.): Vorabversionen bis zum Test auf echten Servern. Neue Funktionen erhöhen die mittlere Stelle (`v0.2.0`: Logging und Überwachung), Fixes nach einem Servertest die letzte (`v0.2.x`); apt erkennt jede als Update. Die Installationsanleitung steht im Text des Releases.

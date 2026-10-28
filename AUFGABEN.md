@@ -75,15 +75,18 @@ PostgreSQL (Entscheidung Nutzer). Datenbanken und Benutzer anlegen, Tabellenbetr
 - [x] WireGuard: Option „Schlüssel auf dem Gerät erzeugen“ (Public Key einfügen), Client-Dateien nach dem Download optional löschen – 27.10.
 - [x] APK-Download optional mit Token – 28.10.
 - [x] `godeb doctor` und Ampel: SSH nur per Schlüssel und unattended-upgrades (nur melden) – 27.10.
-- [x] Paket auch für `arm64` (Hetzner CAX): `scripts/build-deb.sh`, CI und APT-Repo-Workflow – 28.10.
 - [x] Steam/Enshrouded: Formular für `gameSettings` beim Preset „Custom“, Warnfenster vor Update/Neustart – 28.10. (zeitgesteuerte Jobs über Plugin „Geplante Aufgaben“ / Skript).
 - [x] Volltunnel als bewusste Option im Setup (IP-Forwarding und NAT, eigene nftables-Tabelle wie `portforward`) – 28.10.
+
+### 10. Ganz hinten (niedrige Priorität, erst nach allem anderen)
+
+- [ ] **arm64 im APT-Repo:** Die CI baut `godeb_*_arm64.deb` als Release-Asset (seit v0.2.8), `.github/workflows/apt-repo.yml` veröffentlicht aber nur `binary-amd64`. War 28.10. fälschlich als erledigt abgehakt.
 
 ---
 
 ## B. Für den Nutzer (braucht die echten Server, nicht für den Agenten)
 
-1. **VPS auf v0.2.8 bringen:** vorher einen Snapshot ziehen, dann APT → „Alle aktualisieren“. Prüfen: `godeb version`, Dienste-Seite, Protokoll, Plugins abschalten, automatische Updates.
+1. **VPS auf v0.2.9 bringen:** vorher einen Snapshot ziehen, dann APT → „Alle aktualisieren“. Prüfen: `godeb version`, Dienste-Seite, Protokoll, Plugins abschalten, automatische Updates.
 2. **Mailserver auf dem VPS:**
    - Vorher: A-Eintrag `mail.<domain>`, Reverse-DNS, Freigabe für ausgehend 25/465 bei Hetzner beantragen.
    - Dann: Domain und Postfach anlegen, mit Thunderbird und Handy testen, mail-tester.com.
