@@ -2,20 +2,20 @@
 
 Stand: 27.10.2026. Reihenfolge = Priorität. `[x]` erledigt, `[ ]` offen. Neue Ideen kommen hierher (passende Phase oder Phase 7), getroffene Entscheidungen unten unter „Entscheidungen“.
 
-## Aktueller Stand (27.10., nach v0.2.7)
+## Aktueller Stand (28.10., nach v0.2.8)
 
 Für einen neuen Chat: zuerst `/diagnose` (Skill in `.claude/skills/diagnose`, Skript `scripts/diagnose.sh`), dann hier weiterlesen.
 
 - **Veröffentlicht** (alle öffentlich, nur unter ZeroDos1988):
-  - `ZeroDos1988/GoDeb`: GPL-3.0, Release **v0.2.7** (27.10., Vorabversion) im APT-Repo `https://zerodos1988.github.io/GoDeb`: Mailserver, Dienste-Seite, Plugin-Ausblendung ohne Stoppen, Protokoll-Fix. Jeder Tag `vX.Y.Z` baut Release und APT-Repo automatisch; den Release-Text danach von Hand im Stil der vorigen Releases ersetzen und als Vorabversion markieren.
+  - `ZeroDos1988/GoDeb`: GPL-3.0, Release **v0.2.8** (28.10., Vorabversion) im APT-Repo `https://zerodos1988.github.io/GoDeb`: Mail-Ausbau, nginx/Webseiten, PostgreSQL, Cron, Mobil-Feinschliff, Volltunnel, arm64. Jeder Tag `vX.Y.Z` baut Release und APT-Repo automatisch; den Release-Text danach von Hand im Stil der vorigen Releases ersetzen und als Vorabversion markieren.
   - `ZeroDos1988/godeb-tunnel-android` (Release 1.1.0), `ZeroDos1988/godeb-tunnel-arch` (1.0.1). Privat: `godeb-wireguard-windows`.
-- **Auf den Servern:** Hetzner-VPS zuletzt mit älterer 0.2.x; Heim-VM noch nicht neu eingerichtet. **v0.2.7 auf dem VPS noch nicht eingespielt.**
+- **Auf den Servern:** Hetzner-VPS zuletzt mit älterer 0.2.x; Heim-VM noch nicht neu eingerichtet. **v0.2.8 auf dem VPS noch nicht eingespielt.**
 - **Nächste Schritte, in dieser Reihenfolge:**
-  1. Auf dem VPS v0.2.7 über APT → „Alle aktualisieren“ einspielen (erster echter Test des Selbst-Updates) und prüfen: `godeb version` = 0.2.7, Dienste-Seite, Protokoll, Plugins abschalten, automatische Updates.
+  1. Auf dem VPS v0.2.8 über APT → „Alle aktualisieren“ einspielen und prüfen: `godeb version` = 0.2.8, Dienste-Seite, Protokoll, Plugins, automatische Updates.
   2. Mailserver auf dem VPS einrichten: vorher A-Eintrag `mail.<domain>`, Reverse-DNS bei Hetzner, Freigabe von ausgehend 25/465 bei Hetzner (siehe „Entscheidungen“). Dann Domain, Postfach, Empfang und Versand mit Thunderbird/Handy testen, Ergebnis bei mail-tester.com.
-  3. Domains/DNS-Plugin (erste Fassung auf `main`, noch unveröffentlicht): manuell prüfen und über Hetzner-Cloud-API setzen; nach dem Mail-Test mit echter Zone und Token verifizieren, dann in v0.2.8.
-  4. Heim-VM mit v0.2.7 (oder neuer) neu anbinden (Beitrittscode), Enshrouded, Portweiterleitung.
-  5. Danach: Mail-Ausbau (Webmail, Abwesenheitsnotiz, Autoconfig), VPS nur als Mail-Relay mit Postfächern auf der Heim-VM, Phase 8 (Heim-VM als Gateway), Windows-Client.
+  3. Domains/DNS-Plugin mit echter Zone und Hetzner-Token verifizieren.
+  4. Heim-VM mit v0.2.8 neu anbinden (Beitrittscode), Enshrouded, Portweiterleitung.
+  5. Danach: Phase 8 (Heim-VM als Gateway), Windows-Client, weitere Mail-Optionen nach Bedarf.
 
 ## Leitplanken für alle Phasen
 

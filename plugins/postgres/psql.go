@@ -14,7 +14,7 @@ func psqlArgs(extra ...string) []string {
 }
 
 func psql(ctx context.Context, sql string) (string, error) {
-	res := core.RunAdmin(ctx, "sudo", append(psqlArgs("-c", sql))...)
+	res := core.RunAdmin(ctx, "sudo", psqlArgs("-c", sql)...)
 	if res.Err != nil {
 		return "", fmt.Errorf("%s", res.Detail())
 	}
@@ -25,7 +25,7 @@ func psqlDB(ctx context.Context, dbname, sql string) (string, error) {
 	if _, err := cleanIdent(dbname, "Datenbank"); err != nil {
 		return "", err
 	}
-	res := core.RunAdmin(ctx, "sudo", append(psqlArgs("-d", dbname, "-c", sql))...)
+	res := core.RunAdmin(ctx, "sudo", psqlArgs("-d", dbname, "-c", sql)...)
 	if res.Err != nil {
 		return "", fmt.Errorf("%s", res.Detail())
 	}
@@ -65,7 +65,7 @@ func browseTable(ctx context.Context, dbname, table string) ([]string, [][]strin
 		return nil, nil, err
 	}
 	sql := fmt.Sprintf(`SELECT * FROM "%s" LIMIT 100;`, tbl)
-	res := core.RunAdmin(ctx, "sudo", append(psqlArgs("-d", dbname, "-F", "\t", "-A", "-c", sql))...)
+	res := core.RunAdmin(ctx, "sudo", psqlArgs("-d", dbname, "-F", "\t", "-A", "-c", sql)...)
 	if res.Err != nil {
 		return nil, nil, fmt.Errorf("%s", res.Detail())
 	}
