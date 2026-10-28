@@ -7,7 +7,7 @@ Stand: 27.10.2026. Reihenfolge = Priorität. `[x]` erledigt, `[ ]` offen. Neue I
 Für einen neuen Chat: zuerst `/diagnose` (Skill in `.claude/skills/diagnose`, Skript `scripts/diagnose.sh`), dann hier weiterlesen.
 
 - **Veröffentlicht** (alle öffentlich, nur unter ZeroDos1988):
-  - `ZeroDos1988/GoDeb`: GPL-3.0, Release **v0.2.9** (28.10., Vorabversion, Sicherheitsfixes für Webseiten, PostgreSQL und Cron aus v0.2.8) im APT-Repo `https://zerodos1988.github.io/GoDeb` (nur amd64). v0.2.8 brachte Mail-Ausbau, nginx/Webseiten, PostgreSQL, Cron, Mobil-Feinschliff, Volltunnel. Jeder Tag `vX.Y.Z` baut Release und APT-Repo automatisch; den Release-Text danach von Hand im Stil der vorigen Releases ersetzen und als Vorabversion markieren.
+  - `ZeroDos1988/GoDeb`: GPL-3.0, Release **v0.2.9** (28.10., Vorabversion, Sicherheitsfixes für Webseiten, PostgreSQL und Cron aus v0.2.8) im APT-Repo `https://zerodos1988.github.io/GoDeb` (amd64 und arm64). v0.2.8 brachte Mail-Ausbau, nginx/Webseiten, PostgreSQL, Cron, Mobil-Feinschliff, Volltunnel. Jeder Tag `vX.Y.Z` baut Release und APT-Repo automatisch; den Release-Text danach von Hand im Stil der vorigen Releases ersetzen und als Vorabversion markieren.
   - `ZeroDos1988/godeb-tunnel-android` (Release 1.1.0), `ZeroDos1988/godeb-tunnel-arch` (1.0.1). Privat: `godeb-wireguard-windows`.
 - **Auf den Servern:** Hetzner-VPS zuletzt mit älterer 0.2.x; Heim-VM noch nicht neu eingerichtet. **v0.2.9 auf dem VPS noch nicht eingespielt.**
 - **Nächste Schritte, in dieser Reihenfolge:**
@@ -159,7 +159,7 @@ Ziel: auf einen Blick sehen, ob der Server gesund ist, ob der Traffic normal aus
 
 ## Ganz hinten (niedrige Priorität)
 
-- [ ] **arm64 im APT-Repo** (Hetzner CAX): Release-Assets `godeb_*_arm64.deb` baut die CI seit v0.2.8, `apt-repo.yml` veröffentlicht aber nur `binary-amd64` (`Architectures: amd64`). Debian 13 unterstützt arm64 offiziell.
+- [x] **arm64 im APT-Repo** (Hetzner CAX, 28.10.): `build-apt-repo.sh` baut `binary-amd64` und `binary-arm64`, `godeb.sources` nennt beide. Plugin Steam ist auf arm64 gesperrt (`architectures` in `plugin.json`), weil es SteamCMD nur für x86 gibt.
 
 ## Entscheidungen
 
@@ -175,5 +175,5 @@ Festgehalten, damit sie nicht wieder neu diskutiert werden.
 - **Mailserver zuerst auf dem VPS** (27.10.): Postfächer liegen vorerst auf dem VPS; Ziel bleibt VPS nur als Relay, Postfächer und Virenscanner auf der Heim-VM. Rspamd statt SpamAssassin (leichter, DKIM eingebaut), ClamAV abschaltbar (RAM). Bedienung nach dem Vorbild von HestiaCP, aber moderner. Hetzner sperrt bei Cloud-Servern ausgehend 25 und 465 standardmäßig, unabhängig von der eigenen Domain; Freigabe per Antrag, meist erst nach der ersten bezahlten Rechnung. Ohne Freigabe geht Empfang, Versand nur über einen Relay-Dienst auf Port 587.
 - **Beitrittscode statt Kopplungsdienst** (25.10.): Der Code enthält die Client-Datei selbst. Ein kurzer Code, mit dem die Heim-VM ihre Datei beim Hub abholt, bräuchte einen öffentlich erreichbaren Endpunkt am Hub; das widerspricht „nur über den Tunnel“. Der lange Code wird kopiert, nicht abgetippt.
 - **Zielgruppe und Umfang** (27.10.): Ein Admin, der seine eigenen Server privat betreibt. Vorbild ist HestiaCP (Bedienung) bzw. Plesk (Funktionsumfang), aber mit den aktuellen Paketen aus Debian 13 statt eigener Paketstände und ohne Mandanten: keine Rechte pro Domain, keine Reseller- oder Kundenkonten. Mehrere Admin-Konten gibt es, alle mit denselben Rechten.
-- **arm64 nachrangig** (28.10.): Nutzerentscheidung, steht unter „Ganz hinten“.
+- **arm64 veröffentlichen** (28.10.): zuerst nachrangig, am selben Tag doch umgesetzt (Nutzerwunsch). Spielserver bleiben amd64-only.
 - **Releases per Git-Tag** (22.10., ergänzt 23.10.): Vorabversionen bis zum Test auf echten Servern. Neue Funktionen erhöhen die mittlere Stelle (`v0.2.0`: Logging und Überwachung), Fixes nach einem Servertest die letzte (`v0.2.x`); apt erkennt jede als Update. Die Installationsanleitung steht im Text des Releases.

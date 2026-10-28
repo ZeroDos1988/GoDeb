@@ -200,7 +200,7 @@ Für einen Testserver. Was vor dem produktiven Einsatz noch fehlt, steht unter �
 
 **Server anlegen** (Hetzner Cloud Console):
 
-- Typ mit x86-CPU. ARM-Typen (CAX) gehen nicht, das Paket gibt es nur für `amd64`. Für GoDeb allein reicht ein kleiner Typ mit 2 GB RAM. Im Zielbild läuft Enshrouded nicht auf dem VPS, sondern auf der Heim-VM (siehe „Zielbild: VPS und Heim-VM“). Soll es doch auf dem VPS laufen, braucht er mindestens 8 GB RAM, und die Serverdateien belegen knapp 8 GB auf der Platte.
+- x86 (CX/CPX) oder ARM (CAX): Das Paket gibt es für `amd64` und `arm64`. Spielserver (Plugin Steam) laufen nur auf x86, weil SteamCMD und die Windows-Server unter Wine nur dafür existieren. Für GoDeb allein reicht ein kleiner Typ mit 2 GB RAM. Im Zielbild läuft Enshrouded nicht auf dem VPS, sondern auf der Heim-VM (siehe „Zielbild: VPS und Heim-VM“). Soll es doch auf dem VPS laufen, braucht er mindestens 8 GB RAM, und die Serverdateien belegen knapp 8 GB auf der Platte.
 - Image **Debian 13**, eigenen SSH-Schlüssel hinterlegen.
 - Eine Hetzner-Cloud-Firewall ist optional. Wenn sie aktiv ist, muss sie eingehend `22/tcp` und `51820/udp` erlauben. Port `8080` bleibt dort zu.
 
@@ -657,7 +657,7 @@ Jeder Lauf ist die eigene Unit `godeb-apt.service` (`systemd-run`, führt `godeb
 
 ### APT-Repo
 
-Das Repo liegt auf GitHub Pages unter `https://zerodos1988.github.io/GoDeb` (Suite `trixie`, Komponente `main`, nur `amd64`). Nach jedem Release baut der Workflow `apt-repo.yml` es aus allen veröffentlichten Releases neu (`scripts/build-apt-repo.sh`: `apt-ftparchive`, signiert mit `sq`, vor dem Hochladen mit `sqv` gegen den mitgelieferten Schlüssel geprüft). Von Hand neu veröffentlichen: Actions → „APT-Repo“ → „Run workflow“. Vorabversionen landen mit im Repo; ein gelöschtes Release verschwindet beim nächsten Lauf.
+Das Repo liegt auf GitHub Pages unter `https://zerodos1988.github.io/GoDeb` (Suite `trixie`, Komponente `main`, `amd64` und `arm64`). Nach jedem Release baut der Workflow `apt-repo.yml` es aus allen veröffentlichten Releases neu (`scripts/build-apt-repo.sh`: `apt-ftparchive`, signiert mit `sq`, vor dem Hochladen mit `sqv` gegen den mitgelieferten Schlüssel geprüft). Von Hand neu veröffentlichen: Actions → „APT-Repo“ → „Run workflow“. Vorabversionen landen mit im Repo; ein gelöschtes Release verschwindet beim nächsten Lauf.
 
 - **Paket:** Es bringt `/etc/apt/sources.list.d/godeb.sources` (Conffile) und `/usr/share/keyrings/godeb-archive-keyring.asc` mit. Die Dateien auf der Pages-Seite sind dieselben, wer sie vorher von Hand anlegt, bekommt beim Installieren keine Rückfrage.
 - **Schlüssel:** Primärschlüssel `85BB 4B5E C4EB BC47 DCD1  6D32 FF4E 70E4 D1A7 EBB9` (nur Zertifizierung, bis 2036), Signier-Unterschlüssel `C59E 5F9F EE98 E052 817E  B9AC B93E E13B A71E 8187` (bis 22.10.2028). Die CI hat nur den Unterschlüssel (Secret `APT_SIGNING_KEY`). Vor Ablauf den Unterschlüssel offline verlängern oder ersetzen und die neue Fassung von `package/apt/godeb-archive-keyring.asc` mit einem Release ausliefern.

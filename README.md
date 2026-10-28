@@ -61,7 +61,7 @@ Ein neues Spiel ist eine `Game`-Beschreibung in `plugins/steam/`, kein eigenes P
 
 ## Installation
 
-Voraussetzung: Debian 13 (amd64), ein Konto mit `sudo`, eine Netzwerkverbindung. GoDeb kommt aus einem eigenen, signierten APT-Repo auf GitHub Pages:
+Voraussetzung: Debian 13 (amd64 oder arm64; Spielserver über SteamCMD nur amd64), ein Konto mit `sudo`, eine Netzwerkverbindung. GoDeb kommt aus einem eigenen, signierten APT-Repo auf GitHub Pages:
 
 ```bash
 sudo wget -O /usr/share/keyrings/godeb-archive-keyring.asc https://zerodos1988.github.io/GoDeb/godeb-archive-keyring.asc
@@ -72,7 +72,7 @@ sudo apt install --no-install-recommends godeb
 
 Alle Befehle in dieser Anleitung laufen mit `sudo`. Wer direkt als root angemeldet ist (etwa auf einem frischen Hetzner-Server), lässt `sudo` weg. Fehlt `sudo` (Debian, bei dessen Installation ein root-Passwort gesetzt wurde), einmal als root: `apt install sudo && usermod -aG sudo <benutzer>`, dann neu anmelden.
 
-Der Schlüssel hat den Fingerprint `85BB 4B5E C4EB BC47 DCD1  6D32 FF4E 70E4 D1A7 EBB9` (prüfen mit `sq inspect /usr/share/keyrings/godeb-archive-keyring.asc`). Ab dann kommt jede neue Version mit `sudo apt update && sudo apt upgrade`. Ohne Repo geht es weiter mit dem `.deb` aus den [Releases](https://github.com/ZeroDos1988/GoDeb/releases): `sudo apt install --no-install-recommends ./godeb_*_amd64.deb`. Ab Version 0.2.3 bringt das Paket Repo-Eintrag und Schlüssel selbst mit.
+Der Schlüssel hat den Fingerprint `85BB 4B5E C4EB BC47 DCD1  6D32 FF4E 70E4 D1A7 EBB9` (prüfen mit `sq inspect /usr/share/keyrings/godeb-archive-keyring.asc`). Ab dann kommt jede neue Version mit `sudo apt update && sudo apt upgrade`. Ohne Repo geht es weiter mit dem `.deb` aus den [Releases](https://github.com/ZeroDos1988/GoDeb/releases): `sudo apt install --no-install-recommends ./godeb_*_amd64.deb` (bzw. `_arm64.deb`). Ab Version 0.2.3 bringt das Paket Repo-Eintrag und Schlüssel selbst mit.
 
 Am Ende der Installation steht in einem Kasten der Link zur Ersteinrichtung. Später lässt er sich jederzeit wieder abrufen:
 

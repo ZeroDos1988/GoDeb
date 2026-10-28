@@ -80,7 +80,7 @@ PostgreSQL (Entscheidung Nutzer). Datenbanken und Benutzer anlegen, Tabellenbetr
 
 ### 10. Ganz hinten (niedrige Priorität, erst nach allem anderen)
 
-- [ ] **arm64 im APT-Repo:** Die CI baut `godeb_*_arm64.deb` als Release-Asset (seit v0.2.8), `.github/workflows/apt-repo.yml` veröffentlicht aber nur `binary-amd64`. War 28.10. fälschlich als erledigt abgehakt.
+- [x] **arm64 im APT-Repo** – 28.10. (`build-apt-repo.sh` mit beiden Architekturen, Steam auf arm64 gesperrt).
 
 ---
 
