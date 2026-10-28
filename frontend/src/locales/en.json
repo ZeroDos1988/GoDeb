@@ -477,6 +477,26 @@
       "description": "Game server"
     }
   },
+  "websites": {
+    "title": "Websites",
+    "description": "nginx vhosts with optional PHP-FPM or reverse proxy. Files under /var/www/godeb/<name>, symlink under the web user's ~/www/<name>. Ports 80/443 open when public access or a certificate is requested.",
+    "root": "Document root",
+    "empty": "No website yet.",
+    "name": "Name",
+    "domain": "Domain",
+    "mode": "Mode",
+    "modeStatic": "Files (+ optional PHP)",
+    "modeProxy": "Reverse proxy",
+    "php": "Enable PHP-FPM",
+    "proxyUrl": "Upstream URL (private/localhost only)",
+    "add": "Add website",
+    "addHint": "After creating, set DNS (A), then use Certificate for Let's Encrypt.",
+    "create": "Create",
+    "cert": "Certificate",
+    "delete": "Delete",
+    "confirmDelete": "Delete website {{name}} including files?",
+    "failed": "Action failed"
+  },
   "cron": {
     "title": "Scheduled tasks",
     "description": "systemd timers and files under /etc/cron.d. New jobs are GoDeb timers only, with an allowlisted command or a script under /usr/local/sbin or /etc/godeb/scripts.",

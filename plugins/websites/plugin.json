@@ -1,0 +1,6 @@
+{
+  "id": "websites",
+  "name": "Webseiten",
+  "apt_dependencies": ["nginx", "php-fpm", "php-cli", "php-sqlite3", "php-curl", "php-mbstring", "php-xml"],
+  "systemd_services": ["nginx.service", "php8.4-fpm.service"]
+}

@@ -1,0 +1,7 @@
+{
+  "id": "websites",
+  "name": "Webseiten",
+  "description": "nginx, PHP und Reverse-Proxy",
+  "icon": "server",
+  "order": 45
+}

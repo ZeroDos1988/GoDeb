@@ -14,5 +14,6 @@ import (
 	_ "godeb/plugins/steam"
 	_ "godeb/plugins/systemd"
 	_ "godeb/plugins/ufw"
+	_ "godeb/plugins/websites"
 	_ "godeb/plugins/wireguard"
 )

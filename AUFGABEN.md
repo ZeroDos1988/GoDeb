@@ -58,9 +58,9 @@ Jeden Unterpunkt einzeln committen:
 - [x] Touch-Ziele mindestens 44 px. Unter `sm` Tabellen als Karten (WireGuard-Peers, UFW-Regeln).
 - [x] Playwright-Smoke-Test mit iPhone- und Pixel-Viewport in der CI (`.github/workflows`): prüft `scrollWidth == innerWidth` auf allen Seiten, die API wird per `page.route` mit Beispieldaten bedient.
 
-### 6. Webseiten und Reverse-Proxy (neues Plugin, nginx) **(Frage)**
+### 6. Webseiten und Reverse-Proxy (neues Plugin, nginx) – erledigt 28.10.
 
-nginx-vhosts für eigene Webseiten und Reverse-Proxy auf interne Ziele, auch hinter dem Tunnel. Zertifikate über das vorhandene Certbot-Plugin, DNS über `domains.RegisterNeeds`. Vor dem Start mit dem Nutzer klären: PHP ja oder nein, Verzeichnisstruktur, ob Port 80/443 dauerhaft offen sein darf.
+nginx-vhosts für eigene Webseiten und Reverse-Proxy auf interne Ziele, auch hinter dem Tunnel. Zertifikate über Certbot, DNS über `domains.RegisterNeeds`. Entschieden: PHP ja, Docroot `/var/www/godeb/<name>` mit Symlink `~/www/<name>`, Ports 80/443 bei Bedarf.
 
 ### 7. Cron-Aufgaben (neues Plugin) – erledigt 28.10.
 
