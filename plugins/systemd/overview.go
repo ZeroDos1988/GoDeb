@@ -27,6 +27,7 @@ var catalog = []catalogEntry{
 	{"fail2ban.service", "fail2ban", "security"},
 	{"wg-quick@wg0.service", "wireguard", "network"},
 	{"godeb-portforward.service", "portforward", "network"},
+	{"godeb-volltunnel.service", "volltunnel", "network"},
 	{"postfix.service", "postfix", "mail"},
 	{"dovecot.service", "dovecot", "mail"},
 	{"rspamd.service", "rspamd", "mail"},

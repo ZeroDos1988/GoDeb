@@ -2,5 +2,5 @@
   "id": "wireguard",
   "name": "WireGuard",
   "apt_dependencies": ["wireguard", "wireguard-tools", "qrencode"],
-  "systemd_services": ["wg-quick@wg0.service"]
+  "systemd_services": ["wg-quick@wg0.service", "godeb-volltunnel.service"]
 }

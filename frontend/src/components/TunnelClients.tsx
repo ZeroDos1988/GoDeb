@@ -23,7 +23,17 @@ const input =
 // TunnelClients lists the clients created in the wizard and adds more with
 // "+": phones and laptops get a QR code and the file, GoDeb hosts at home
 // (sites) get a join code to paste into "Mit Hub verbinden" there.
-export function TunnelClients({ endpoint, clients, onAdded }: { endpoint: string; clients: ClientResult[]; onAdded: (c: ClientResult) => void }) {
+export function TunnelClients({
+  endpoint,
+  clients,
+  onAdded,
+  fullTunnel = false,
+}: {
+  endpoint: string;
+  clients: ClientResult[];
+  onAdded: (c: ClientResult) => void;
+  fullTunnel?: boolean;
+}) {
   const { t } = useTranslation();
   const [adding, setAdding] = useState(false);
   return (
@@ -33,11 +43,12 @@ export function TunnelClients({ endpoint, clients, onAdded }: { endpoint: string
         <p className="mt-1 text-xs text-white/60">{t("clients.text")}</p>
       </div>
       {clients.map((c, i) => (
-        <ClientCard key={c.name} client={c} open={i === clients.length - 1} />
+        <ClientCard key={c.name} client={c} open={i === clients.length - 1} fullTunnel={fullTunnel} />
       ))}
       {adding ? (
         <AddClient
           endpoint={endpoint}
+          fullTunnel={fullTunnel}
           taken={clients.map((c) => c.name)}
           hasSite={clients.some((c) => c.site)}
           onCancel={() => setAdding(false)}
@@ -55,7 +66,7 @@ export function TunnelClients({ endpoint, clients, onAdded }: { endpoint: string
   );
 }
 
-function ClientCard({ client, open }: { client: ClientResult; open: boolean }) {
+function ClientCard({ client, open, fullTunnel }: { client: ClientResult; open: boolean; fullTunnel: boolean }) {
   const { t } = useTranslation();
   return (
     <details open={open} className="group rounded-2xl border border-white/10 bg-white/5 px-3 py-2">
@@ -80,7 +91,7 @@ function ClientCard({ client, open }: { client: ClientResult; open: boolean }) {
               />
             ) : null}
             <div className="min-w-0 space-y-3 text-xs text-white/70">
-              <p>{t("clients.deviceHint")}</p>
+              <p>{fullTunnel ? t("clients.deviceHintFull") : t("clients.deviceHint")}</p>
               <button type="button" className={glass} onClick={() => downloadText(`${client.name}.conf`, client.config)}>
                 {t("clients.download")}
               </button>
@@ -138,12 +149,14 @@ export function JoinCodeBox({ code, filename, config }: { code: string; filename
 
 function AddClient({
   endpoint,
+  fullTunnel,
   taken,
   hasSite,
   onCancel,
   onAdded,
 }: {
   endpoint: string;
+  fullTunnel: boolean;
   taken: string[];
   hasSite: boolean;
   onCancel: () => void;
@@ -173,7 +186,13 @@ function AddClient({
       onAdded(
         await api<ClientResult>("/api/setup/client", {
           method: "POST",
-          body: JSON.stringify({ name: name.trim(), site, address: site ? address.trim() : "", endpoint }),
+          body: JSON.stringify({
+            name: name.trim(),
+            site,
+            address: site ? address.trim() : "",
+            endpoint,
+            fullTunnel: !site && fullTunnel,
+          }),
         }),
       );
     } catch (err: unknown) {

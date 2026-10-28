@@ -54,9 +54,10 @@ var criticalGameActions = map[string]bool{"install": true, "update": true}
 
 // criticalExact always needs a fresh code.
 var criticalExact = map[string]bool{
-	"/api/plugins/wireguard/peers": true, // a new peer is a new way into the network
-	"/api/plugins/wireguard/join":  true, // replaces how this host reaches the tunnel
-	"/api/plugins/wireguard/trust": true, // decides where phones switch their tunnel off
+	"/api/plugins/wireguard/peers":      true, // a new peer is a new way into the network
+	"/api/plugins/wireguard/join":       true, // replaces how this host reaches the tunnel
+	"/api/plugins/wireguard/trust":      true, // decides where phones switch their tunnel off
+	"/api/plugins/wireguard/volltunnel": true, // NAT: client internet egress through the hub
 	"/api/plugins/apt/upgrade":     true, // installs every pending update, GoDeb included
 	"/api/plugins/domains/token":   true, // Cloud-API token that can change every DNS zone
 }

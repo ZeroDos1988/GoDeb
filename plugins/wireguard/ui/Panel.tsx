@@ -57,6 +57,7 @@ type WgPeers = CommandEnvelope & {
   peers: WgPeer[];
   configured: boolean;
   role: WgRole;
+  volltunnel?: boolean;
 };
 
 type CreateResult = {
@@ -223,6 +224,14 @@ export default function Panel() {
           ) : null}
 
           {query.data.configured ? <TrustCard hub={!isPeer} hasSites={peers.some((p) => p.site)} /> : null}
+
+          {!isPeer && query.data.configured ? (
+            <VolltunnelCard
+              enabled={Boolean(query.data.volltunnel)}
+              disabled={Boolean(query.data.mocked)}
+              onChanged={query.reload}
+            />
+          ) : null}
 
           {!isPeer ? (
             <AndroidClientCard
@@ -512,6 +521,65 @@ function TrustCard({ hub, hasSites }: { hub: boolean; hasSites: boolean }) {
         {error ? <p className="text-debian">{error}</p> : null}
         <p className="text-xs text-white/50">{hub ? t("wg.trustHubHint") : t("wg.trustPeerHint")}</p>
       </div>
+    </section>
+  );
+}
+
+function VolltunnelCard({
+  enabled,
+  disabled,
+  onChanged,
+}: {
+  enabled: boolean;
+  disabled: boolean;
+  onChanged: () => void;
+}) {
+  const { t } = useTranslation();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+
+  async function setEnabled(next: boolean) {
+    if (next && !window.confirm(t("wg.volltunnelConfirm"))) {
+      return;
+    }
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      await api("/api/plugins/wireguard/volltunnel", {
+        method: "POST",
+        body: JSON.stringify({ enabled: next }),
+      });
+      setNotice(next ? t("wg.volltunnelOn") : t("wg.volltunnelOff"));
+      onChanged();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : t("wg.volltunnelFailed"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="mb-6 max-w-3xl rounded-3xl border border-white/10 bg-slate-900/60 px-4 py-3 text-sm text-white backdrop-blur-xl">
+      <h2 className="font-medium">{t("wg.volltunnelTitle")}</h2>
+      <p className="mt-1 text-white/70">{t("wg.volltunnelText")}</p>
+      <p className="mt-2 text-xs text-amber-200/90">{t("wg.volltunnelWarn")}</p>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <span className={enabled ? "text-emerald-300" : "text-white/50"}>
+          {enabled ? t("wg.volltunnelActive") : t("wg.volltunnelInactive")}
+        </span>
+        <button
+          type="button"
+          disabled={busy || disabled}
+          onClick={() => void setEnabled(!enabled)}
+          className={buttonClass}
+        >
+          {enabled ? t("wg.volltunnelDisable") : t("wg.volltunnelEnable")}
+        </button>
+      </div>
+      {notice ? <p className="mt-2 text-moss">{notice}</p> : null}
+      {error ? <p className="mt-2 text-debian">{error}</p> : null}
     </section>
   );
 }

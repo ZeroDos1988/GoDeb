@@ -1,0 +1,18 @@
+[Unit]
+Description=GoDeb Volltunnel (nftables MASQUERADE for WireGuard clients)
+# Written by the WireGuard Volltunnel option; absent until enabled.
+ConditionPathExists=/etc/godeb/volltunnel.nft
+After=network-pre.target
+Wants=network-pre.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/sbin/nft -f /etc/godeb/volltunnel.nft
+ExecStop=-/usr/sbin/nft delete table ip godeb_volltunnel
+ProtectHome=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=multi-user.target

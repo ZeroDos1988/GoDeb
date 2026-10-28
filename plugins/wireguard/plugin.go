@@ -27,6 +27,8 @@ func Mount(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/plugins/wireguard/trust", handleTrustSet)
 	mux.HandleFunc("POST /api/plugins/wireguard/trust/sync", handleTrustSync)
 	mux.HandleFunc("GET /api/plugins/wireguard/trust/info", handleTrustInfo)
+	mux.HandleFunc("GET /api/plugins/wireguard/volltunnel", handleVolltunnelGet)
+	mux.HandleFunc("POST /api/plugins/wireguard/volltunnel", handleVolltunnelSet)
 	mountAndroid(mux)
 }
 

@@ -32,21 +32,41 @@ func (r RouteRule) valid() error {
 	switch {
 	case !routeIface.MatchString(r.In) || !routeIface.MatchString(r.Out):
 		return fmt.Errorf("ungültiges Interface %q/%q", r.In, r.Out)
+	case !routeComment.MatchString(r.Comment):
+		return fmt.Errorf("ungültiger Kommentar %q", r.Comment)
+	}
+	// Empty To/Port/Proto means all traffic (Volltunnel egress). Otherwise
+	// all three must be set together, as for portforward and hub UI routes.
+	allEmpty := r.To == "" && r.Port == "" && r.Proto == ""
+	allSet := r.To != "" && r.Port != "" && r.Proto != ""
+	switch {
+	case allEmpty:
+		return nil
+	case !allSet:
+		return fmt.Errorf("Ziel, Port und Protokoll müssen zusammen gesetzt sein oder alle leer")
 	case !routeAddr.MatchString(r.To):
 		return fmt.Errorf("ungültige Zieladresse %q", r.To)
 	case !routePort.MatchString(r.Port):
 		return fmt.Errorf("ungültiger Port %q", r.Port)
 	case r.Proto != "tcp" && r.Proto != "udp":
 		return fmt.Errorf("ungültiges Protokoll %q", r.Proto)
-	case !routeComment.MatchString(r.Comment):
-		return fmt.Errorf("ungültiger Kommentar %q", r.Comment)
 	}
 	return nil
 }
 
 // args is the rule without the leading "route allow" / "route delete allow".
 func (r RouteRule) args() []string {
-	return []string{"in", "on", r.In, "out", "on", r.Out, "to", r.To, "port", r.Port, "proto", r.Proto, "comment", r.Comment}
+	args := []string{"in", "on", r.In, "out", "on", r.Out}
+	if r.To != "" {
+		args = append(args, "to", r.To)
+	}
+	if r.Port != "" {
+		args = append(args, "port", r.Port)
+	}
+	if r.Proto != "" {
+		args = append(args, "proto", r.Proto)
+	}
+	return append(args, "comment", r.Comment)
 }
 
 // SyncRoutes makes the GoDeb route rules tagged with tag (for example

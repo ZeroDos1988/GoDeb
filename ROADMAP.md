@@ -71,7 +71,7 @@ Eine Testinstallation auf einem Hetzner-VPS ist ab 20.10. möglich. Die Anleitun
 - [ ] **Agent auf den echten Servern testen**: Update von der Version davor (Umzug nach `/var/lib/godeb`), Assistent, Trusted Endpoint, Steam-Installation.
 - [x] **Client-Schlüssel** (27.10.): Option „Schlüssel auf dem Gerät erzeugen“ (Public Key einfügen); Client-Dateien nach dem Download optional löschen. Mailversand nur mit Warnhinweis (weiterhin).
 - [x] ~~**Master-Key** getrennt von der Datenbank~~ (entschieden 21.10.): entfällt. Gesichert wird die ganze VM (Proxmox bzw. Hetzner), ein VM-Backup enthält Schlüssel und Datenbank ohnehin zusammen; ein systemd-Credential läge auf derselben Platte.
-- [ ] **Volltunnel**: IP-Forwarding und NAT über `ufw` (`before.rules`, `route allow`) als bewusste Option im Setup.
+- [x] **Volltunnel** (28.10.): bewusste Option im Setup und unter WireGuard (`--full-tunnel` / Checkbox). IP-Forwarding und MASQUERADE in eigener nftables-Tabelle `godeb_volltunnel` (wie Portweiterleitung, nicht `before.rules`), dazu `ufw route allow` wg0→öffentlich; Boot-Unit `godeb-volltunnel.service`. Standard aus; Geräte-Clients im Setup bekommen bei Aktivierung `AllowedIPs 0.0.0.0/0`, Standorte nie.
 - [ ] **Unauthentifizierter APK-Download**: nur über den Tunnel erreichbar (Bind-Adresse); optional mit Token. (`/api/trusted` ist seit 20.10. entfernt.)
 - [x] ~~**Backups**~~ (entschieden 21.10.): nicht Aufgabe von GoDeb. Proxmox (Heim-VM) und Hetzner (VPS) sichern die ganze Maschine; vor größeren Änderungen einen Snapshot ziehen.
 - [ ] VPS-Spezifika: Setup installiert SSH-nur-Schlüssel und unattended-upgrades noch nicht (steht bisher nur in der Anleitung). Doctor und Ampel melden den Zustand seit 27.10. nur lesend.

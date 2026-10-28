@@ -2,6 +2,7 @@ package ufw
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -34,12 +35,20 @@ func TestRouteRuleValidation(t *testing.T) {
 	if err := ok.valid(); err != nil {
 		t.Fatal(err)
 	}
+	all := RouteRule{In: "wg0", Out: "eth0", Comment: "GoDeb-VT internet"}
+	if err := all.valid(); err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.Join(all.args(), " "); got != "in on wg0 out on eth0 comment GoDeb-VT internet" {
+		t.Fatalf("args=%q", got)
+	}
 	for _, bad := range []RouteRule{
 		{In: "eth0;x", Out: "wg0", To: "10.8.0.2", Port: "1", Proto: "udp", Comment: "GoDeb-PF a"},
 		{In: "eth0", Out: "wg0", To: "10.8.0.2/24", Port: "1", Proto: "udp", Comment: "GoDeb-PF a"},
 		{In: "eth0", Out: "wg0", To: "10.8.0.2", Port: "1-2", Proto: "udp", Comment: "GoDeb-PF a"},
 		{In: "eth0", Out: "wg0", To: "10.8.0.2", Port: "1", Proto: "icmp", Comment: "GoDeb-PF a"},
 		{In: "eth0", Out: "wg0", To: "10.8.0.2", Port: "1", Proto: "udp", Comment: "GoDeb-PF a' b"},
+		{In: "wg0", Out: "eth0", To: "10.8.0.2", Comment: "GoDeb-VT internet"}, // partial
 	} {
 		if bad.valid() == nil {
 			t.Errorf("accepted %+v", bad)

@@ -23,19 +23,20 @@ import (
 // setupOptions are the answers of `godeb setup`. Every value has a flag so
 // the command also runs unattended (--yes).
 type setupOptions struct {
-	Admin    string
-	Address  string
-	Port     int
-	UIPort   int
-	Endpoint string
-	Client   string
-	SSHPort  int
-	NoUFW    bool
-	Join     string
-	Role     string
-	Access   string
-	LAN      string
-	Yes      bool
+	Admin      string
+	Address    string
+	Port       int
+	UIPort     int
+	Endpoint   string
+	Client     string
+	SSHPort    int
+	NoUFW      bool
+	Join       string
+	Role       string
+	Access     string
+	LAN        string
+	FullTunnel bool
+	Yes        bool
 }
 
 // runSetup performs the first-run setup: admin account, wg0, firewall and a
@@ -57,6 +58,7 @@ func runSetup(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	fs.StringVar(&opt.Access, "access", "", "Erreichbarkeit der Web-UI: tunnel, lan (HTTPS im Heimnetz) oder local")
 	fs.StringVar(&opt.LAN, "lan-address", "", "LAN-Adresse für --access lan (Standard: Adresse der Default-Route)")
 	fs.BoolVar(&opt.NoUFW, "no-firewall", false, "ufw nicht aktivieren, nur Regeln anlegen")
+	fs.BoolVar(&opt.FullTunnel, "full-tunnel", false, "Hub: Internetverkehr der Clients über diesen Server (NAT, Bandbreite und Traffic beachten)")
 	fs.BoolVar(&opt.Yes, "yes", false, "keine Rückfragen, Standardwerte nehmen")
 	if err := fs.Parse(args); err != nil {
 		return 2
@@ -123,8 +125,8 @@ func (s *setup) run(ctx context.Context) error {
 	default:
 		return fmt.Errorf("unbekannte Rolle %q", s.opt.Role)
 	}
-	s.steps = 4
-	fmt.Fprintln(s.out, "GoDeb Ersteinrichtung als WireGuard-Server: Administrator, Tunnel, Firewall, erster Client.")
+	s.steps = 5
+	fmt.Fprintln(s.out, "GoDeb Ersteinrichtung als WireGuard-Server: Administrator, Tunnel, Volltunnel, Firewall, erster Client.")
 
 	s.step(1, "Administrator")
 	if err := s.admin(); err != nil {
@@ -137,12 +139,17 @@ func (s *setup) run(ctx context.Context) error {
 		return err
 	}
 
-	s.step(3, "Firewall und Erreichbarkeit")
+	s.step(3, "Volltunnel (optional)")
+	if err := s.volltunnel(ctx); err != nil {
+		return err
+	}
+
+	s.step(4, "Firewall und Erreichbarkeit")
 	if err := s.firewall(ctx, firstrun.AccessTunnel); err != nil {
 		return err
 	}
 
-	s.step(4, "Erster Client")
+	s.step(5, "Erster Client")
 	return s.client(ctx, prefix)
 }
 
@@ -354,6 +361,34 @@ func (s *setup) enableTunnel(ctx context.Context) error {
 	return nil
 }
 
+// volltunnel optionally enables NAT so tunnel clients can send all traffic
+// through this hub. Off by default; --full-tunnel or an explicit yes turns it on.
+func (s *setup) volltunnel(ctx context.Context) error {
+	if wireguard.VolltunnelEnabled() {
+		fmt.Fprintln(s.out, "  Volltunnel ist bereits aktiv (IP-Forwarding und NAT).")
+		s.opt.FullTunnel = true
+		return nil
+	}
+	enable := s.opt.FullTunnel
+	if !s.opt.Yes && !s.opt.FullTunnel {
+		fmt.Fprintln(s.out, "  Clients können dann ihren gesamten Internetverkehr über diesen Server schicken")
+		fmt.Fprintln(s.out, "  (AllowedIPs 0.0.0.0/0). Kostet Bandbreite und Traffic; bei Ausfall des Tunnels")
+		fmt.Fprintln(s.out, "  haben solche Clients keinen Ausweichweg. Standorte (Heim-VM) bleiben ohne Volltunnel.")
+		answer := strings.ToLower(s.ask("Volltunnel einschalten? (j/N)", "n"))
+		enable = strings.HasPrefix(answer, "j") || strings.HasPrefix(answer, "y")
+	}
+	if !enable {
+		fmt.Fprintln(s.out, "  Übersprungen. Später unter WireGuard → Volltunnel oder mit --full-tunnel.")
+		return nil
+	}
+	if err := wireguard.ApplyVolltunnel(ctx, true); err != nil {
+		return err
+	}
+	s.opt.FullTunnel = true
+	fmt.Fprintln(s.out, "  Volltunnel aktiv: IP-Forwarding und MASQUERADE (nftables-Tabelle godeb_volltunnel).")
+	return nil
+}
+
 // firewall asks how the web UI is reached, applies the same plan as the web
 // wizard (firstrun.ApplyFirewall) and completes the first-run setup.
 func (s *setup) firewall(ctx context.Context, defaultAccess string) error {
@@ -431,7 +466,7 @@ func (s *setup) client(ctx context.Context, prefix netip.Prefix) error {
 	name := s.ask("Name des ersten Clients", s.opt.Client)
 	site := false
 	for name != "" {
-		res, err := firstrun.AddClient(ctx, firstrun.ClientSpec{Name: name, Site: site, Endpoint: endpoint})
+		res, err := firstrun.AddClient(ctx, firstrun.ClientSpec{Name: name, Site: site, Endpoint: endpoint, FullTunnel: !site && s.opt.FullTunnel})
 		var reqErr *wireguard.RequestError
 		switch {
 		case errors.As(err, &reqErr) && reqErr.Status == 409:
@@ -469,7 +504,11 @@ func (s *setup) printClient(ctx context.Context, res firstrun.ClientResult, pref
 		fmt.Fprintf(s.out, "  Datei: %s\n", file)
 		return
 	}
-	fmt.Fprintf(s.out, "  %s erhält %s (nur das Tunnelnetz %s, kein Volltunnel).\n", res.Name, res.Address, prefix.Masked())
+	if s.opt.FullTunnel {
+		fmt.Fprintf(s.out, "  %s erhält %s (Volltunnel: gesamter Verkehr über diesen Server).\n", res.Name, res.Address)
+	} else {
+		fmt.Fprintf(s.out, "  %s erhält %s (nur das Tunnelnetz %s, kein Volltunnel).\n", res.Name, res.Address, prefix.Masked())
+	}
 	if qr := core.RunInput(ctx, res.Config, "qrencode", "-t", "ansiutf8", "-m", "2"); qr.Err == nil {
 		fmt.Fprintln(s.out, "\n  Mit der GoDeb-Tunnel-App scannen:")
 		fmt.Fprintln(s.out, qr.Stdout)

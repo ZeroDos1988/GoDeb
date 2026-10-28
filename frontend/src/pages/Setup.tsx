@@ -168,6 +168,7 @@ function RoleStep({ info, role, setRole, onNext }: { info: SetupInfo; role: Role
   const [address, setAddress] = useState("10.8.0.1/24");
   const [port, setPort] = useState(51820);
   const [client, setClient] = useState("admin-handy");
+  const [fullTunnel, setFullTunnel] = useState(false);
   const [config, setConfig] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -181,7 +182,7 @@ function RoleStep({ info, role, setRole, onNext }: { info: SetupInfo; role: Role
     setError("");
     try {
       if (role === "hub") {
-        const res = await api<HubResult>("/api/setup/hub", { method: "POST", body: JSON.stringify({ endpoint, address, port, client }) });
+        const res = await api<HubResult>("/api/setup/hub", { method: "POST", body: JSON.stringify({ endpoint, address, port, client, fullTunnel }) });
         setHub(res);
         setClients(res.first ? [res.first] : []);
       } else if (role === "peer") {
@@ -241,6 +242,18 @@ function RoleStep({ info, role, setRole, onNext }: { info: SetupInfo; role: Role
           <Field label={t("setup.wgPort")}>
             <input inputMode="numeric" value={port} onChange={(e) => setPort(Number(e.target.value) || 0)} className={input} />
           </Field>
+          <label className="md:col-span-2 flex items-start gap-2 rounded-2xl border border-amber-300/20 bg-amber-400/5 px-3 py-3 text-sm">
+            <input
+              type="checkbox"
+              className="mt-1"
+              checked={fullTunnel}
+              onChange={(e) => setFullTunnel(e.target.checked)}
+            />
+            <span>
+              <span className="block font-medium">{t("setup.fullTunnel")}</span>
+              <span className="mt-1 block text-xs text-white/60">{t("setup.fullTunnelHint")}</span>
+            </span>
+          </label>
         </div>
       ) : null}
       {!configured && role === "peer" && !joined ? (
@@ -256,7 +269,12 @@ function RoleStep({ info, role, setRole, onNext }: { info: SetupInfo; role: Role
 
       {hub ? <p className="mt-4 text-sm text-emerald-300">{t("setup.hubDone")}</p> : null}
       {isHub ? (
-        <TunnelClients endpoint={hub?.endpoint ?? ""} clients={clients} onAdded={(c) => setClients((prev) => [...prev, c])} />
+        <TunnelClients
+          endpoint={hub?.endpoint ?? ""}
+          fullTunnel={fullTunnel}
+          clients={clients}
+          onAdded={(c) => setClients((prev) => [...prev, c])}
+        />
       ) : null}
       {joined ? (
         <div className="mt-4 space-y-1 text-sm">

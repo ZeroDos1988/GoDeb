@@ -433,6 +433,10 @@
       "name": "Portweiterleitung",
       "description": "NAT-Regeln zu Standorten laden"
     },
+    "volltunnel": {
+      "name": "Volltunnel",
+      "description": "MASQUERADE für Client-Internetverkehr"
+    },
     "postfix": {
       "name": "Postfix",
       "description": "Mailserver (SMTP)"
@@ -624,6 +628,17 @@
     "configDeleted": "Client-Datei von {{name}} vom Server gelöscht.",
     "peerRoleTitle": "Peer eines Hubs",
     "peerRoleText": "Dieser Server hängt mit der Adresse {{address}} am Hub {{hub}}. Neue Clients und Standorte legst du auf dem Hub an.",
+    "volltunnelTitle": "Volltunnel",
+    "volltunnelText": "Clients mit AllowedIPs 0.0.0.0/0 schicken ihren gesamten Internetverkehr über diesen Hub (IP-Forwarding und NAT in einer eigenen nftables-Tabelle).",
+    "volltunnelWarn": "Kostet Bandbreite und Traffic des VPS. Fällt der Tunnel aus, haben solche Clients keinen Ausweichweg. Standorte (Heim-VM) bleiben ohne Volltunnel.",
+    "volltunnelActive": "Aktiv",
+    "volltunnelInactive": "Aus",
+    "volltunnelEnable": "Einschalten",
+    "volltunnelDisable": "Ausschalten",
+    "volltunnelConfirm": "Volltunnel einschalten? Der gesamte Internetverkehr der betroffenen Clients geht dann über diesen Server.",
+    "volltunnelOn": "Volltunnel ist aktiv.",
+    "volltunnelOff": "Volltunnel ist aus.",
+    "volltunnelFailed": "Volltunnel konnte nicht geändert werden",
     "joinTitle": "Mit einem Hub verbinden",
     "joinText": "Noch kein wg0. Füge den Beitrittscode oder die Client-Datei ein, die der Hub für diesen Standort erzeugt hat (Assistent, „sudo godeb site add“ oder WireGuard → Standort → Code). Erlaubt sind nur Schlüssel, Adresse, Endpoint, AllowedIPs im Tunnelnetz und Keepalive.",
     "joinSubmit": "Verbinden",
@@ -1096,6 +1111,8 @@
     "firstClient": "Erster Client",
     "tunnelAddress": "Tunnel-Adresse",
     "wgPort": "WireGuard-Port (UDP)",
+    "fullTunnel": "Volltunnel (Internet über diesen Server)",
+    "fullTunnelHint": "Optional. Clients schicken dann allen Verkehr über den Hub (NAT). Kostet Bandbreite; bei Tunnelausfall kein Fallback. Standorte bleiben ohne Volltunnel.",
     "joinFile": "Beitrittscode oder Client-Datei",
     "joinHint": "Den Beitrittscode vom Hub einfügen (beginnt mit godeb-join:) oder die Datei hochladen. Er steht im Assistenten des Hubs, unter WireGuard → Standort → Code oder in der Ausgabe von „sudo godeb site add“.",
     "hubDone": "WireGuard-Server läuft.",
@@ -1142,6 +1159,7 @@
     "addressAuto": "automatisch (10.8.0.2 oder nächste freie)",
     "create": "Anlegen",
     "deviceHint": "Handy: mit der GoDeb-Tunnel-App scannen. Laptop: Datei herunterladen und in WireGuard importieren. Der Zugang reicht nur ins Tunnelnetz, der übrige Verkehr bleibt draußen.",
+    "deviceHintFull": "Handy: mit der GoDeb-Tunnel-App scannen. Laptop: Datei herunterladen und in WireGuard importieren. Volltunnel: der gesamte Internetverkehr geht über diesen Server.",
     "download": "Datei herunterladen",
     "siteHint": "Auf dem GoDeb-Server zu Hause im Assistenten „Mit Hub verbinden“ wählen und diesen Code einfügen. Er verbindet sich dann direkt mit diesem Server.",
     "siteTerminal": "Im Terminal des Servers:",

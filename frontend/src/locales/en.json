@@ -433,6 +433,10 @@
       "name": "Port forwarding",
       "description": "Loads the NAT rules to sites"
     },
+    "volltunnel": {
+      "name": "Full tunnel",
+      "description": "MASQUERADE for client internet egress"
+    },
     "postfix": {
       "name": "Postfix",
       "description": "Mail server (SMTP)"
@@ -624,6 +628,17 @@
     "configDeleted": "Client file for {{name}} deleted from the server.",
     "peerRoleTitle": "Peer of a hub",
     "peerRoleText": "This server is connected to hub {{hub}} with address {{address}}. Create new clients and sites on the hub.",
+    "volltunnelTitle": "Full tunnel",
+    "volltunnelText": "Clients with AllowedIPs 0.0.0.0/0 send all their internet traffic through this hub (IP forwarding and NAT in a dedicated nftables table).",
+    "volltunnelWarn": "Uses VPS bandwidth and traffic. If the tunnel drops, those clients have no fallback. Sites (home VM) stay without a full tunnel.",
+    "volltunnelActive": "On",
+    "volltunnelInactive": "Off",
+    "volltunnelEnable": "Enable",
+    "volltunnelDisable": "Disable",
+    "volltunnelConfirm": "Enable full tunnel? Affected clients will send all internet traffic through this server.",
+    "volltunnelOn": "Full tunnel is on.",
+    "volltunnelOff": "Full tunnel is off.",
+    "volltunnelFailed": "Could not change full tunnel",
     "joinTitle": "Connect to a hub",
     "joinText": "No wg0 yet. Paste the join code or client file the hub created for this site (wizard, \"sudo godeb site add\" or WireGuard → site → Code). Only keys, address, endpoint, AllowedIPs inside the tunnel network and keepalive are accepted.",
     "joinSubmit": "Connect",
@@ -1096,6 +1111,8 @@
     "firstClient": "First client",
     "tunnelAddress": "Tunnel address",
     "wgPort": "WireGuard port (UDP)",
+    "fullTunnel": "Full tunnel (internet through this server)",
+    "fullTunnelHint": "Optional. Clients then send all traffic through the hub (NAT). Uses bandwidth; no fallback if the tunnel drops. Sites stay without a full tunnel.",
     "joinFile": "Join code or client file",
     "joinHint": "Paste the join code from the hub (starts with godeb-join:) or upload the file. It is shown in the hub's wizard, under WireGuard → site → Code, or by \"sudo godeb site add\".",
     "hubDone": "WireGuard server is running.",
@@ -1142,6 +1159,7 @@
     "addressAuto": "automatic (10.8.0.2 or next free)",
     "create": "Create",
     "deviceHint": "Phone: scan with the GoDeb Tunnel app. Laptop: download the file and import it into WireGuard. The access only reaches the tunnel network; other traffic stays outside.",
+    "deviceHintFull": "Phone: scan with the GoDeb Tunnel app. Laptop: download the file and import it into WireGuard. Full tunnel: all internet traffic goes through this server.",
     "download": "Download file",
     "siteHint": "On the GoDeb server at home, choose \"Connect to hub\" in the wizard and paste this code. It then connects directly to this server.",
     "siteTerminal": "In the server's terminal:",

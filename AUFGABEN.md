@@ -77,7 +77,7 @@ PostgreSQL (Entscheidung Nutzer). Datenbanken und Benutzer anlegen, Tabellenbetr
 - [x] `godeb doctor` und Ampel: SSH nur per Schlüssel und unattended-upgrades (nur melden) – 27.10.
 - [x] Paket auch für `arm64` (Hetzner CAX): `scripts/build-deb.sh`, CI und APT-Repo-Workflow – 28.10.
 - [x] Steam/Enshrouded: Formular für `gameSettings` beim Preset „Custom“, Warnfenster vor Update/Neustart – 28.10. (zeitgesteuerte Jobs über Plugin „Geplante Aufgaben“ / Skript).
-- Volltunnel als bewusste Option im Setup (IP-Forwarding und NAT, eigene nftables-Tabelle wie `portforward`) – Entscheidung: umsetzen.
+- [x] Volltunnel als bewusste Option im Setup (IP-Forwarding und NAT, eigene nftables-Tabelle wie `portforward`) – 28.10.
 
 ---
 

@@ -141,10 +141,11 @@ func handleInfo(w http.ResponseWriter, r *http.Request) {
 
 // HubSpec creates this host as WireGuard hub and optionally a first client.
 type HubSpec struct {
-	Address  string `json:"address"`  // e.g. 10.8.0.1/24
-	Port     int    `json:"port"`     // UDP
-	Endpoint string `json:"endpoint"` // public host or IP for the clients
-	Client   string `json:"client"`   // first client name, empty for none
+	Address    string `json:"address"`    // e.g. 10.8.0.1/24
+	Port       int    `json:"port"`       // UDP
+	Endpoint   string `json:"endpoint"`   // public host or IP for the clients
+	Client     string `json:"client"`     // first client name, empty for none
+	FullTunnel bool   `json:"fullTunnel"` // NAT so clients may send all traffic through this hub
 }
 
 // HubResult is the hub plus the first client.
@@ -158,10 +159,11 @@ type HubResult struct {
 // device (phone, laptop) or a site, i.e. another GoDeb host such as the
 // home VM.
 type ClientSpec struct {
-	Name     string `json:"name"`
-	Site     bool   `json:"site"`
-	Address  string `json:"address"`  // empty: next free (sites prefer 10.8.0.2)
-	Endpoint string `json:"endpoint"` // public host or host:port of this hub
+	Name       string `json:"name"`
+	Site       bool   `json:"site"`
+	Address    string `json:"address"`  // empty: next free (sites prefer 10.8.0.2)
+	Endpoint   string `json:"endpoint"` // public host or host:port of this hub
+	FullTunnel bool   `json:"fullTunnel,omitempty"` // device AllowedIPs 0.0.0.0/0 (hub NAT must be on)
 }
 
 // ClientResult carries everything the admin needs to set up the client:
@@ -205,11 +207,16 @@ func CreateHub(ctx context.Context, spec HubSpec) (HubResult, error) {
 	if err := wireguard.StartTunnel(ctx); err != nil {
 		return res, err
 	}
+	if spec.FullTunnel {
+		if err := wireguard.ApplyVolltunnel(ctx, true); err != nil {
+			return res, err
+		}
+	}
 	res.Endpoint = hubEndpoint(spec.Endpoint, spec.Port)
 	if strings.TrimSpace(spec.Client) == "" {
 		return res, nil
 	}
-	first, err := AddClient(ctx, ClientSpec{Name: spec.Client, Endpoint: res.Endpoint})
+	first, err := AddClient(ctx, ClientSpec{Name: spec.Client, Endpoint: res.Endpoint, FullTunnel: spec.FullTunnel})
 	if err != nil {
 		return res, err
 	}
@@ -251,11 +258,15 @@ func AddClient(ctx context.Context, spec ClientSpec) (ClientResult, error) {
 	}
 	req := wireguard.PeerRequest{Name: spec.Name, Endpoint: endpoint, Address: spec.Address, Site: spec.Site}
 	if !spec.Site {
-		prefix, err := wireguard.TunnelPrefix()
-		if err != nil {
-			return res, err
+		if spec.FullTunnel {
+			req.AllowedIPs = "0.0.0.0/0, ::/0"
+		} else {
+			prefix, err := wireguard.TunnelPrefix()
+			if err != nil {
+				return res, err
+			}
+			req.AllowedIPs = prefix.Masked().String()
 		}
-		req.AllowedIPs = prefix.Masked().String()
 	}
 	peer, err := wireguard.CreatePeer(ctx, req)
 	if err != nil {

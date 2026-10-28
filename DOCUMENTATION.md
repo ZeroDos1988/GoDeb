@@ -192,7 +192,7 @@ sudo godeb setup --join - --access lan          # Beitrittscode einfügen
 sudo godeb setup --role none --access lan
 ```
 
-Der Hub bekommt einen ersten Client als QR-Code im Terminal (`firstrun.AddClient`, nur das Tunnelnetz als `AllowedIPs`). Danach fragt `godeb setup` nach weiteren Geräten oder GoDeb-Servern, bis der Name leer bleibt; Standorte bekommen einen Beitrittscode statt des QR-Codes. 2FA richtet der Administrator dann beim ersten Login in der Web-UI ein. Flags: `--role`, `--access`, `--lan-address`, `--address`, `--port`, `--ui-port`, `--client`, `--admin`, `--ssh-port`, `--no-firewall`, `--join DATEI|-` (Client-Datei oder Beitrittscode, `-` liest von stdin), `--yes` (unbeaufsichtigt, braucht `--role` und einen vorhandenen Admin).
+Der Hub bekommt einen ersten Client als QR-Code im Terminal (`firstrun.AddClient`, standardmäßig nur das Tunnelnetz als `AllowedIPs`). Optional **Volltunnel** (`--full-tunnel` bzw. Checkbox im Assistenten): IP-Forwarding und MASQUERADE in der nftables-Tabelle `godeb_volltunnel` plus `ufw route allow` von `wg0` zur öffentlichen Schnittstelle; Geräte-Clients erhalten dann `0.0.0.0/0`. Standorte bleiben ohne Volltunnel. Später unter WireGuard umschaltbar. Danach fragt `godeb setup` nach weiteren Geräten oder GoDeb-Servern, bis der Name leer bleibt; Standorte bekommen einen Beitrittscode statt des QR-Codes. 2FA richtet der Administrator dann beim ersten Login in der Web-UI ein. Flags: `--role`, `--access`, `--lan-address`, `--address`, `--port`, `--ui-port`, `--client`, `--admin`, `--ssh-port`, `--no-firewall`, `--full-tunnel`, `--join DATEI|-` (Client-Datei oder Beitrittscode, `-` liest von stdin), `--yes` (unbeaufsichtigt, braucht `--role` und einen vorhandenen Admin).
 
 ## Installation auf einem Hetzner-VPS
 

@@ -56,8 +56,9 @@ type peersResponse struct {
 	Peers           []PeerView    `json:"peers"`
 	// Configured is false while wg0.conf is missing; the UI then offers to
 	// join a hub instead of showing sample data as editable.
-	Configured bool     `json:"configured"`
-	Role       RoleInfo `json:"role"`
+	Configured  bool     `json:"configured"`
+	Role        RoleInfo `json:"role"`
+	Volltunnel  bool     `json:"volltunnel"`
 }
 
 func handlePeers(w http.ResponseWriter, r *http.Request) {
@@ -110,6 +111,9 @@ func handlePeers(w http.ResponseWriter, r *http.Request) {
 			resp.DefaultEndpoint = c.Endpoint
 			break
 		}
+	}
+	if !resp.Mocked && resp.Role.Role == RoleHub {
+		resp.Volltunnel = VolltunnelEnabled()
 	}
 	core.WriteJSON(w, http.StatusOK, resp)
 }
