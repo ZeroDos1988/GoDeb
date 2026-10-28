@@ -28,11 +28,12 @@ var allowed = map[string]fileSpec{
 	mapMailboxes: {0o640, "postfix"},
 	mapAliases:   {0o640, "postfix"},
 	mapSenders:   {0o640, "postfix"},
-	dovecotConf:  {0o644, ""},
-	dovecotUsers: {0o640, "dovecot"},
-	dovecotDeny:  {0o640, "dovecot"},
-	spamSieve:    {0o644, ""},
-	fail2banJail: {0o644, ""},
+	dovecotConf:     {0o644, ""},
+	dovecotUsers:    {0o640, "dovecot"},
+	dovecotDeny:     {0o640, "dovecot"},
+	spamSieve:       {0o644, ""},
+	quotaWarningBin: {0o755, ""},
+	fail2banJail:    {0o644, ""},
 
 	rspamdLocal + "/dkim_signing.conf":     {0o644, ""},
 	rspamdLocal + "/arc.conf":              {0o644, ""},
@@ -160,7 +161,7 @@ func apply(ctx context.Context) ([]string, error) {
 	files := map[string]string{
 		mapDomains: dom, mapMailboxes: mbox, mapAliases: ali, mapSenders: snd,
 		dovecotConf: dovecotConfig(s), dovecotUsers: users, dovecotDeny: deny,
-		spamSieve: spamSieveScript, fail2banJail: fail2banConfig,
+		spamSieve: spamSieveScript, quotaWarningBin: quotaWarningScript, fail2banJail: fail2banConfig,
 	}
 	for p, body := range rspamdFiles(s, domains) {
 		files[p] = body

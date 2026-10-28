@@ -92,10 +92,17 @@ func TestMapsAndUsers(t *testing.T) {
 
 func TestDovecotConfigIsClosed(t *testing.T) {
 	c := dovecotConfig(Settings{Hostname: "mail.example.com", CertFile: "/c.pem", KeyFile: "/k.pem"})
-	for _, want := range []string{"auth_allow_cleartext = no", "ssl = required", "port = 0", "deny = yes", "ssl_server_cert_file = /c.pem", "vacation = yes", "active_path = ~/.dovecot.sieve"} {
+	for _, want := range []string{
+		"auth_allow_cleartext = no", "ssl = required", "port = 0", "deny = yes",
+		"ssl_server_cert_file = /c.pem", "vacation = yes", "active_path = ~/.dovecot.sieve",
+		"quota_storage_percentage = 95", "executable = script /etc/dovecot/godeb/quota-warning",
+	} {
 		if !strings.Contains(c, want) {
 			t.Errorf("dovecot.conf lacks %q", want)
 		}
+	}
+	if !strings.Contains(quotaWarningScript, "dovecot-lda") || !strings.HasPrefix(quotaWarningScript, "#!/bin/sh") {
+		t.Error("quota-warning script incomplete")
 	}
 	// No PAM, no system users, no includes of Debian's conf.d.
 	for _, bad := range []string{"passdb pam", "driver = pam", "!include", "userdb passwd {", "pop3"} {

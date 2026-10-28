@@ -236,16 +236,38 @@ function Usage({ usedKB, quotaMB }: { usedKB: number; quotaMB: number }) {
   const pct =
     limitKB > 0 && usedKB >= 0
       ? Math.min(100, Math.round((usedKB / limitKB) * 100))
-      : 0;
+      : -1;
+  const bar =
+    pct < 0
+      ? ""
+      : pct >= 95
+        ? "bg-rose-400"
+        : pct >= 80
+          ? "bg-amber-300"
+          : "bg-emerald-400";
   return (
     <div className="min-w-28 text-xs">
-      <div>
-        {size(usedKB)} / {quotaMB > 0 ? size(limitKB) : t("mail.unlimited")}
+      <div className="flex flex-wrap items-baseline gap-x-2">
+        <span>
+          {usedKB < 0 ? "–" : size(usedKB)} /{" "}
+          {quotaMB > 0 ? size(limitKB) : t("mail.unlimited")}
+        </span>
+        {pct >= 80 ? (
+          <span
+            className={
+              pct >= 95 ? "font-medium text-rose-300" : "text-amber-200"
+            }
+          >
+            {t("mail.quotaWarn", { pct })}
+          </span>
+        ) : pct >= 0 ? (
+          <span className="text-white/40">{pct}%</span>
+        ) : null}
       </div>
-      {quotaMB > 0 ? (
+      {quotaMB > 0 && pct >= 0 ? (
         <div className="mt-1 h-1.5 rounded-full bg-white/10">
           <div
-            className={`h-1.5 rounded-full ${pct > 90 ? "bg-rose-400" : pct > 70 ? "bg-amber-300" : "bg-emerald-400"}`}
+            className={`h-1.5 rounded-full ${bar}`}
             style={{ width: `${pct}%` }}
           />
         </div>

@@ -14,11 +14,12 @@ const (
 	mapAliases    = postfixMapDir + "/aliases"
 	mapSenders    = postfixMapDir + "/senders"
 
-	dovecotConf  = "/etc/dovecot/dovecot.conf"
-	dovecotDir   = "/etc/dovecot/godeb"
-	dovecotUsers = dovecotDir + "/users"
-	dovecotDeny  = dovecotDir + "/deny"
-	spamSieve    = dovecotDir + "/spam.sieve"
+	dovecotConf     = "/etc/dovecot/dovecot.conf"
+	dovecotDir      = "/etc/dovecot/godeb"
+	dovecotUsers    = dovecotDir + "/users"
+	dovecotDeny     = dovecotDir + "/deny"
+	spamSieve       = dovecotDir + "/spam.sieve"
+	quotaWarningBin = dovecotDir + "/quota-warning"
 
 	rspamdLocal = "/etc/rspamd/local.d"
 	dkimDir     = "/var/lib/rspamd/dkim"
@@ -300,6 +301,22 @@ quota "User quota" {
   quota_storage_size = 0
 }
 
+# Warn once when storage crosses 95% then 80%. Highest first.
+quota user {
+  warning warn-95 {
+    quota_storage_percentage = 95
+    execute quota-warning {
+      args = 95 %{user}
+    }
+  }
+  warning warn-80 {
+    quota_storage_percentage = 80
+    execute quota-warning {
+      args = 80 %{user}
+    }
+  }
+}
+
 protocol imap {
   mail_plugins {
     imap_quota = yes
@@ -353,8 +370,45 @@ service auth {
     group = postfix
   }
 }
+service quota-warning {
+  executable = script ` + quotaWarningBin + `
+  user = vmail
+  unix_listener quota-warning {
+    user = vmail
+    group = vmail
+    mode = 0660
+  }
+}
 `
 }
+
+// quotaWarningScript delivers a German notice into the mailbox via LDA.
+// Args come only from Dovecot (percent + %{user}); the address is checked
+// before it is passed on.
+const quotaWarningScript = `#!/bin/sh
+# Written by GoDeb (plugin mail). Changes are overwritten.
+set -eu
+PERCENT=${1:-}
+USER=${2:-}
+case "$PERCENT" in
+  80|95) ;;
+  *) exit 0 ;;
+esac
+case "$USER" in
+  *[!a-zA-Z0-9._%+-@]*|"") exit 1 ;;
+  *@*.*) ;;
+  *) exit 1 ;;
+esac
+LDA=/usr/lib/dovecot/dovecot-lda
+if [ ! -x "$LDA" ]; then
+  LDA=/usr/libexec/dovecot/dovecot-lda
+fi
+export USER
+export PERCENT
+# shellcheck disable=SC2086
+printf 'From: %s\nTo: %s\nSubject: Postfach zu %s%% voll\nContent-Type: text/plain; charset=UTF-8\n\nDein Postfach %s ist zu etwa %s Prozent voll.\nBitte alten Müll und große Anhänge löschen, sonst können neue Mails abgelehnt werden.\n' \
+  "$USER" "$USER" "$PERCENT" "$USER" "$PERCENT" | "$LDA" -d "$USER" -o quota_enforce=no
+`
 
 const spamSieveScript = `require ["fileinto"];
 if header :contains "X-Spam" "Yes" {
