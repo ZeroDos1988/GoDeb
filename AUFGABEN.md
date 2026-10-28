@@ -62,7 +62,7 @@ Jeden Unterpunkt einzeln committen:
 
 nginx-vhosts für eigene Webseiten und Reverse-Proxy auf interne Ziele, auch hinter dem Tunnel. Zertifikate über das vorhandene Certbot-Plugin, DNS über `domains.RegisterNeeds`. Vor dem Start mit dem Nutzer klären: PHP ja oder nein, Verzeichnisstruktur, ob Port 80/443 dauerhaft offen sein darf.
 
-### 7. Cron-Aufgaben (neues Plugin)
+### 7. Cron-Aufgaben (neues Plugin) – erledigt 28.10.
 
 Geplante Aufgaben (systemd-Timer und `/etc/cron.d`) anzeigen. Neue Aufgaben nur als systemd-Timer mit einem Befehl aus einer Allowlist bzw. einem streng geprüften Pfad, kein freier Shell-Befehl.
 

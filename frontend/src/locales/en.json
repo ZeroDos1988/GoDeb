@@ -477,6 +477,28 @@
       "description": "Game server"
     }
   },
+  "cron": {
+    "title": "Scheduled tasks",
+    "description": "systemd timers and files under /etc/cron.d. New jobs are GoDeb timers only, with an allowlisted command or a script under /usr/local/sbin or /etc/godeb/scripts.",
+    "timers": "systemd timers",
+    "noTimers": "No timers found.",
+    "unit": "Unit",
+    "next": "Next run",
+    "activates": "Activates",
+    "delete": "Delete",
+    "confirmDelete": "Delete timer {{name}}?",
+    "add": "Create timer",
+    "addHint": "No shell. Allowed: fixed binaries (true, logrotate, certbot renew, systemctl reload …) or scripts in the allowlisted directories.",
+    "name": "Name",
+    "calendar": "Schedule (OnCalendar)",
+    "command": "Command (space-separated arguments)",
+    "jobDescription": "Description (optional)",
+    "create": "Create",
+    "cronD": "/etc/cron.d (read-only)",
+    "cronDHint": "Classic cron.d files are shown only, not edited.",
+    "noCronD": "No files in /etc/cron.d.",
+    "failed": "Action failed"
+  },
   "ufw": {
     "title": "UFW",
     "description": "Firewall status from ufw status. New rules are applied with ufw --force.",

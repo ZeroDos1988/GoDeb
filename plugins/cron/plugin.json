@@ -1,0 +1,6 @@
+{
+  "id": "cron",
+  "name": "Geplante Aufgaben",
+  "apt_dependencies": [],
+  "systemd_services": []
+}

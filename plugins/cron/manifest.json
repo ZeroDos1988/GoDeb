@@ -1,0 +1,7 @@
+{
+  "id": "cron",
+  "name": "Geplante Aufgaben",
+  "description": "systemd-Timer und /etc/cron.d",
+  "icon": "cogs",
+  "order": 55
+}
