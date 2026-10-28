@@ -49,7 +49,7 @@ Jeden Unterpunkt einzeln committen:
 - [x] **MTA-STS und TLS-RPT**: Richtlinie und DNS-Einträge, über `domains.RegisterNeeds` melden – 28.10. (HTTPS-Auslieferung der Richtlinie mit Webserver-Plugin).
 - [x] **Quota-Warnungen** (Dovecot-Quota-Warning) und Belegung pro Postfach in der UI – 28.10.
 - [x] **Spam lernen**: Verschieben in den Junk-Ordner bzw. aus ihm heraus trainiert Rspamd (imapsieve) – 28.10.
-- **Mail-Queue**: Postfix-Queue anzeigen, einzelne Mails löschen oder erneut senden. Die Queue-IDs gegen eine Regex prüfen.
+- [x] **Mail-Queue**: Postfix-Queue anzeigen, einzelne Mails löschen oder erneut senden. Die Queue-IDs gegen eine Regex prüfen – 28.10.
 - Danach mit `scripts/check-mail-config.sh` gegen die echten Debian-13-Werkzeuge prüfen.
 
 ### 5. Mobil-Feinschliff (ROADMAP Phase 6)

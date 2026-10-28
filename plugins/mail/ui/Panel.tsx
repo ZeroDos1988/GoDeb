@@ -9,13 +9,31 @@ import {
   base,
   button,
   card,
+  danger,
   errorText,
   Field,
   input,
   JobCard,
   primary,
+  size,
   type Status,
 } from "./shared.tsx";
+
+type QueueMessage = {
+  id: string;
+  sender: string;
+  recipients: string[];
+  arrival: string;
+  status: string;
+  reason?: string;
+  size: number;
+};
+
+type QueueData = {
+  messages: QueueMessage[];
+  count: number;
+  mocked?: boolean;
+};
 
 // The mail server follows HestiaCP: a list of mail domains, and per domain
 // its mailboxes, DNS records, settings and the client configuration.
@@ -62,6 +80,7 @@ export default function Panel() {
         data.installed ? (
           <>
             <ServerCard status={data} onChanged={reload} />
+            <QueueCard />
             <Domains status={data} onOpen={openDomain} onChanged={reload} />
           </>
         ) : (
@@ -402,6 +421,132 @@ function Domains({
           ))}
         </DataTable>
       )}
+    </section>
+  );
+}
+
+function QueueCard() {
+  const { t } = useTranslation();
+  const query = useGet<QueueData>(`${base}/queue`);
+  const [busy, setBusy] = useState("");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const id = window.setInterval(query.reload, 15000);
+    return () => window.clearInterval(id);
+  }, [query.reload]);
+
+  async function act(path: string, id = "") {
+    setBusy(id || path);
+    setError("");
+    try {
+      await api(`${base}/queue/${path}`, { method: "POST", body: "{}" });
+      query.reload();
+    } catch (err) {
+      setError(errorText(err, t("mail.failed")));
+    } finally {
+      setBusy("");
+    }
+  }
+
+  const messages = query.data?.messages ?? [];
+  return (
+    <section className={`${card} mb-4 space-y-3`}>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-sm font-semibold">
+          {t("mail.queue.title", { count: query.data?.count ?? 0 })}
+        </h2>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            className={button}
+            disabled={busy !== ""}
+            onClick={() => query.reload()}
+          >
+            {t("common.refresh")}
+          </button>
+          <button
+            type="button"
+            className={button}
+            disabled={busy !== "" || messages.length === 0}
+            onClick={() => void act("flush")}
+          >
+            {t("mail.queue.flush")}
+          </button>
+        </div>
+      </div>
+      <p className="text-xs text-white/50">{t("mail.queue.hint")}</p>
+      {query.data?.mocked ? (
+        <p className="text-xs text-amber-200">{t("mail.queue.mocked")}</p>
+      ) : null}
+      {error ? <p className="text-sm text-rose-300">{error}</p> : null}
+      {query.loading && !query.data ? (
+        <p className="text-sm text-muted">{t("common.loading")}</p>
+      ) : null}
+      {!query.loading && messages.length === 0 ? (
+        <p className="text-sm text-muted">{t("mail.queue.empty")}</p>
+      ) : null}
+      {messages.length > 0 ? (
+        <DataTable
+          head={[
+            t("mail.queue.id"),
+            t("mail.queue.sender"),
+            t("mail.queue.recipients"),
+            t("mail.queue.status"),
+            "",
+          ]}
+        >
+          {messages.map((m) => (
+            <tr key={m.id}>
+              <td className="px-3 py-2 font-mono text-xs">
+                <div>{m.id}</div>
+                <div className="text-white/40">
+                  {m.arrival}
+                  {m.size > 0 ? ` · ${size(Math.round(m.size / 1024))}` : ""}
+                </div>
+              </td>
+              <td className="px-3 py-2 font-mono text-xs break-all">
+                {m.sender || "–"}
+              </td>
+              <td className="max-w-[14rem] px-3 py-2 font-mono text-xs break-all">
+                {m.recipients.length ? m.recipients.join(", ") : "–"}
+                {m.reason ? (
+                  <div className="mt-1 text-amber-200/90">{m.reason}</div>
+                ) : null}
+              </td>
+              <td className="px-3 py-2">
+                <Badge tone={m.status === "active" ? "ok" : "warn"}>
+                  {m.status}
+                </Badge>
+              </td>
+              <td className="px-3 py-2 text-right whitespace-nowrap">
+                <button
+                  type="button"
+                  className="me-2 text-xs text-white/80 hover:underline"
+                  disabled={busy !== ""}
+                  onClick={() => void act(`${m.id}/retry`, m.id)}
+                >
+                  {t("mail.queue.retry")}
+                </button>
+                <button
+                  type="button"
+                  className={`${danger} !px-2 !py-1 text-xs`}
+                  disabled={busy !== ""}
+                  onClick={() => {
+                    if (
+                      window.confirm(t("mail.queue.confirmDelete", { id: m.id }))
+                    ) {
+                      void act(`${m.id}/delete`, m.id);
+                    }
+                  }}
+                >
+                  {t("mail.queue.delete")}
+                </button>
+              </td>
+            </tr>
+          ))}
+        </DataTable>
+      ) : null}
     </section>
   );
 }

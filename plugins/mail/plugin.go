@@ -31,6 +31,10 @@ func Mount(mux *http.ServeMux) {
 	mux.HandleFunc("POST "+base+"/domains/{domain}/accounts", handleAddAccount)
 	mux.HandleFunc("POST "+base+"/domains/{domain}/accounts/{local}", handleEditAccount)
 	mux.HandleFunc("POST "+base+"/domains/{domain}/accounts/{local}/delete", handleDeleteAccount)
+	mux.HandleFunc("GET "+base+"/queue", handleQueue)
+	mux.HandleFunc("POST "+base+"/queue/flush", handleQueueFlush)
+	mux.HandleFunc("POST "+base+"/queue/{id}/delete", handleQueueDelete)
+	mux.HandleFunc("POST "+base+"/queue/{id}/retry", handleQueueRetry)
 }
 
 type serviceState struct {
@@ -520,4 +524,49 @@ func parseQuota(stdout string) map[string]int64 {
 		}
 	}
 	return out
+}
+
+func handleQueue(w http.ResponseWriter, r *http.Request) {
+	msgs, mocked := readQueue(r.Context())
+	core.WriteJSON(w, http.StatusOK, map[string]any{"messages": msgs, "count": len(msgs), "mocked": mocked})
+}
+
+func handleQueueFlush(w http.ResponseWriter, r *http.Request) {
+	res := core.RunAdmin(r.Context(), "postqueue", "-f")
+	if res.Err != nil {
+		core.WriteError(w, http.StatusBadGateway, res.Detail())
+		return
+	}
+	slog.InfoContext(r.Context(), "Mail-Queue geleert (flush)")
+	core.WriteJSON(w, http.StatusOK, map[string]any{"ok": true})
+}
+
+func handleQueueDelete(w http.ResponseWriter, r *http.Request) {
+	id, err := normalizeQueueID(r.PathValue("id"))
+	if err != nil {
+		core.WriteError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	res := core.RunAdmin(r.Context(), "postsuper", "-d", id)
+	if res.Err != nil {
+		core.WriteError(w, http.StatusBadGateway, res.Detail())
+		return
+	}
+	slog.InfoContext(r.Context(), "Mail aus Queue gelöscht", "id", id)
+	core.WriteJSON(w, http.StatusOK, map[string]any{"ok": true, "id": id})
+}
+
+func handleQueueRetry(w http.ResponseWriter, r *http.Request) {
+	id, err := normalizeQueueID(r.PathValue("id"))
+	if err != nil {
+		core.WriteError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	res := core.RunAdmin(r.Context(), "postsuper", "-r", id)
+	if res.Err != nil {
+		core.WriteError(w, http.StatusBadGateway, res.Detail())
+		return
+	}
+	slog.InfoContext(r.Context(), "Mail erneut in Queue", "id", id)
+	core.WriteJSON(w, http.StatusOK, map[string]any{"ok": true, "id": id})
 }
