@@ -32,3 +32,14 @@ jobs:
       - name: npm audit
         working-directory: frontend
         run: npm audit --audit-level=moderate
+
+  apt-key:
+    runs-on: ubuntu-24.04
+    # Same sq as the release tooling.
+    container: debian:trixie
+    steps:
+      - name: Werkzeuge
+        run: apt-get update && apt-get install -y --no-install-recommends sq ca-certificates git
+      - uses: actions/checkout@v4
+      - name: Ablauf des Signierschlüssels (90 Tage Vorlauf)
+        run: ./scripts/check-key-expiry.sh 90
