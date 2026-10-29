@@ -74,7 +74,7 @@ func status(ctx context.Context) statusResponse {
 	resp.PublicIf, resp.PublicIP = env.PublicIf, env.PublicIP
 	resp.HubAddress, resp.Network = env.HubAddr.String(), env.Prefix.String()
 	resp.Forwarding = core.IPv4Forwarding()
-	resp.TableLive = core.RunAdmin(ctx, "nft", "list", "table", "ip", tableName).Err == nil
+	resp.TableLive = core.RunAdminQuiet(ctx, "nft", "list", "table", "ip", tableName).Err == nil
 	resp.Unit = strings.TrimSpace(core.Run(ctx, "systemctl", "is-enabled", unitName).Stdout)
 	resp.Targets = targets(env)
 	return resp

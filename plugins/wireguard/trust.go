@@ -451,7 +451,7 @@ func WaitTrustListening(timeout time.Duration) bool {
 }
 
 func ufwAvailable(ctx context.Context) bool {
-	return core.RunAdmin(ctx, "ufw", "status").Err == nil
+	return core.RunAdminQuiet(ctx, "ufw", "status").Err == nil
 }
 
 // LocalTrust describes this host's endpoint for client configurations.

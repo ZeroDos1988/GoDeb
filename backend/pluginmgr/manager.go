@@ -33,6 +33,13 @@ var execute = func(ctx context.Context, timeout time.Duration, name string, args
 	return core.RunAdminTimeout(ctx, timeout, name, args...)
 }
 
+// probe runs state queries (dpkg-query, systemctl is-*). Their non-zero
+// exit is an answer ("not installed", "disabled"), so it is not logged as
+// a failure. Tests replace it together with execute.
+var probe = func(ctx context.Context, _ time.Duration, name string, args ...string) core.CommandResult {
+	return core.RunAdminQuiet(ctx, name, args...)
+}
+
 // Descriptor is the on-disk plugin contract.
 type Descriptor struct {
 	ID              string   `json:"id"`
@@ -327,7 +334,7 @@ func disable(_ context.Context, _ string, desc Descriptor) error {
 }
 
 func packageInstalled(ctx context.Context, name string) (bool, error) {
-	res := execute(ctx, 15*time.Second, "dpkg-query", "-W", "-f", "${db:Status-Status}", name)
+	res := probe(ctx, 15*time.Second, "dpkg-query", "-W", "-f", "${db:Status-Status}", name)
 	if res.Err != nil {
 		if strings.Contains(res.Stderr, "no packages found") || strings.TrimSpace(res.Stdout) == "" {
 			return false, nil
@@ -338,7 +345,7 @@ func packageInstalled(ctx context.Context, name string) (bool, error) {
 }
 
 func unitProperty(ctx context.Context, verb, unit string) string {
-	res := execute(ctx, 15*time.Second, "systemctl", verb, unit)
+	res := probe(ctx, 15*time.Second, "systemctl", verb, unit)
 	value := strings.TrimSpace(res.Stdout)
 	if value == "" {
 		return "unknown"

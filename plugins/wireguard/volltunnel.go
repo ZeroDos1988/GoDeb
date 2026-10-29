@@ -187,7 +187,7 @@ func volltunnelStatus(ctx context.Context) volltunnelResponse {
 		resp.Detail = "Volltunnel nur auf dem Hub"
 		return resp
 	}
-	resp.TableLive = core.RunAdmin(ctx, "nft", "list", "table", "ip", volltunnelTable).Err == nil
+	resp.TableLive = core.RunAdminQuiet(ctx, "nft", "list", "table", "ip", volltunnelTable).Err == nil
 	resp.Unit = strings.TrimSpace(core.Run(ctx, "systemctl", "is-enabled", volltunnelUnit).Stdout)
 	return resp
 }

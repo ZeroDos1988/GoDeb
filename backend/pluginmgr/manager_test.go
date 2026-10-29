@@ -217,3 +217,10 @@ func TestArchitectureRestriction(t *testing.T) {
 		t.Fatal("plugin without architectures must run everywhere")
 	}
 }
+
+// In tests every probe goes through the fake execute of the test.
+func init() {
+	probe = func(ctx context.Context, timeout time.Duration, name string, args ...string) core.CommandResult {
+		return execute(ctx, timeout, name, args...)
+	}
+}

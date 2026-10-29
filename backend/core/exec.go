@@ -132,6 +132,16 @@ func RunAdmin(ctx context.Context, name string, args ...string) CommandResult {
 	return RunAdminInput(ctx, "", name, args...)
 }
 
+// RunAdminQuiet is RunAdmin for probes whose failure is an answer, not an
+// error (e.g. "nft list table" of a table that does not exist yet): a
+// failure only logs at debug, so the journal holds no false warnings.
+func RunAdminQuiet(ctx context.Context, name string, args ...string) CommandResult {
+	if os.Geteuid() == 0 {
+		return RunQuiet(ctx, name, args...)
+	}
+	return RunQuiet(ctx, "sudo", append([]string{"-n", "--", name}, args...)...)
+}
+
 // RunAdminInput is RunAdmin with stdin.
 func RunAdminInput(ctx context.Context, stdin, name string, args ...string) CommandResult {
 	if os.Geteuid() == 0 {
