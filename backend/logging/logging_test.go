@@ -136,3 +136,30 @@ func TestStatusRecorderFlushes(t *testing.T) {
 		t.Fatal("not flushed")
 	}
 }
+
+func TestAuditLogsErrorReason(t *testing.T) {
+	buf := captureDefault(t, slog.LevelInfo)
+	h := Audit(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/fail":
+			w.WriteHeader(http.StatusBadGateway)
+			_, _ = w.Write([]byte(`{"error":"nginx -t: unknown directive \"foo\""}`))
+		case "/ok":
+			_, _ = w.Write([]byte(`{"error":"not an error, status 200"}`))
+		}
+	}), AuditOptions{})
+	for _, p := range []string{"/fail", "/ok"} {
+		h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, p, nil))
+	}
+	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
+	if len(lines) != 2 {
+		t.Fatalf("lines = %q", lines)
+	}
+	if !strings.Contains(lines[0], `fehler="nginx -t: unknown directive \"foo\""`) {
+		t.Fatalf("reason missing: %q", lines[0])
+	}
+	if strings.Contains(lines[1], "fehler=") {
+		t.Fatalf("success with error field logged as failure: %q", lines[1])
+	}
+}

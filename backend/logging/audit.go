@@ -2,8 +2,10 @@ package logging
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 )
@@ -76,6 +78,9 @@ func Audit(next http.Handler, opts AuditOptions) http.Handler {
 				attrs = append(attrs, slog.String("ip", ip))
 			}
 		}
+		if reason := rec.errorText(); reason != "" {
+			attrs = append(attrs, slog.String("fehler", reason))
+		}
 		attrs = append(attrs, n.attrs()...)
 		slog.LogAttrs(ctx, level, msg, attrs...)
 	})
@@ -126,6 +131,26 @@ func Expected(ctx context.Context) {
 type statusRecorder struct {
 	http.ResponseWriter
 	status int
+	// body keeps the start of an error answer (status >= 400) so the
+	// audit line can say why a request failed, not only that it did.
+	body []byte
+}
+
+// maxErrorBody bounds what is kept of an error answer.
+const maxErrorBody = 2 << 10
+
+// errorText is the "error" field of a JSON error answer, shortened.
+func (s *statusRecorder) errorText() string {
+	if s.status < 400 || len(s.body) == 0 {
+		return ""
+	}
+	var payload struct {
+		Error string `json:"error"`
+	}
+	if json.Unmarshal(s.body, &payload) != nil {
+		return ""
+	}
+	return Truncate(strings.TrimSpace(payload.Error), 300)
 }
 
 func (s *statusRecorder) WriteHeader(code int) {
@@ -138,6 +163,9 @@ func (s *statusRecorder) WriteHeader(code int) {
 func (s *statusRecorder) Write(b []byte) (int, error) {
 	if s.status == 0 {
 		s.status = http.StatusOK
+	}
+	if s.status >= 400 && len(s.body) < maxErrorBody {
+		s.body = append(s.body, b[:min(len(b), maxErrorBody-len(s.body))]...)
 	}
 	return s.ResponseWriter.Write(b)
 }
