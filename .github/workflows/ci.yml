@@ -50,6 +50,13 @@ jobs:
       - name: go test
         run: go test ./...
 
+      - name: go test -race
+        # The race detector needs cgo; only for the tests, the package
+        # stays CGO_ENABLED=0.
+        env:
+          CGO_ENABLED: "1"
+        run: go test -race ./...
+
       - name: govulncheck
         # `go run pkg@version` ignores the toolchain line of go.mod, so pin it here.
         run: GOTOOLCHAIN="$(go mod edit -json | jq -r .Toolchain)" go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
