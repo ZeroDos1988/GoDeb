@@ -185,11 +185,10 @@ Ziel: auf einen Blick sehen, ob der Server gesund ist, ob der Traffic normal aus
 
 ## Entscheidungen
 
-- **Logo** (29.10.): mit Gemini entworfen (Schild mit „GD“, Schriftzug „GoDeb“ in Cyan/Rot), Dateien in `docs/brand/`.
-- **Anmeldung in drei Schritten, ohne Verraten von Benutzernamen** (29.10.): Schritt 1 antwortet für jeden Namen gleich; ein unbekannter Name zählt trotzdem sofort für fail2ban (5 Versuche in 10 Minuten, 10 Minuten Sperre, steigend). Kein Cookie-Banner, weil nur technisch nötige Cookies.
-
 Festgehalten, damit sie nicht wieder neu diskutiert werden.
 
+- **Logo** (29.10.): mit Gemini entworfen (Schild mit „GD“, Schriftzug „GoDeb“ in Cyan/Rot), Dateien in `docs/brand/`.
+- **Anmeldung in drei Schritten, ohne Verraten von Benutzernamen** (29.10.): Schritt 1 antwortet für jeden Namen gleich; ein unbekannter Name zählt trotzdem sofort für fail2ban (5 Versuche in 10 Minuten, 10 Minuten Sperre, steigend). Kein Cookie-Banner, weil nur technisch nötige Cookies.
 - **Ein Paket für alle Rollen** (20.10.): VPS und Heim-VM bekommen dasselbe GoDeb, Unterschiede nur über Setup-Rolle und eingeschaltete Plugins. Alle Plugins werden mitgeliefert und sind abschaltbar.
 - **Kein WireGuard-Server ohne Auswahl** (21.10.): Die Ersteinrichtung fragt die Rolle (Hub, Peer, ohne WireGuard) im Browser-Assistenten ab.
 - **Backups macht die Plattform** (21.10.): Proxmox bzw. Hetzner sichern die ganze Maschine, GoDeb hat keine eigene Backup-Funktion.
