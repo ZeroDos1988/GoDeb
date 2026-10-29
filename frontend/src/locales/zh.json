@@ -3,8 +3,13 @@
     "overview": "概览",
     "appearance": "外观",
     "logout": "退出",
-    "subtitle": "Debian 服务器",
-    "noPlugins": "plugins/ 目录中还没有插件。"
+    "groups": {
+      "system": "系统",
+      "network": "网络",
+      "apps": "应用",
+      "settings": "设置"
+    },
+    "setupSummary": "配置概览"
   },
   "common": {
     "refresh": "刷新",
@@ -58,11 +63,8 @@
   },
   "overview": {
     "title": "概览",
-    "lead": "此服务器的负载和状态。",
     "loading": "正在加载主机数据 …",
     "unreachable": "守护进程不可达。{{error}}",
-    "hostname": "主机名",
-    "os": "操作系统",
     "kernel": "内核",
     "sample": "部分主机数据是 Debian 示例值。",
     "cpu": "CPU",
@@ -74,7 +76,10 @@
     "blockedCount": "{{count}} 个已封禁",
     "noneBlocked": "没有封禁",
     "tunnelUp": "隧道已连接",
-    "tunnelDown": "隧道未连接"
+    "tunnelDown": "隧道未连接",
+    "allGood": "一切正常",
+    "attention_one": "{{count}} 项需要关注",
+    "attention_other": "{{count}} 项需要关注"
   },
   "panel": {
     "mocked": "示例数据：此服务器上缺少所需的程序或文件。",

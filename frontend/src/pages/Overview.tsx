@@ -64,10 +64,22 @@ export function Overview() {
   const tunnelUp = Boolean(peers.data?.interface?.up);
   const doctorIssues = (doctor.data?.findings ?? []).filter((f) => f.level === "FAIL" || f.level === "WARN");
 
+  const monitorIssues = (health.data?.findings ?? []).filter((f) => f.status !== "info");
+  const allGood = Boolean(health.data || doctor.data) && monitorIssues.length === 0 && doctorIssues.length === 0;
+  // The worse of monitor and doctor decides the colour of the dot.
+  const rank: Health["status"][] = ["ok", "info", "warning", "critical"];
+  const doctorStatus: Health["status"] = doctor.data?.fails ? "critical" : doctorIssues.length ? "warning" : "ok";
+  const monitorStatus = health.data?.status ?? "ok";
+  const status = rank[Math.max(rank.indexOf(monitorStatus), rank.indexOf(doctorStatus))];
+
   return (
     <section>
       <h1 className="text-2xl font-semibold tracking-tight">{t("overview.title")}</h1>
-      <p className="mt-1 max-w-2xl text-sm text-muted">{t("overview.lead")}</p>
+      {info ? (
+        <p className="mt-1 text-sm text-muted">
+          {info.os} · {t("overview.kernel")} {info.kernel}
+        </p>
+      ) : null}
 
       {query.loading && !info ? <p className="mt-6 text-sm text-muted">{t("overview.loading")}</p> : null}
       {query.error ? (
@@ -76,64 +88,53 @@ export function Overview() {
         </p>
       ) : null}
 
-      {health.data ? (
-        <a
-          href="#/monitor"
-          className="mt-6 flex max-w-3xl items-center gap-4 rounded-3xl border border-white/10 bg-slate-900/60 p-5 text-white backdrop-blur-xl transition-all duration-200 ease-in-out hover:bg-white/5"
-        >
-          <span className={`h-3 w-3 shrink-0 rounded-full ${healthDot[health.data.status]}`} aria-hidden="true" />
-          <span className="min-w-0 flex-1">
-            <span className="block text-xs tracking-wide text-white/60 uppercase">{t("monitor.tile")}</span>
-            <span className="block text-lg font-semibold">{t(`monitor.status.${health.data.status}`)}</span>
-            {(health.data.findings ?? [])
-              .filter((f) => f.status !== "info")
-              .slice(0, 3)
-              .map((f) => (
-                <span key={f.id} className="block truncate text-sm text-white/70">
-                  {f.title}
-                </span>
-              ))}
-          </span>
-          <span className="text-sm text-white/60">{t("monitor.tileOpen")} →</span>
-        </a>
-      ) : null}
-
-      {doctor.data || doctor.loading || doctor.error ? (
-        <article className="mt-4 max-w-3xl rounded-3xl border border-white/10 bg-slate-900/60 p-5 text-white backdrop-blur-xl">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 className="text-xs tracking-wide text-white/60 uppercase">{t("overview.doctor")}</h2>
-              <p className="mt-1 text-lg font-semibold">
-                {doctor.data
-                  ? doctor.data.fails + doctor.data.warns === 0
-                    ? t("overview.doctorOk")
-                    : t("overview.doctorSummary", { fails: doctor.data.fails, warns: doctor.data.warns })
-                  : doctor.loading
+      {/* One card for the state of the server: green and quiet while it
+          runs on its own, a short list as soon as something needs a look. */}
+      {health.data || doctor.data || doctor.loading ? (
+        <article className="mt-6 rounded-3xl border border-white/10 bg-slate-900/60 p-5 text-white backdrop-blur-xl">
+          <div className="flex flex-wrap items-center gap-4">
+            <span className={`h-3 w-3 shrink-0 rounded-full ${healthDot[status]}`} aria-hidden="true" />
+            <div className="min-w-0 flex-1">
+              <p className="text-lg font-semibold">
+                {allGood
+                  ? t("overview.allGood")
+                  : doctor.loading && !doctor.data && !health.data
                     ? t("common.loading")
-                    : doctor.error}
+                    : t("overview.attention", { count: monitorIssues.length + doctorIssues.length })}
               </p>
-              <p className="mt-1 text-xs text-white/50">{t("overview.doctorHint")}</p>
+              <p className="mt-0.5 hidden text-xs text-white/50 sm:block">{t("overview.doctorHint")}</p>
             </div>
             <button
               type="button"
-              onClick={doctor.reload}
+              onClick={() => {
+                doctor.reload();
+                reloadHealth();
+              }}
               disabled={doctor.loading}
-              className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm transition-all duration-200 enabled:hover:bg-white/10 disabled:opacity-50"
+              className="min-h-11 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm transition-all duration-200 enabled:hover:bg-white/10 disabled:opacity-50"
             >
               {t("overview.doctorOpen")}
             </button>
           </div>
-          {doctorIssues.length > 0 ? (
+          {monitorIssues.length + doctorIssues.length > 0 ? (
             <ul className="mt-4 grid gap-2">
-              {doctorIssues.slice(0, 12).map((f, i) => (
-                <li key={`${f.area}-${f.text}-${i}`} className="rounded-2xl border border-white/10 bg-slate-950/40 px-3 py-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className={`rounded-full px-2 py-0.5 text-xs ${doctorTone[f.level] ?? doctorTone.INFO}`}>
-                      {f.level}
+              {monitorIssues.map((f) => (
+                <li key={f.id}>
+                  <a
+                    href="#/monitor"
+                    className="flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-slate-950/40 px-3 py-2 text-sm transition-all duration-200 hover:bg-white/5"
+                  >
+                    <span className={`rounded-full px-2 py-0.5 text-xs ${doctorTone[f.status === "critical" ? "FAIL" : "WARN"]}`}>
+                      {t("monitor.tile")}
                     </span>
-                    <span className="text-xs text-white/50">{f.area}</span>
-                  </div>
-                  <p className="mt-1 text-sm">{f.text}</p>
+                    <span className="min-w-0 flex-1">{f.title}</span>
+                  </a>
+                </li>
+              ))}
+              {doctorIssues.slice(0, 12).map((f, i) => (
+                <li key={`${f.area}-${f.text}-${i}`} className="flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-slate-950/40 px-3 py-2 text-sm">
+                  <span className={`rounded-full px-2 py-0.5 text-xs ${doctorTone[f.level] ?? doctorTone.INFO}`}>{f.area}</span>
+                  <span className="min-w-0 flex-1">{f.text}</span>
                 </li>
               ))}
             </ul>
@@ -142,49 +143,36 @@ export function Overview() {
       ) : null}
 
       {info ? (
-        <>
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <MetricRing label={t("overview.cpu")} value={cpu} detail={`${Math.round(cpu)}%`} />
-            <MetricRing
-              label={t("overview.ram")}
-              value={percent(info.memUsed, info.memTotal)}
-              detail={`${formatBytes(info.memUsed)} / ${formatBytes(info.memTotal)}`}
-            />
-            <MetricRing
-              label={t("overview.disk")}
-              value={percent(info.diskUsed, info.diskTotal)}
-              detail={`${formatBytes(info.diskUsed)} / ${formatBytes(info.diskTotal)}`}
-            />
-            <article className="rounded-3xl border border-white/10 bg-slate-900/60 p-5 text-white shadow-xl backdrop-blur-xl transition-all duration-200 ease-in-out hover:-translate-y-0.5">
-              <div className="text-xs tracking-wide text-white/60 uppercase">{t("overview.peers")}</div>
-              <div className="mt-3 text-3xl font-semibold tracking-tight">{livePeers}</div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <StatusPill tone={tunnelUp ? "ok" : "idle"}>
-                  {tunnelUp ? t("overview.tunnelUp") : t("overview.tunnelDown")}
-                </StatusPill>
-                <StatusPill tone={blocked > 0 ? "bad" : "ok"}>
-                  {blocked > 0 ? t("overview.blockedCount", { count: blocked }) : t("overview.noneBlocked")}
-                </StatusPill>
-              </div>
-            </article>
-          </div>
-
-          <dl className="mt-4 max-w-3xl overflow-hidden rounded-3xl border border-white/10 bg-slate-900/60 text-white backdrop-blur-xl">
-            <Row label={t("overview.hostname")} value={info.hostname} />
-            <Row label={t("overview.os")} value={info.os} />
-            <Row label={t("overview.kernel")} value={info.kernel} />
-          </dl>
-          <a
-            href="#/setup-summary"
-            className="mt-4 inline-block rounded-2xl border border-white/10 bg-slate-900/60 px-4 py-2 text-sm text-white backdrop-blur-xl transition-all duration-200 hover:bg-white/10"
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <MetricRing label={t("overview.cpu")} value={cpu} detail={`${Math.round(cpu)}%`} />
+          <MetricRing
+            label={t("overview.ram")}
+            value={percent(info.memUsed, info.memTotal)}
+            detail={`${formatBytes(info.memUsed)} / ${formatBytes(info.memTotal)}`}
+          />
+          <MetricRing
+            label={t("overview.disk")}
+            value={percent(info.diskUsed, info.diskTotal)}
+            detail={`${formatBytes(info.diskUsed)} / ${formatBytes(info.diskTotal)}`}
+          />
+          <article className="rounded-3xl border border-white/10 bg-slate-900/60 p-5 text-white shadow-xl backdrop-blur-xl transition-all duration-200 ease-in-out hover:-translate-y-0.5"
           >
-            {t("summary.open")} →
-          </a>
-        </>
+            <div className="text-xs tracking-wide text-white/60 uppercase">{t("overview.peers")}</div>
+            <div className="mt-3 text-3xl font-semibold tracking-tight">{livePeers}</div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <StatusPill tone={tunnelUp ? "ok" : "idle"}>
+                {tunnelUp ? t("overview.tunnelUp") : t("overview.tunnelDown")}
+              </StatusPill>
+              <StatusPill tone={blocked > 0 ? "bad" : "ok"}>
+                {blocked > 0 ? t("overview.blockedCount", { count: blocked }) : t("overview.noneBlocked")}
+              </StatusPill>
+            </div>
+          </article>
+        </div>
       ) : null}
 
       {info?.mocked ? (
-        <p className="mt-4 max-w-3xl rounded-2xl border border-amber-300/20 bg-amber-950/30 px-4 py-3 text-sm text-amber-100">
+        <p className="mt-4 rounded-2xl border border-amber-300/20 bg-amber-950/30 px-4 py-3 text-sm text-amber-100">
           {t("overview.sample")}
           {info.detail ? ` ${info.detail}` : ""}
         </p>
@@ -198,13 +186,4 @@ function percent(used: number, total: number) {
     return 0;
   }
   return (used / total) * 100;
-}
-
-function Row({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
-  return (
-    <div className="grid gap-1 border-b border-white/10 px-4 py-3 transition-all duration-200 ease-in-out last:border-b-0 hover:bg-white/5 sm:grid-cols-[11rem_1fr] sm:gap-4">
-      <dt className="text-xs tracking-wide text-white/50 uppercase">{label}</dt>
-      <dd className={mono ? "font-mono text-sm" : "text-sm"}>{value}</dd>
-    </div>
-  );
 }

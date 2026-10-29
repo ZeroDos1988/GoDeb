@@ -328,7 +328,7 @@ Microsoft 365 und Google sind vorbereitet. Der Start nutzt PKCE und eine Nonce. 
 
 ## Plugins
 
-Jedes Plugin hat ein `manifest.json` (`id`, `name`, `description`, `icon`, `order`) und einen Go-Handler. Fehlt das Werkzeug auf dem Host, liefert die API Beispieldaten und setzt `mocked`, statt die Oberfläche zu leeren.
+Jedes Plugin hat ein `manifest.json` (`id`, `name`, `description`, `icon`, `group`, `order`). `group` (`system`, `network` oder `apps`, sonst `apps`) legt den Reiter in der Kopfzeile fest; innerhalb des Reiters stehen die Plugins links nach `order` und einen Go-Handler. Fehlt das Werkzeug auf dem Host, liefert die API Beispieldaten und setzt `mocked`, statt die Oberfläche zu leeren.
 
 | Plugin | Laufzeit | Metadaten |
 | --- | --- | --- |
@@ -482,7 +482,7 @@ Alle außer `status` antworten nach dem Abschluss mit `410`.
 | GET | `/api/health` | öffentlich, Dienst lebt |
 | GET | `/api/system` | Hostname, OS, Kernel, CPU, RAM, Platte |
 | GET | `/api/doctor` | Server-Diagnose wie `godeb doctor` (nur lesen; mit Agent über `/internal/doctor`, Ausgabe ohne Geheimnisse) |
-| GET | `/api/plugins` | Sidebar-Metadaten |
+| GET | `/api/plugins` | Navigations-Metadaten |
 | POST | `/api/auth/identify` | Schritt 1: Benutzername; gleiche Antwort für jeden Namen, unbekannte zählen als Fehlversuch |
 | POST | `/api/auth/login` | Passwort, setzt Pending-Cookie |
 | POST | `/api/auth/2fa/enroll` | TOTP anlegen |

@@ -3,8 +3,13 @@
     "overview": "نظرة عامة",
     "appearance": "المظهر",
     "logout": "تسجيل الخروج",
-    "subtitle": "خادم Debian",
-    "noPlugins": "لا توجد إضافات في مجلد plugins/ بعد."
+    "groups": {
+      "system": "النظام",
+      "network": "الشبكة",
+      "apps": "التطبيقات",
+      "settings": "الإعدادات"
+    },
+    "setupSummary": "ملخص الإعداد"
   },
   "common": {
     "refresh": "تحديث",
@@ -58,11 +63,8 @@
   },
   "overview": {
     "title": "نظرة عامة",
-    "lead": "حمل وحالة هذا الخادم.",
     "loading": "جارٍ تحميل بيانات المضيف …",
     "unreachable": "البرنامج الخفي غير متاح. {{error}}",
-    "hostname": "اسم المضيف",
-    "os": "نظام التشغيل",
     "kernel": "النواة",
     "sample": "جزء من بيانات المضيف قيمة نموذجية من Debian.",
     "cpu": "المعالج",
@@ -74,7 +76,10 @@
     "blockedCount": "{{count}} محظور",
     "noneBlocked": "لا يوجد حظر",
     "tunnelUp": "النفق نشط",
-    "tunnelDown": "النفق متوقف"
+    "tunnelDown": "النفق متوقف",
+    "allGood": "كل شيء على ما يرام",
+    "attention_one": "{{count}} بند يحتاج إلى انتباه",
+    "attention_other": "{{count}} بنود تحتاج إلى انتباه"
   },
   "panel": {
     "mocked": "بيانات تجريبية: البرنامج أو الملف المطلوب غير موجود على هذا الخادم.",

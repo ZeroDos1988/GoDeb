@@ -72,9 +72,6 @@ export function UserMenu({ username, version, onAppearance, onSessions, onLogout
           <div className="py-1">
             <Item onClick={pick(onAppearance)}>{t("nav.appearance")}</Item>
             <Item onClick={pick(onSessions)}>{t("nav.sessions")}</Item>
-            <Item href="#/setup-summary" onClick={() => setOpen(false)}>
-              {t("summary.open")}
-            </Item>
           </div>
           <div className="border-t border-white/10 py-1">
             <Item onClick={pick(onLogout)} danger>
@@ -88,14 +85,13 @@ export function UserMenu({ username, version, onAppearance, onSessions, onLogout
   );
 }
 
-function Item({ children, onClick, href, danger = false }: { children: ReactNode; onClick: () => void; href?: string; danger?: boolean }) {
-  const cls = `block w-full px-4 py-2 text-start transition-all duration-200 ease-in-out hover:bg-white/10 ${danger ? "text-rose-300" : "text-white/85"}`;
-  return href ? (
-    <a href={href} onClick={onClick} className={cls}>
-      {children}
-    </a>
-  ) : (
-    <button type="button" onClick={onClick} className={cls}>
+function Item({ children, onClick, danger = false }: { children: ReactNode; onClick: () => void; danger?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`block w-full px-4 py-2 text-start transition-all duration-200 ease-in-out hover:bg-white/10 ${danger ? "text-rose-300" : "text-white/85"}`}
+    >
       {children}
     </button>
   );

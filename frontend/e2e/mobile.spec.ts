@@ -5,6 +5,7 @@ const plugins = [
     id: "wireguard",
     name: "WireGuard",
     icon: "shield",
+    group: "network",
     description: "VPN",
     ready: true,
   },
@@ -12,6 +13,7 @@ const plugins = [
     id: "ufw",
     name: "Firewall",
     icon: "firewall",
+    group: "network",
     description: "UFW",
     ready: true,
   },
@@ -126,7 +128,7 @@ for (const hash of routes) {
   test(`no horizontal overflow on ${hash}`, async ({ page }) => {
     await mockApi(page);
     await page.goto(`/${hash}`);
-    await expect(page.getByText("GoDeb").first()).toBeVisible();
+    await expect(page.getByRole("navigation").first()).toBeVisible();
     // Wait for shell / panel content.
     await page.waitForTimeout(300);
     const overflow = await page.evaluate(() => {
@@ -143,14 +145,12 @@ for (const hash of routes) {
   });
 }
 
-test("mobile menu opens navigation", async ({ page }) => {
+test("tabs lead to the plugins of a group", async ({ page }) => {
   await mockApi(page);
   await page.goto("/#/");
-  const open = page.locator('button[aria-controls="godeb-nav"]');
-  await expect(open).toBeVisible();
-  await open.click();
-  const nav = page.locator("#godeb-nav");
-  await expect(nav.getByText("WireGuard")).toBeVisible();
-  await nav.getByText("WireGuard").click();
+  await page.getByRole("link", { name: /^(Netzwerk|Network)$/ }).click();
   await expect(page).toHaveURL(/#\/wireguard/);
+  const sub = page.getByRole("navigation", { name: /^(Netzwerk|Network)$/ });
+  await sub.getByText("Firewall").click();
+  await expect(page).toHaveURL(/#\/ufw/);
 });

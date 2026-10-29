@@ -17,187 +17,170 @@ type ShellProps = {
   children: ReactNode;
 };
 
-const glass =
-  "rounded-3xl border border-white/10 bg-slate-900/60 text-white shadow-xl backdrop-blur-xl transition-all duration-200 ease-in-out";
+type Health = { status: "ok" | "info" | "warning" | "critical" };
+
+// The tabs below the header, like the tab row of a GitHub repository.
+// Every plugin names its group in manifest.json; settings sit at the end.
+const groups = ["system", "network", "apps"] as const;
+type Tab = "overview" | (typeof groups)[number] | "settings";
+
+type SubLink = { href: string; route: string; icon: string; label: string };
+
+const healthDot: Record<Health["status"], string> = {
+  ok: "bg-[#0ca30c]",
+  info: "bg-[#0ca30c]",
+  warning: "bg-[#fab219]",
+  critical: "bg-[#d03b3b] animate-pulse",
+};
 
 export function Shell({ plugins, pluginsError, route, username, onLogout, children }: ShellProps) {
   const { t } = useTranslation();
   const [themeOpen, setThemeOpen] = useState(false);
   const [sessionsOpen, setSessionsOpen] = useState(false);
-  const [navOpen, setNavOpen] = useState(false);
   const health = useGet<{ version?: string }>("/api/health");
   // The host name tells VPS and home VM apart at a glance.
   const host = useGet<{ hostname?: string }>("/api/system").data?.hostname ?? "";
-  const menu = (
-    <UserMenu
-      username={username}
-      version={health.data?.version}
-      onAppearance={() => setThemeOpen(true)}
-      onSessions={() => setSessionsOpen(true)}
-      onLogout={onLogout}
-    />
-  );
-
-  // Close the drawer after a route change (hash navigation).
+  // Missing when the monitor plugin is off; the dot then hides.
+  const state = useGet<Health>("/api/plugins/monitor/summary");
+  const reloadState = state.reload;
   useEffect(() => {
-    setNavOpen(false);
-  }, [route]);
+    reloadState();
+  }, [route, reloadState]);
 
-  useEffect(() => {
-    if (!navOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setNavOpen(false);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [navOpen]);
+  const settingsLinks: SubLink[] = [
+    { href: "#/plugin-manager", route: "/plugin-manager", icon: "cogs", label: t("nav.plugins") },
+    { href: "#/setup-summary", route: "/setup-summary", icon: "log", label: t("nav.setupSummary") },
+  ];
+  const linksFor = (tab: Tab): SubLink[] => {
+    if (tab === "settings") return settingsLinks;
+    return plugins
+      .filter((plugin) => (plugin.group ?? "apps") === tab)
+      .map((plugin) => ({ href: `#/${plugin.id}`, route: `/${plugin.id}`, icon: plugin.icon, label: plugin.name }));
+  };
 
-  const nav = (
-    <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-3 pb-4 md:gap-0.5">
-      <NavLink href="#/" active={route === "/"} icon="server" label={t("nav.overview")} />
-      <NavLink
-        href="#/plugin-manager"
-        active={route === "/plugin-manager"}
-        icon="cogs"
-        label={t("nav.plugins")}
-      />
-      {plugins.map((plugin) => (
-        <NavLink
-          key={plugin.id}
-          href={`#/${plugin.id}`}
-          active={route === `/${plugin.id}`}
-          icon={plugin.icon}
-          label={plugin.name}
-        />
-      ))}
-      {pluginsError ? <p className="px-3 py-2 text-xs text-rose-300">{pluginsError}</p> : null}
-      {!pluginsError && plugins.length === 0 ? (
-        <p className="px-3 py-2 text-xs text-white/60">{t("nav.noPlugins")}</p>
-      ) : null}
-    </nav>
-  );
+  const current = plugins.find((plugin) => `/${plugin.id}` === route);
+  const tab: Tab = current
+    ? (current.group ?? "apps")
+    : settingsLinks.some((link) => link.route === route)
+      ? "settings"
+      : "overview";
+  const subLinks = tab === "overview" ? [] : linksFor(tab);
+
+  const tabs: { id: Tab; href: string; label: string }[] = [
+    { id: "overview", href: "#/", label: t("nav.overview") },
+    ...groups
+      .map((id) => ({ id, links: linksFor(id) }))
+      .filter((g) => g.links.length > 0)
+      .map((g) => ({ id: g.id, href: g.links[0].href, label: t(`nav.groups.${g.id}`) })),
+  ];
 
   return (
     <div className="min-h-screen bg-paper text-ink">
-      <div className="mx-auto grid min-h-screen max-w-[1600px] grid-cols-[minmax(0,1fr)] content-start gap-4 p-3 md:grid-cols-[17rem_minmax(0,1fr)] md:content-stretch md:p-4">
-        {/* Mobile top bar */}
-        <header className={`${glass} relative z-40 flex items-center gap-2 px-3 py-2 md:hidden`}>
-          <button
-            type="button"
-            className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-white/90 hover:bg-white/10"
-            aria-expanded={navOpen}
-            aria-controls="godeb-nav"
-            aria-label={navOpen ? t("nav.closeMenu") : t("nav.openMenu")}
-            onClick={() => setNavOpen((v) => !v)}
-          >
-            <MenuIcon open={navOpen} />
-          </button>
-          <div className="flex min-w-0 flex-1 items-center gap-2">
-            <Shield className="h-9 w-auto" />
-            <div className="min-w-0">
-              <Wordmark className="h-4 w-auto" />
-              <div className="truncate font-mono text-[10px] text-white/60">{host || t("nav.subtitle")}</div>
-            </div>
-          </div>
-          {menu}
-        </header>
-
-        {navOpen ? (
-          <button
-            type="button"
-            className="fixed inset-0 z-40 bg-black/50 md:hidden"
-            aria-label={t("nav.closeMenu")}
-            onClick={() => setNavOpen(false)}
-          />
-        ) : null}
-
-        <aside
-          id="godeb-nav"
-          className={`${glass} relative z-50 flex min-w-0 flex-col max-md:fixed max-md:inset-y-3 max-md:start-3 max-md:w-[min(18rem,calc(100vw-1.5rem))] max-md:transition-transform max-md:duration-200 ${
-            navOpen ? "max-md:translate-x-0" : "max-md:-translate-x-[120%]"
-          } md:sticky md:top-4 md:h-[calc(100vh-2rem)] md:translate-x-0`}
-        >
-          <div className="hidden items-center gap-3 px-5 py-5 md:flex">
-            <Shield className="h-11 w-auto" />
-            <div className="min-w-0 flex-1">
-              <Wordmark className="h-5 w-auto" />
-              <div className="mt-1 text-[11px] tracking-wide text-white/60 uppercase">
-                {t("nav.subtitle")}
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center justify-between px-4 py-3 md:hidden">
-            <span className="text-sm font-semibold">{t("nav.menu")}</span>
-            <button
-              type="button"
-              className="grid h-11 w-11 place-items-center rounded-2xl hover:bg-white/10"
-              aria-label={t("nav.closeMenu")}
-              onClick={() => setNavOpen(false)}
-            >
-              <MenuIcon open />
-            </button>
-          </div>
-          {nav}
-          {themeOpen ? <ThemeSettings onClose={() => setThemeOpen(false)} /> : null}
-          {sessionsOpen ? (
-            <SessionsDialog onClose={() => setSessionsOpen(false)} onSignedOut={onLogout} />
+      <div className="sticky top-0 z-30 border-b border-white/10 bg-slate-900/80 text-white backdrop-blur-xl">
+        <header className="mx-auto flex max-w-[1280px] items-center gap-3 px-3 pt-3 pb-2 md:px-6">
+          <a href="#/" className="flex min-w-0 items-center gap-2" aria-label={t("nav.overview")}>
+            <Shield className="h-8 w-auto" />
+            <Wordmark className="hidden h-4 w-auto sm:block" />
+          </a>
+          {host ? (
+            <>
+              <span aria-hidden className="text-white/30">
+                /
+              </span>
+              <span className="min-w-0 truncate font-mono text-sm font-semibold">{host}</span>
+            </>
           ) : null}
-        </aside>
-
-        <div className="min-w-0">
-          <header className="relative z-20 mb-4 hidden items-center justify-between gap-3 rounded-2xl border border-white/10 bg-slate-900/60 px-4 py-2 text-white backdrop-blur-xl transition-all duration-200 ease-in-out md:flex">
-            <div className="min-w-0 truncate font-mono text-sm text-white/80">{host}</div>
-            {menu}
-          </header>
-          <main>{children}</main>
-        </div>
+          <div className="ms-auto flex items-center gap-2">
+            {state.data ? (
+              <a
+                href="#/monitor"
+                title={t(`monitor.status.${state.data.status}`)}
+                className="flex min-h-9 items-center gap-2 rounded-full border border-white/10 px-3 text-xs text-white/80 transition-all duration-200 ease-in-out hover:bg-white/10"
+              >
+                <span className={`h-2 w-2 rounded-full ${healthDot[state.data.status]}`} aria-hidden />
+                <span className="hidden sm:inline">{t(`monitor.status.${state.data.status}`)}</span>
+              </a>
+            ) : null}
+            <UserMenu
+              username={username}
+              version={health.data?.version}
+              onAppearance={() => setThemeOpen(true)}
+              onSessions={() => setSessionsOpen(true)}
+              onLogout={onLogout}
+            />
+          </div>
+        </header>
+        <nav
+          aria-label={t("nav.menu")}
+          className="mx-auto flex max-w-[1280px] gap-1 overflow-x-auto px-1 [scrollbar-width:none] md:px-4"
+        >
+          {tabs.map((item) => (
+            <TabLink key={item.id} href={item.href} active={tab === item.id} label={item.label} />
+          ))}
+          <span className="ms-auto" />
+          <TabLink href="#/plugin-manager" active={tab === "settings"} label={t("nav.groups.settings")} />
+        </nav>
       </div>
+
+      <div className="mx-auto max-w-[1280px] px-3 py-5 md:px-6 md:py-6">
+        {pluginsError ? <p className="mb-4 text-sm text-debian">{pluginsError}</p> : null}
+        {subLinks.length > 0 ? (
+          <div className="grid gap-4 md:grid-cols-[13rem_minmax(0,1fr)] md:gap-6">
+            <nav
+              aria-label={t(`nav.groups.${tab}`)}
+              className="-mx-3 flex gap-1 overflow-x-auto px-3 [scrollbar-width:none] md:sticky md:top-28 md:mx-0 md:flex-col md:self-start md:overflow-visible md:px-0"
+            >
+              {subLinks.map((link) => (
+                <SubNavLink key={link.route} link={link} active={route === link.route} />
+              ))}
+            </nav>
+            <main className="min-w-0">{children}</main>
+          </div>
+        ) : (
+          <main className="min-w-0">{children}</main>
+        )}
+      </div>
+
+      {themeOpen ? <ThemeSettings onClose={() => setThemeOpen(false)} /> : null}
+      {sessionsOpen ? <SessionsDialog onClose={() => setSessionsOpen(false)} onSignedOut={onLogout} /> : null}
     </div>
   );
 }
 
-function NavLink({
-  href,
-  active,
-  icon,
-  label,
-}: {
-  href: string;
-  active: boolean;
-  icon: string;
-  label: string;
-}) {
+// TabLink is one entry of the tab row; the active tab gets the underline.
+function TabLink({ href, active, label }: { href: string; active: boolean; label: string }) {
   return (
     <a
       href={href}
-      className={`flex min-h-11 shrink-0 items-center gap-2 rounded-2xl px-3 py-2.5 text-sm md:min-h-9 md:py-1.5 transition-all duration-200 ease-in-out ${
-        active ? "bg-white/10 text-white" : "text-white/75 hover:bg-white/5"
+      aria-current={active ? "page" : undefined}
+      className={`relative flex min-h-11 shrink-0 items-center rounded-t-lg px-3 text-sm whitespace-nowrap transition-all duration-200 ease-in-out ${
+        active ? "font-semibold text-white" : "text-white/65 hover:text-white"
       }`}
     >
-      <PluginIcon name={icon} />
-      <span>{label}</span>
+      {label}
+      <span
+        aria-hidden
+        className={`absolute inset-x-2 bottom-0 h-0.5 rounded-full ${active ? "bg-debian" : "bg-transparent"}`}
+      />
     </a>
   );
 }
 
-function MenuIcon({ open }: { open?: boolean }) {
+// SubNavLink is the left list inside a tab (a row of chips on phones),
+// like the sidebar of GitHub's settings pages.
+function SubNavLink({ link, active }: { link: SubLink; active: boolean }) {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      {open ? (
-        <path
-          d="M6 6l12 12M18 6L6 18"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-        />
-      ) : (
-        <path
-          d="M4 7h16M4 12h16M4 17h16"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-        />
-      )}
-    </svg>
+    <a
+      href={link.href}
+      aria-current={active ? "page" : undefined}
+      className={`flex min-h-11 shrink-0 items-center gap-2 rounded-2xl px-3 text-sm whitespace-nowrap transition-all duration-200 ease-in-out md:min-h-9 ${
+        active
+          ? "bg-slate-900/60 font-medium text-white md:border-s-2 md:border-debian"
+          : "text-muted hover:bg-slate-900/30 hover:text-ink"
+      }`}
+    >
+      <PluginIcon name={link.icon} />
+      <span>{link.label}</span>
+    </a>
   );
 }

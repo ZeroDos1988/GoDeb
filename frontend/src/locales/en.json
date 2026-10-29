@@ -4,12 +4,15 @@
     "plugins": "Plugins",
     "appearance": "Appearance",
     "logout": "Sign out",
-    "subtitle": "Debian Server",
-    "noPlugins": "No plugins in the plugins/ folder yet.",
     "sessions": "Sessions",
     "menu": "Navigation",
-    "openMenu": "Open menu",
-    "closeMenu": "Close menu"
+    "groups": {
+      "system": "System",
+      "network": "Network",
+      "apps": "Applications",
+      "settings": "Settings"
+    },
+    "setupSummary": "Setup summary"
   },
   "user": {
     "menu": "Account {{name}}: open menu",
@@ -83,11 +86,8 @@
   },
   "overview": {
     "title": "Overview",
-    "lead": "Load and health of this server.",
     "loading": "Loading host data …",
     "unreachable": "Daemon unreachable. {{error}}",
-    "hostname": "Hostname",
-    "os": "Operating system",
     "kernel": "Kernel",
     "sample": "Part of the host data is a Debian sample value.",
     "cpu": "CPU",
@@ -100,11 +100,11 @@
     "noneBlocked": "None blocked",
     "tunnelUp": "Tunnel up",
     "tunnelDown": "Tunnel down",
-    "doctor": "Server diagnosis",
-    "doctorOk": "No failures or warnings",
-    "doctorSummary": "{{fails}} failures, {{warns}} warnings",
     "doctorHint": "Same check as sudo godeb doctor. Output without secrets.",
-    "doctorOpen": "Refresh"
+    "doctorOpen": "Refresh",
+    "allGood": "All good",
+    "attention_one": "{{count}} item needs attention",
+    "attention_other": "{{count}} items need attention"
   },
   "panel": {
     "mocked": "Sample data: the program or file this page needs is missing on this server.",
@@ -215,7 +215,6 @@
     "events": "Events",
     "noEvents": "No events in this time range.",
     "tile": "Health",
-    "tileOpen": "Open monitoring",
     "games": {
       "unavailable": "The Steam plugin is not active.",
       "none": "No game server set up yet.",
@@ -1175,7 +1174,6 @@
     "title": "Setup of {{host}}",
     "generated": "As of {{date}} · GoDeb {{version}}",
     "print": "Print / save as PDF",
-    "open": "Setup overview (print, PDF)",
     "reach": "How to reach GoDeb",
     "lanCert": "Certificate SHA-256",
     "server": "Server",

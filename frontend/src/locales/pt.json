@@ -3,8 +3,13 @@
     "overview": "Visão geral",
     "appearance": "Aparência",
     "logout": "Sair",
-    "subtitle": "Servidor Debian",
-    "noPlugins": "Ainda não há plugins na pasta plugins/."
+    "groups": {
+      "system": "Sistema",
+      "network": "Rede",
+      "apps": "Aplicações",
+      "settings": "Configurações"
+    },
+    "setupSummary": "Resumo da configuração"
   },
   "common": {
     "refresh": "Atualizar",
@@ -58,11 +63,8 @@
   },
   "overview": {
     "title": "Visão geral",
-    "lead": "Carga e estado deste servidor.",
     "loading": "A carregar dados do anfitrião …",
     "unreachable": "Daemon inacessível. {{error}}",
-    "hostname": "Hostname",
-    "os": "Sistema operativo",
     "kernel": "Kernel",
     "sample": "Parte dos dados do anfitrião é um valor de exemplo Debian.",
     "cpu": "CPU",
@@ -74,7 +76,10 @@
     "blockedCount": "{{count}} bloqueados",
     "noneBlocked": "Sem bloqueios",
     "tunnelUp": "Túnel ativo",
-    "tunnelDown": "Túnel inativo"
+    "tunnelDown": "Túnel inativo",
+    "allGood": "Tudo em ordem",
+    "attention_one": "{{count}} item precisa de atenção",
+    "attention_other": "{{count}} itens precisam de atenção"
   },
   "panel": {
     "mocked": "Dados de exemplo: falta neste servidor o programa ou o ficheiro necessário.",

@@ -4,12 +4,15 @@
     "plugins": "Plugins",
     "appearance": "Darstellung",
     "logout": "Abmelden",
-    "subtitle": "Debian Server",
-    "noPlugins": "Noch keine Plugins im Ordner plugins/.",
     "sessions": "Sitzungen",
     "menu": "Navigation",
-    "openMenu": "Menü öffnen",
-    "closeMenu": "Menü schließen"
+    "groups": {
+      "system": "System",
+      "network": "Netzwerk",
+      "apps": "Anwendungen",
+      "settings": "Einstellungen"
+    },
+    "setupSummary": "Einrichtungsübersicht"
   },
   "user": {
     "menu": "Konto {{name}}: Menü öffnen",
@@ -83,11 +86,8 @@
   },
   "overview": {
     "title": "Übersicht",
-    "lead": "Auslastung und Zustand dieses Servers.",
     "loading": "Lade Hostdaten …",
     "unreachable": "Daemon nicht erreichbar. {{error}}",
-    "hostname": "Hostname",
-    "os": "Betriebssystem",
     "kernel": "Kernel",
     "sample": "Ein Teil der Hostdaten ist ein Debian-Beispielwert.",
     "cpu": "CPU",
@@ -100,11 +100,11 @@
     "noneBlocked": "Keine Sperre",
     "tunnelUp": "Tunnel aktiv",
     "tunnelDown": "Tunnel inaktiv",
-    "doctor": "Server-Diagnose",
-    "doctorOk": "Keine Fehler oder Warnungen",
-    "doctorSummary": "{{fails}} Fehler, {{warns}} Warnungen",
     "doctorHint": "Dieselbe Prüfung wie sudo godeb doctor. Ausgabe ohne Geheimnisse.",
-    "doctorOpen": "Aktualisieren"
+    "doctorOpen": "Aktualisieren",
+    "allGood": "Alles in Ordnung",
+    "attention_one": "{{count}} Punkt braucht Aufmerksamkeit",
+    "attention_other": "{{count}} Punkte brauchen Aufmerksamkeit"
   },
   "panel": {
     "mocked": "Beispieldaten: Auf diesem Server fehlt das nötige Programm oder die Datei.",
@@ -215,7 +215,6 @@
     "events": "Ereignisse",
     "noEvents": "Keine Ereignisse in diesem Zeitraum.",
     "tile": "Zustand",
-    "tileOpen": "Zur Überwachung",
     "games": {
       "unavailable": "Das Steam-Plugin ist nicht aktiv.",
       "none": "Noch kein Spielserver eingerichtet.",
@@ -1175,7 +1174,6 @@
     "title": "Einrichtung von {{host}}",
     "generated": "Stand {{date}} · GoDeb {{version}}",
     "print": "Drucken / als PDF speichern",
-    "open": "Einrichtungsübersicht (drucken, als PDF)",
     "reach": "So erreichst du GoDeb",
     "lanCert": "Zertifikat SHA-256",
     "server": "Server",

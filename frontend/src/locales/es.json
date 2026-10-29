@@ -3,8 +3,13 @@
     "overview": "Resumen",
     "appearance": "Apariencia",
     "logout": "Salir",
-    "subtitle": "Servidor Debian",
-    "noPlugins": "Todavía no hay plugins en la carpeta plugins/."
+    "groups": {
+      "system": "Sistema",
+      "network": "Red",
+      "apps": "Aplicaciones",
+      "settings": "Ajustes"
+    },
+    "setupSummary": "Resumen de configuración"
   },
   "common": {
     "refresh": "Actualizar",
@@ -58,11 +63,8 @@
   },
   "overview": {
     "title": "Resumen",
-    "lead": "Carga y estado de este servidor.",
     "loading": "Cargando datos del host …",
     "unreachable": "Demonio no disponible. {{error}}",
-    "hostname": "Hostname",
-    "os": "Sistema operativo",
     "kernel": "Kernel",
     "sample": "Parte de los datos del host es un valor de ejemplo de Debian.",
     "cpu": "CPU",
@@ -74,7 +76,10 @@
     "blockedCount": "{{count}} bloqueadas",
     "noneBlocked": "Sin bloqueos",
     "tunnelUp": "Túnel activo",
-    "tunnelDown": "Túnel inactivo"
+    "tunnelDown": "Túnel inactivo",
+    "allGood": "Todo en orden",
+    "attention_one": "{{count}} punto requiere atención",
+    "attention_other": "{{count}} puntos requieren atención"
   },
   "panel": {
     "mocked": "Datos de ejemplo: falta en este servidor el programa o el archivo necesario.",

@@ -3,8 +3,13 @@
     "overview": "Aperçu",
     "appearance": "Apparence",
     "logout": "Déconnexion",
-    "subtitle": "Serveur Debian",
-    "noPlugins": "Aucun plugin dans le dossier plugins/."
+    "groups": {
+      "system": "Système",
+      "network": "Réseau",
+      "apps": "Applications",
+      "settings": "Paramètres"
+    },
+    "setupSummary": "Récapitulatif"
   },
   "common": {
     "refresh": "Actualiser",
@@ -58,11 +63,8 @@
   },
   "overview": {
     "title": "Aperçu",
-    "lead": "Charge et état de ce serveur.",
     "loading": "Chargement des données de l'hôte …",
     "unreachable": "Démon injoignable. {{error}}",
-    "hostname": "Nom d'hôte",
-    "os": "Système d'exploitation",
     "kernel": "Noyau",
     "sample": "Une partie des données est une valeur d'exemple Debian.",
     "cpu": "CPU",
@@ -74,7 +76,10 @@
     "blockedCount": "{{count}} bloquées",
     "noneBlocked": "Aucun blocage",
     "tunnelUp": "Tunnel actif",
-    "tunnelDown": "Tunnel inactif"
+    "tunnelDown": "Tunnel inactif",
+    "allGood": "Tout va bien",
+    "attention_one": "{{count}} point demande votre attention",
+    "attention_other": "{{count}} points demandent votre attention"
   },
   "panel": {
     "mocked": "Données d’exemple : le programme ou le fichier nécessaire manque sur ce serveur.",

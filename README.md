@@ -44,7 +44,7 @@ Die Android-App trennt den Tunnel automatisch, sobald das Handy im Heim-WLAN ist
 
 ## Plugins
 
-Jedes Plugin lässt sich im Plugin-Manager abschalten. Es verschwindet dann aus der Seitenleiste, und seine API antwortet mit 404.
+Jedes Plugin lässt sich im Plugin-Manager abschalten. Es verschwindet dann aus der Navigation, und seine API antwortet mit 404.
 
 | Plugin | Was es tut |
 | --- | --- |

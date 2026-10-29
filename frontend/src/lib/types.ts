@@ -3,6 +3,7 @@ export type PluginMeta = {
   name: string;
   description: string;
   icon: string;
+  group: "system" | "network" | "apps";
   order: number;
   ready: boolean;
 };
