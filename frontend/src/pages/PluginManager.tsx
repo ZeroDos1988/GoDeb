@@ -70,7 +70,6 @@ export function PluginManager({ onChanged }: { onChanged?: () => void }) {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h2 className="text-lg font-semibold tracking-tight">{plugin.name}</h2>
-                  <p className="mt-1 font-mono text-xs text-white/50">{plugin.id}</p>
                 </div>
                 <Toggle
                   checked={plugin.enabled}
@@ -86,13 +85,16 @@ export function PluginManager({ onChanged }: { onChanged?: () => void }) {
                 <Badge tone={plugin.enabled ? "ok" : "idle"}>
                   {plugin.enabled ? t("pluginManager.enabled") : t("pluginManager.disabled")}
                 </Badge>
-                {plugin.services.map((service) => (
-                  <Badge key={service.unit} tone={service.active === "active" ? "ok" : "idle"}>
-                    {`${service.unit} · ${service.active}`}
-                  </Badge>
-                ))}
+                {/* Service state only means something once the packages are there. */}
+                {plugin.installed
+                  ? plugin.services.map((service) => (
+                      <Badge key={service.unit} tone={service.active === "active" ? "ok" : "idle"}>
+                        {`${service.unit} · ${service.active}`}
+                      </Badge>
+                    ))
+                  : null}
               </div>
-              {plugin.aptDependencies.length > 0 ? (
+              {plugin.aptDependencies.length > 0 && !plugin.dependenciesReady && plugin.supported ? (
                 <p className="mt-4 text-xs text-white/60">
                   {t("pluginManager.deps")}: {plugin.aptDependencies.join(", ")}
                 </p>

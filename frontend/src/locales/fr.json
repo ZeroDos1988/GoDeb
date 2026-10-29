@@ -4,9 +4,7 @@
     "appearance": "Apparence",
     "logout": "Déconnexion",
     "subtitle": "Serveur Debian",
-    "footer": "Les métadonnées sont dans SQLite. L'état d'exécution vient du système.",
-    "noPlugins": "Aucun plugin dans le dossier plugins/.",
-    "serverAdmin": "Administration du serveur"
+    "noPlugins": "Aucun plugin dans le dossier plugins/."
   },
   "common": {
     "refresh": "Actualiser",
@@ -60,13 +58,12 @@
   },
   "overview": {
     "title": "Aperçu",
-    "lead": "Charge et identité de cet hôte. Les données d'exécution viennent du système.",
+    "lead": "Charge et état de ce serveur.",
     "loading": "Chargement des données de l'hôte …",
     "unreachable": "Démon injoignable. {{error}}",
     "hostname": "Nom d'hôte",
     "os": "Système d'exploitation",
     "kernel": "Noyau",
-    "source": "Source",
     "sample": "Une partie des données est une valeur d'exemple Debian.",
     "cpu": "CPU",
     "ram": "RAM",
@@ -80,7 +77,8 @@
     "tunnelDown": "Tunnel inactif"
   },
   "panel": {
-    "mocked": "Données d'exemple. Le chemin ou la commande Debian n'a pas pu s'exécuter sur cet hôte."
+    "mocked": "Données d’exemple : le programme ou le fichier nécessaire manque sur ce serveur.",
+    "technical": "Détails techniques"
   },
   "app": {
     "unknown": "Plugin inconnu",
@@ -90,7 +88,7 @@
   },
   "fail2ban": {
     "title": "Fail2ban",
-    "description": "Jails issues de fail2ban-client status. Le déblocage vaut pour toutes les jails.",
+    "description": "Adresses bannies après trop d’échecs (connexion, SSH, mail).",
     "none": "Aucune jail active.",
     "blockedTitle": "Adresses IP bloquées",
     "noneBlocked": "Aucune IP n'est bloquée pour le moment.",
@@ -117,7 +115,7 @@
   },
   "certbot": {
     "title": "Certbot",
-    "description": "Métadonnées des certificats dans /etc/letsencrypt/live. Les clés privées ne sont pas lues.",
+    "description": "Certificats Let’s Encrypt de ce serveur et leur date d’expiration.",
     "empty": "Aucun certificat dans /etc/letsencrypt/live.",
     "name": "Nom",
     "subject": "Subject",
@@ -127,7 +125,7 @@
   },
   "systemd": {
     "title": "Systemd",
-    "description": "Services chargés. Démarrage et arrêt passent par systemctl.",
+    "description": "Tous les services de ce serveur.",
     "filter": "Filtre",
     "failed": "Action échouée",
     "unit": "Unit",
@@ -135,11 +133,12 @@
     "sub": "Sub",
     "descriptionCol": "Description",
     "start": "Démarrer",
-    "stop": "Arrêter"
+    "stop": "Arrêter",
+    "overviewDescription": "Les services importants de ce serveur avec état et consommation."
   },
   "ufw": {
     "title": "UFW",
-    "description": "État du pare-feu via ufw status. Les nouvelles règles utilisent ufw --force.",
+    "description": "Règles du pare-feu de ce serveur.",
     "status": "État",
     "rule": "Règle",
     "allow": "Autoriser",
@@ -153,7 +152,7 @@
   },
   "wg": {
     "title": "WireGuard",
-    "description": "Pairs de {{path}} et wg show. Les configurations client sont dans /etc/wireguard/clients.",
+    "description": "Tunnel et appareils. Les nouveaux appareils reçoivent un code QR ou un fichier.",
     "status": "État",
     "up": "{{name}} actif",
     "down": "{{name}} inactif",
@@ -256,5 +255,33 @@
     "time": "Heure",
     "status": "État",
     "reason": "Raison"
+  },
+  "cron": {
+    "description": "Tâches planifiées de ce serveur. Les nouvelles tâches tournent comme minuteurs systemd, uniquement avec des commandes autorisées.",
+    "last": "Dernière exécution"
+  },
+  "monitor": {
+    "description": "État du serveur, historique et événements."
+  },
+  "mail": {
+    "description": "Serveur mail avec domaines, boîtes, redirections et filtre anti-spam."
+  },
+  "postgres": {
+    "description": "Bases de données et utilisateurs. Accessibles uniquement depuis ce serveur, jamais publics."
+  },
+  "logs": {
+    "description": "Connexions, actions et erreurs de GoDeb."
+  },
+  "steam": {
+    "description": "Installer, mettre à jour et configurer des serveurs de jeu."
+  },
+  "websites": {
+    "description": "Vos sites web et proxys vers des services internes, avec certificat Let’s Encrypt."
+  },
+  "pf": {
+    "description": "Rediriger des ports publics de ce serveur vers un site, p. ex. le serveur de jeu de la VM à la maison."
+  },
+  "pluginManager": {
+    "lead": "Activer et désactiver les plugins. Un plugin désactivé disparaît du menu ; les services derrière (p. ex. WireGuard ou le pare-feu) continuent de tourner."
   }
 }

@@ -173,7 +173,6 @@ export function Overview() {
             <Row label={t("overview.hostname")} value={info.hostname} />
             <Row label={t("overview.os")} value={info.os} />
             <Row label={t("overview.kernel")} value={info.kernel} />
-            <Row label={t("overview.source")} value="hostname · uname -r · /etc/os-release · /proc" mono />
           </dl>
           <a
             href="#/setup-summary"

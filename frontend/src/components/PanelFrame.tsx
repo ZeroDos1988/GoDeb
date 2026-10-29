@@ -48,17 +48,26 @@ export function PanelFrame({
         </button>
       </div>
 
-      {command && command.length > 0 ? (
-        <p className="mt-4 overflow-x-auto rounded-2xl border border-white/10 bg-slate-900/60 px-3 py-2 font-mono text-xs text-white/80 backdrop-blur-xl">
-          $ {command.join(" ")}
-        </p>
+      {mocked ? (
+        <p className="mt-4 rounded-2xl border border-amber-300/20 bg-amber-950/30 px-4 py-3 text-sm text-amber-100">{t("panel.mocked")}</p>
       ) : null}
 
-      {mocked ? (
-        <p className="mt-4 rounded-2xl border border-amber-300/20 bg-amber-950/30 px-4 py-3 text-sm text-amber-100">
-          {t("panel.mocked")}
-          {detail ? ` ${detail}` : ""}
-        </p>
+      {/* What GoDeb ran and why sample data is shown: for diagnosis only,
+          folded away so the page shows what the admin needs. */}
+      {(command && command.length > 0) || (mocked && detail) ? (
+        <details className="group mt-3 text-xs text-muted">
+          <summary className="w-fit cursor-pointer select-none transition-all duration-200 ease-in-out hover:text-debian">
+            {t("panel.technical")}
+          </summary>
+          <div className="mt-2 space-y-2">
+            {command && command.length > 0 ? (
+              <p className="overflow-x-auto rounded-2xl border border-white/10 bg-slate-900/60 px-3 py-2 font-mono text-white/80 backdrop-blur-xl">
+                $ {command.join(" ")}
+              </p>
+            ) : null}
+            {mocked && detail ? <p className="font-mono break-words">{detail}</p> : null}
+          </div>
+        </details>
       ) : null}
 
       {loading && !children ? <p className="mt-6 text-sm text-muted">{t("common.loading")}</p> : null}

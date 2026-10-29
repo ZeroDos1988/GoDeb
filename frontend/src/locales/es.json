@@ -4,9 +4,7 @@
     "appearance": "Apariencia",
     "logout": "Salir",
     "subtitle": "Servidor Debian",
-    "footer": "Los metadatos están en SQLite. El estado en ejecución viene del sistema operativo.",
-    "noPlugins": "Todavía no hay plugins en la carpeta plugins/.",
-    "serverAdmin": "Administración del servidor"
+    "noPlugins": "Todavía no hay plugins en la carpeta plugins/."
   },
   "common": {
     "refresh": "Actualizar",
@@ -60,13 +58,12 @@
   },
   "overview": {
     "title": "Resumen",
-    "lead": "Carga e identidad de este host. Los datos en ejecución vienen del sistema operativo.",
+    "lead": "Carga y estado de este servidor.",
     "loading": "Cargando datos del host …",
     "unreachable": "Demonio no disponible. {{error}}",
     "hostname": "Hostname",
     "os": "Sistema operativo",
     "kernel": "Kernel",
-    "source": "Fuente",
     "sample": "Parte de los datos del host es un valor de ejemplo de Debian.",
     "cpu": "CPU",
     "ram": "RAM",
@@ -80,7 +77,8 @@
     "tunnelDown": "Túnel inactivo"
   },
   "panel": {
-    "mocked": "Datos de ejemplo. La ruta o el comando de Debian no se pudo ejecutar en este host."
+    "mocked": "Datos de ejemplo: falta en este servidor el programa o el archivo necesario.",
+    "technical": "Detalles técnicos"
   },
   "app": {
     "unknown": "Plugin desconocido",
@@ -90,7 +88,7 @@
   },
   "fail2ban": {
     "title": "Fail2ban",
-    "description": "Jails de fail2ban-client status. El desbloqueo vale para todas las jails.",
+    "description": "Direcciones bloqueadas tras demasiados intentos fallidos (acceso, SSH, correo).",
     "none": "No hay jails activas.",
     "blockedTitle": "Direcciones IP bloqueadas",
     "noneBlocked": "Ahora mismo no hay ninguna IP bloqueada.",
@@ -117,7 +115,7 @@
   },
   "certbot": {
     "title": "Certbot",
-    "description": "Metadatos de certificados en /etc/letsencrypt/live. No se leen las claves privadas.",
+    "description": "Certificados de Let’s Encrypt de este servidor y cuándo caducan.",
     "empty": "No hay certificados en /etc/letsencrypt/live.",
     "name": "Nombre",
     "subject": "Subject",
@@ -127,7 +125,7 @@
   },
   "systemd": {
     "title": "Systemd",
-    "description": "Servicios cargados. Inicio y parada usan systemctl.",
+    "description": "Todos los servicios de este servidor.",
     "filter": "Filtro",
     "failed": "La acción ha fallado",
     "unit": "Unit",
@@ -135,11 +133,12 @@
     "sub": "Sub",
     "descriptionCol": "Descripción",
     "start": "Iniciar",
-    "stop": "Parar"
+    "stop": "Parar",
+    "overviewDescription": "Los servicios importantes de este servidor con estado y consumo."
   },
   "ufw": {
     "title": "UFW",
-    "description": "Estado del cortafuegos con ufw status. Las reglas nuevas usan ufw --force.",
+    "description": "Reglas del cortafuegos de este servidor.",
     "status": "Estado",
     "rule": "Regla",
     "allow": "Permitir",
@@ -153,7 +152,7 @@
   },
   "wg": {
     "title": "WireGuard",
-    "description": "Peers de {{path}} y wg show. Las configuraciones de cliente están en /etc/wireguard/clients.",
+    "description": "Túnel y dispositivos. Los nuevos reciben un código QR o un archivo.",
     "status": "Estado",
     "up": "{{name}} activo",
     "down": "{{name}} inactivo",
@@ -256,5 +255,33 @@
     "time": "Hora",
     "status": "Estado",
     "reason": "Motivo"
+  },
+  "cron": {
+    "description": "Tareas programadas de este servidor. Las nuevas se ejecutan como temporizadores de systemd y solo con comandos aprobados.",
+    "last": "Última ejecución"
+  },
+  "monitor": {
+    "description": "Estado del servidor, historial y eventos."
+  },
+  "mail": {
+    "description": "Servidor de correo con dominios, buzones, reenvíos y filtro de spam."
+  },
+  "postgres": {
+    "description": "Bases de datos y usuarios. Solo accesibles desde este servidor, nunca públicas."
+  },
+  "logs": {
+    "description": "Accesos, acciones y errores de GoDeb."
+  },
+  "steam": {
+    "description": "Instalar, actualizar y configurar servidores de juegos."
+  },
+  "websites": {
+    "description": "Sitios web propios y proxies a servicios internos, con certificado de Let’s Encrypt."
+  },
+  "pf": {
+    "description": "Reenviar puertos públicos de este servidor a una ubicación, p. ej. el servidor de juegos en la VM de casa."
+  },
+  "pluginManager": {
+    "lead": "Activar y desactivar plugins. Un plugin desactivado desaparece del menú; los servicios que hay detrás (p. ej. WireGuard o el cortafuegos) siguen funcionando."
   }
 }

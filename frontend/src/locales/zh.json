@@ -4,9 +4,7 @@
     "appearance": "外观",
     "logout": "退出",
     "subtitle": "Debian 服务器",
-    "footer": "元数据保存在 SQLite。运行状态来自操作系统。",
-    "noPlugins": "plugins/ 目录中还没有插件。",
-    "serverAdmin": "服务器管理"
+    "noPlugins": "plugins/ 目录中还没有插件。"
   },
   "common": {
     "refresh": "刷新",
@@ -60,13 +58,12 @@
   },
   "overview": {
     "title": "概览",
-    "lead": "本机的负载与身份。运行数据来自操作系统。",
+    "lead": "此服务器的负载和状态。",
     "loading": "正在加载主机数据 …",
     "unreachable": "守护进程不可达。{{error}}",
     "hostname": "主机名",
     "os": "操作系统",
     "kernel": "内核",
-    "source": "来源",
     "sample": "部分主机数据是 Debian 示例值。",
     "cpu": "CPU",
     "ram": "内存",
@@ -80,7 +77,8 @@
     "tunnelDown": "隧道未连接"
   },
   "panel": {
-    "mocked": "示例数据。此主机上无法执行对应的 Debian 路径或命令。"
+    "mocked": "示例数据：此服务器上缺少所需的程序或文件。",
+    "technical": "技术详情"
   },
   "app": {
     "unknown": "未知插件",
@@ -90,7 +88,7 @@
   },
   "fail2ban": {
     "title": "Fail2ban",
-    "description": "来自 fail2ban-client status 的 jail。解除封禁对所有 jail 生效。",
+    "description": "因失败次数过多而被封禁的地址（登录、SSH、邮件）。",
     "none": "没有活动的 jail。",
     "blockedTitle": "已封禁的 IP 地址",
     "noneBlocked": "当前没有被封禁的 IP。",
@@ -117,7 +115,7 @@
   },
   "certbot": {
     "title": "Certbot",
-    "description": "来自 /etc/letsencrypt/live 的证书元数据。不读取私钥。",
+    "description": "此服务器的 Let’s Encrypt 证书及其到期时间。",
     "empty": "/etc/letsencrypt/live 中没有证书。",
     "name": "名称",
     "subject": "主题",
@@ -127,7 +125,7 @@
   },
   "systemd": {
     "title": "Systemd",
-    "description": "已加载的服务。启动和停止通过 systemctl 执行。",
+    "description": "此服务器的所有服务。",
     "filter": "筛选",
     "failed": "操作失败",
     "unit": "单元",
@@ -135,11 +133,12 @@
     "sub": "子状态",
     "descriptionCol": "描述",
     "start": "启动",
-    "stop": "停止"
+    "stop": "停止",
+    "overviewDescription": "此服务器的重要服务及其状态和资源使用。"
   },
   "ufw": {
     "title": "UFW",
-    "description": "来自 ufw status 的防火墙状态。新规则通过 ufw --force 设置。",
+    "description": "此服务器的防火墙规则。",
     "status": "状态",
     "rule": "规则",
     "allow": "允许",
@@ -153,7 +152,7 @@
   },
   "wg": {
     "title": "WireGuard",
-    "description": "来自 {{path}} 和 wg show 的对端。客户端配置位于 /etc/wireguard/clients。",
+    "description": "隧道和设备。新设备会获得二维码或配置文件。",
     "status": "状态",
     "up": "{{name}} 已连接",
     "down": "{{name}} 未连接",
@@ -256,5 +255,33 @@
     "time": "时间",
     "status": "状态",
     "reason": "原因"
+  },
+  "cron": {
+    "description": "此服务器的计划任务。新任务以 systemd 定时器运行，只允许已批准的命令。",
+    "last": "上次运行"
+  },
+  "monitor": {
+    "description": "服务器状态、历史和事件。"
+  },
+  "mail": {
+    "description": "包含域名、邮箱、转发和垃圾邮件过滤的邮件服务器。"
+  },
+  "postgres": {
+    "description": "数据库和用户。只能从本服务器访问，从不公开。"
+  },
+  "logs": {
+    "description": "GoDeb 的登录、操作和错误。"
+  },
+  "steam": {
+    "description": "安装、更新和配置游戏服务器。"
+  },
+  "websites": {
+    "description": "自己的网站和到内部服务的反向代理，带 Let’s Encrypt 证书。"
+  },
+  "pf": {
+    "description": "将此服务器的公共端口转发到某个站点，例如家里虚拟机上的游戏服务器。"
+  },
+  "pluginManager": {
+    "lead": "开启和关闭插件。关闭的插件会从菜单中消失；其背后的服务（例如 WireGuard 或防火墙）继续运行。"
   }
 }

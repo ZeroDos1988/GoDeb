@@ -5,9 +5,7 @@
     "appearance": "Darstellung",
     "logout": "Abmelden",
     "subtitle": "Debian Server",
-    "footer": "Metadaten in SQLite. Laufzeitdaten kommen aus dem Betriebssystem.",
     "noPlugins": "Noch keine Plugins im Ordner plugins/.",
-    "serverAdmin": "Serververwaltung",
     "sessions": "Sitzungen",
     "menu": "Navigation",
     "openMenu": "Menü öffnen",
@@ -19,7 +17,7 @@
   },
   "pluginManager": {
     "title": "Plugins",
-    "lead": "Alle Plugins sind mitgeliefert. Ein deaktiviertes Plugin verschwindet aus der Navigation, seine API antwortet nicht mehr, und GoDeb erledigt dafür nichts mehr im Hintergrund (z. B. automatische Updates). Die Systemdienste dahinter laufen weiter: WireGuard, Firewall oder Postfix bleiben unberührt. Aktivieren setzt die nötigen Pakete voraus.",
+    "lead": "Plugins ein- und ausschalten. Ein ausgeschaltetes Plugin verschwindet aus dem Menü; die Dienste dahinter (z. B. WireGuard oder die Firewall) laufen weiter.",
     "loading": "Lade Plugins …",
     "empty": "Keine plugin.json im Ordner plugins/.",
     "installed": "installiert",
@@ -85,13 +83,12 @@
   },
   "overview": {
     "title": "Übersicht",
-    "lead": "Auslastung und Identität dieses Hosts. Laufzeitdaten kommen aus dem Betriebssystem.",
+    "lead": "Auslastung und Zustand dieses Servers.",
     "loading": "Lade Hostdaten …",
     "unreachable": "Daemon nicht erreichbar. {{error}}",
     "hostname": "Hostname",
     "os": "Betriebssystem",
     "kernel": "Kernel",
-    "source": "Quelle",
     "sample": "Ein Teil der Hostdaten ist ein Debian-Beispielwert.",
     "cpu": "CPU",
     "ram": "RAM",
@@ -110,7 +107,8 @@
     "doctorOpen": "Aktualisieren"
   },
   "panel": {
-    "mocked": "Beispieldaten. Der zugehörige Debian-Pfad oder Befehl war auf diesem Host nicht ausführbar."
+    "mocked": "Beispieldaten: Auf diesem Server fehlt das nötige Programm oder die Datei.",
+    "technical": "Technische Details"
   },
   "app": {
     "unknown": "Unbekanntes Plugin",
@@ -123,7 +121,7 @@
   },
   "fail2ban": {
     "title": "Fail2ban",
-    "description": "Jails aus fail2ban-client status. Entsperren gilt für alle Jails.",
+    "description": "Adressen, die nach zu vielen Fehlversuchen gesperrt sind (Anmeldung, SSH, Mail).",
     "none": "Keine aktiven Jails.",
     "blockedTitle": "Gesperrte IP-Adressen",
     "noneBlocked": "Derzeit ist keine IP gesperrt.",
@@ -140,7 +138,7 @@
   },
   "logs": {
     "title": "Protokoll",
-    "description": "Log der Weboberfläche und des root-Agenten aus dem systemd-Journal: Anmeldungen, Aktionen mit Benutzer und Ergebnis, fehlgeschlagene Befehle. Mehr Details mit GODEB_LOG_LEVEL=debug.",
+    "description": "Anmeldungen, Aktionen und Fehler von GoDeb.",
     "source": "Quelle",
     "sourceAll": "Alle",
     "sourceWeb": "Weboberfläche",
@@ -170,7 +168,7 @@
   },
   "monitor": {
     "title": "Überwachung",
-    "description": "Zustand des Servers, Verlauf und Ereignisse. Werte alle 10 Sekunden, Verlauf bis zu einem Jahr.",
+    "description": "Zustand des Servers, Verlauf und Ereignisse.",
     "tabs": {
       "system": "System",
       "network": "Netzwerk",
@@ -348,7 +346,7 @@
   },
   "certbot": {
     "title": "Certbot",
-    "description": "Zertifikatsmetadaten aus /etc/letsencrypt/live. Private Schlüssel werden nicht gelesen.",
+    "description": "Let’s-Encrypt-Zertifikate dieses Servers und wann sie ablaufen.",
     "empty": "Keine Zertifikate unter /etc/letsencrypt/live.",
     "name": "Name",
     "subject": "Subject",
@@ -358,7 +356,7 @@
   },
   "systemd": {
     "title": "Dienste",
-    "description": "Alle geladenen systemd-Dienste. Start, Neustart und Stopp laufen über systemctl.",
+    "description": "Alle Dienste dieses Servers.",
     "filter": "Filter",
     "failed": "Aktion fehlgeschlagen",
     "unit": "Unit",
@@ -368,7 +366,7 @@
     "start": "Start",
     "stop": "Stopp",
     "allTitle": "Alle Units",
-    "overviewDescription": "Die wichtigen Dienste dieses Servers mit Status, Laufzeit, CPU und Arbeitsspeicher. Aktualisiert sich alle 10 Sekunden.",
+    "overviewDescription": "Die wichtigen Dienste dieses Servers mit Status und Verbrauch.",
     "tab": {
       "server": "Serverdienste",
       "all": "Alle Units"
@@ -488,7 +486,7 @@
   },
   "postgres": {
     "title": "PostgreSQL",
-    "description": "Datenbanken und Login-Rollen. Verbindungen nur über localhost; Ports werden nicht öffentlich geöffnet. Passwörter von GoDeb-Rollen liegen versiegelt in der Agent-DB.",
+    "description": "Datenbanken und Benutzer. Nur vom Server selbst erreichbar, nie öffentlich.",
     "status": "Dienst",
     "databases": "Datenbanken",
     "roles": "Benutzer",
@@ -507,7 +505,7 @@
   },
   "websites": {
     "title": "Webseiten",
-    "description": "nginx-vhosts mit optionalem PHP-FPM oder Reverse-Proxy. Dateien unter /var/www/godeb/<name> (gehören root, Pflege per SSH/SFTP). Port 80/443 werden bei öffentlichem Zugang bzw. Zertifikat geöffnet.",
+    "description": "Eigene Webseiten und Weiterleitungen auf interne Dienste, mit Let’s-Encrypt-Zertifikat.",
     "root": "DocumentRoot",
     "empty": "Noch keine Website.",
     "name": "Name",
@@ -527,7 +525,7 @@
   },
   "cron": {
     "title": "Geplante Aufgaben",
-    "description": "systemd-Timer und Dateien unter /etc/cron.d. Neue Aufgaben nur als GoDeb-Timer mit Allowlist-Befehl oder Skript unter /usr/local/sbin bzw. /etc/godeb/scripts.",
+    "description": "Geplante Aufgaben dieses Servers. Neue Aufgaben laufen als systemd-Timer und nur mit freigegebenen Befehlen.",
     "timers": "systemd-Timer",
     "noTimers": "Keine Timer gefunden.",
     "unit": "Unit",
@@ -545,11 +543,12 @@
     "cronD": "/etc/cron.d (nur Anzeige)",
     "cronDHint": "Klassische cron.d-Dateien werden nicht geändert – nur angezeigt.",
     "noCronD": "Keine Dateien in /etc/cron.d.",
-    "failed": "Aktion fehlgeschlagen"
+    "failed": "Aktion fehlgeschlagen",
+    "last": "Letzter Lauf"
   },
   "ufw": {
     "title": "UFW",
-    "description": "Firewall-Status aus ufw status. Neue Regeln werden mit ufw --force gesetzt.",
+    "description": "Firewall-Regeln dieses Servers.",
     "status": "Status",
     "rule": "Regel",
     "allow": "Erlauben",
@@ -563,7 +562,7 @@
   },
   "wg": {
     "title": "WireGuard",
-    "description": "Peers aus {{path}} und wg show. Client-Konfigurationen liegen unter /etc/wireguard/clients.",
+    "description": "Tunnel und Geräte. Neue Geräte bekommen einen QR-Code oder eine Datei.",
     "status": "Status",
     "up": "{{name}} aktiv",
     "down": "{{name}} nicht aktiv",
@@ -785,7 +784,7 @@
   },
   "mail": {
     "title": "E-Mail",
-    "description": "Mailserver mit Domains, Postfächern, Aliasen, Weiterleitungen, DKIM und Spamfilter (Postfix, Dovecot, Rspamd). Mails in den Junk-Ordner legen trainiert den Filter; herausnehmen als erwünscht.",
+    "description": "Mailserver mit Domains, Postfächern, Weiterleitungen und Spamfilter.",
     "running": "Läuft …",
     "done": "Fertig.",
     "failed": "Aktion fehlgeschlagen",
@@ -1025,7 +1024,7 @@
     "hide": "Ausblenden",
     "behindHub": "Dieser Server hängt am Hub {{hub}}. Spieler verbinden sich mit {{hub}}:{{port}}. Dafür braucht der Hub eine Portweiterleitung für {{ports}}/udp an {{address}} (Plugin „Portweiterleitung“, Vorlage Enshrouded). Hier sind die Ports nur im Tunnel offen.",
     "title": "Spielserver",
-    "description": "Dedizierte Spielserver über SteamCMD. Jedes Spiel läuft unter einem eigenen Benutzer in einem abgeschotteten systemd-Dienst; Windows-Server laufen unter Wine.",
+    "description": "Spielserver installieren, aktualisieren und einstellen.",
     "installHint": "Installiert SteamCMD{{wine}}, lädt den Server (ca. {{size}} GB), legt Konfiguration und Dienst an und öffnet die UDP-Ports. Dauert je nach Leitung 5–20 Minuten. Der Server braucht etwa {{memory}} GB RAM.",
     "wine": " und Wine",
     "account": "Konto und Dienst",
@@ -1059,7 +1058,7 @@
   },
   "pf": {
     "title": "Portweiterleitung",
-    "description": "Leitet öffentliche Ports dieses Hubs durch den WireGuard-Tunnel an einen Standort weiter, zum Beispiel den Enshrouded-Server auf der Heim-VM. NAT in einer eigenen nftables-Tabelle, Freigabe über ufw route.",
+    "description": "Öffentliche Ports dieses Servers an einen Standort weiterleiten, z. B. den Spielserver auf der Heim-VM.",
     "public": "Öffentlich",
     "hub": "Hub im Tunnel",
     "forwarding": "IP-Forwarding",

@@ -26,6 +26,8 @@ export function Shell({ plugins, pluginsError, route, username, onLogout, childr
   const [sessionsOpen, setSessionsOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   const health = useGet<{ version?: string }>("/api/health");
+  // The host name tells VPS and home VM apart at a glance.
+  const host = useGet<{ hostname?: string }>("/api/system").data?.hostname ?? "";
   const menu = (
     <UserMenu
       username={username}
@@ -51,7 +53,7 @@ export function Shell({ plugins, pluginsError, route, username, onLogout, childr
   }, [navOpen]);
 
   const nav = (
-    <nav className="flex flex-col gap-1 px-3 pb-4 md:flex-1">
+    <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-3 pb-4 md:gap-0.5">
       <NavLink href="#/" active={route === "/"} icon="server" label={t("nav.overview")} />
       <NavLink
         href="#/plugin-manager"
@@ -94,9 +96,7 @@ export function Shell({ plugins, pluginsError, route, username, onLogout, childr
             <Shield className="h-9 w-auto" />
             <div className="min-w-0">
               <Wordmark className="h-4 w-auto" />
-              <div className="truncate text-[10px] tracking-wide text-white/60 uppercase">
-                {t("nav.subtitle")}
-              </div>
+              <div className="truncate font-mono text-[10px] text-white/60">{host || t("nav.subtitle")}</div>
             </div>
           </div>
           {menu}
@@ -138,9 +138,6 @@ export function Shell({ plugins, pluginsError, route, username, onLogout, childr
             </button>
           </div>
           {nav}
-          <p className="hidden border-t border-white/10 px-5 py-4 text-[11px] text-white/50 md:block">
-            {t("nav.footer")}
-          </p>
           {themeOpen ? <ThemeSettings onClose={() => setThemeOpen(false)} /> : null}
           {sessionsOpen ? (
             <SessionsDialog onClose={() => setSessionsOpen(false)} onSignedOut={onLogout} />
@@ -149,7 +146,7 @@ export function Shell({ plugins, pluginsError, route, username, onLogout, childr
 
         <div className="min-w-0">
           <header className="relative z-20 mb-4 hidden items-center justify-between gap-3 rounded-2xl border border-white/10 bg-slate-900/60 px-4 py-2 text-white backdrop-blur-xl transition-all duration-200 ease-in-out md:flex">
-            <div className="text-xs tracking-wide text-white/70 uppercase">{t("nav.serverAdmin")}</div>
+            <div className="min-w-0 truncate font-mono text-sm text-white/80">{host}</div>
             {menu}
           </header>
           <main>{children}</main>
@@ -173,7 +170,7 @@ function NavLink({
   return (
     <a
       href={href}
-      className={`mb-1 flex min-h-11 shrink-0 items-center gap-2 rounded-2xl px-3 py-2.5 text-sm transition-all duration-200 ease-in-out ${
+      className={`flex min-h-11 shrink-0 items-center gap-2 rounded-2xl px-3 py-2.5 text-sm md:min-h-9 md:py-1.5 transition-all duration-200 ease-in-out ${
         active ? "bg-white/10 text-white" : "text-white/75 hover:bg-white/5"
       }`}
     >

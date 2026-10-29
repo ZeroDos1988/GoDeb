@@ -5,9 +5,7 @@
     "appearance": "Appearance",
     "logout": "Sign out",
     "subtitle": "Debian Server",
-    "footer": "Metadata lives in SQLite. Runtime state comes from the operating system.",
     "noPlugins": "No plugins in the plugins/ folder yet.",
-    "serverAdmin": "Server administration",
     "sessions": "Sessions",
     "menu": "Navigation",
     "openMenu": "Open menu",
@@ -19,7 +17,7 @@
   },
   "pluginManager": {
     "title": "Plugins",
-    "lead": "All plugins ship with GoDeb. A disabled plugin disappears from the navigation, its API stops answering and GoDeb does no background work for it (e.g. automatic updates). The system services behind it keep running: WireGuard, the firewall or Postfix are left alone. Enabling needs its packages installed.",
+    "lead": "Switch plugins on and off. A plugin that is off disappears from the menu; the services behind it (e.g. WireGuard or the firewall) keep running.",
     "loading": "Loading plugins …",
     "empty": "No plugin.json in the plugins/ folder.",
     "installed": "installed",
@@ -85,13 +83,12 @@
   },
   "overview": {
     "title": "Overview",
-    "lead": "Load and identity of this host. Runtime data comes from the operating system.",
+    "lead": "Load and health of this server.",
     "loading": "Loading host data …",
     "unreachable": "Daemon unreachable. {{error}}",
     "hostname": "Hostname",
     "os": "Operating system",
     "kernel": "Kernel",
-    "source": "Source",
     "sample": "Part of the host data is a Debian sample value.",
     "cpu": "CPU",
     "ram": "RAM",
@@ -110,7 +107,8 @@
     "doctorOpen": "Refresh"
   },
   "panel": {
-    "mocked": "Sample data. The Debian path or command could not be run on this host."
+    "mocked": "Sample data: the program or file this page needs is missing on this server.",
+    "technical": "Technical details"
   },
   "app": {
     "unknown": "Unknown plugin",
@@ -123,7 +121,7 @@
   },
   "fail2ban": {
     "title": "Fail2ban",
-    "description": "Jails from fail2ban-client status. Unban applies to every jail.",
+    "description": "Addresses banned after too many failed attempts (sign-in, SSH, mail).",
     "none": "No active jails.",
     "blockedTitle": "Blocked IP addresses",
     "noneBlocked": "No IP is blocked right now.",
@@ -140,7 +138,7 @@
   },
   "logs": {
     "title": "Log",
-    "description": "Log of the web interface and the root agent from the systemd journal: sign-ins, actions with user and result, failed commands. More detail with GODEB_LOG_LEVEL=debug.",
+    "description": "Sign-ins, actions and errors of GoDeb.",
     "source": "Source",
     "sourceAll": "All",
     "sourceWeb": "Web interface",
@@ -170,7 +168,7 @@
   },
   "monitor": {
     "title": "Monitoring",
-    "description": "Server health, history and events. Sampled every 10 seconds, history up to one year.",
+    "description": "Health of the server, history and events.",
     "tabs": {
       "system": "System",
       "network": "Network",
@@ -348,7 +346,7 @@
   },
   "certbot": {
     "title": "Certbot",
-    "description": "Certificate metadata from /etc/letsencrypt/live. Private keys are not read.",
+    "description": "Let’s Encrypt certificates of this server and when they expire.",
     "empty": "No certificates under /etc/letsencrypt/live.",
     "name": "Name",
     "subject": "Subject",
@@ -358,7 +356,7 @@
   },
   "systemd": {
     "title": "Services",
-    "description": "All loaded systemd services. Start, restart and stop go through systemctl.",
+    "description": "All services of this server.",
     "filter": "Filter",
     "failed": "Action failed",
     "unit": "Unit",
@@ -368,7 +366,7 @@
     "start": "Start",
     "stop": "Stop",
     "allTitle": "All units",
-    "overviewDescription": "The services that matter on this server with status, uptime, CPU and memory. Refreshes every 10 seconds.",
+    "overviewDescription": "The important services of this server with status and usage.",
     "tab": {
       "server": "Server services",
       "all": "All units"
@@ -488,7 +486,7 @@
   },
   "postgres": {
     "title": "PostgreSQL",
-    "description": "Databases and login roles. Connections only via localhost; ports are never opened publicly. Passwords of GoDeb roles are sealed in the agent DB.",
+    "description": "Databases and users. Reachable from this server only, never public.",
     "status": "Service",
     "databases": "Databases",
     "roles": "Users",
@@ -507,7 +505,7 @@
   },
   "websites": {
     "title": "Websites",
-    "description": "nginx vhosts with optional PHP-FPM or reverse proxy. Files under /var/www/godeb/<name> (owned by root, maintained via SSH/SFTP). Ports 80/443 open when public access or a certificate is requested.",
+    "description": "Your own websites and proxies to internal services, with a Let’s Encrypt certificate.",
     "root": "Document root",
     "empty": "No website yet.",
     "name": "Name",
@@ -527,7 +525,7 @@
   },
   "cron": {
     "title": "Scheduled tasks",
-    "description": "systemd timers and files under /etc/cron.d. New jobs are GoDeb timers only, with an allowlisted command or a script under /usr/local/sbin or /etc/godeb/scripts.",
+    "description": "Scheduled tasks of this server. New tasks run as systemd timers with approved commands only.",
     "timers": "systemd timers",
     "noTimers": "No timers found.",
     "unit": "Unit",
@@ -545,11 +543,12 @@
     "cronD": "/etc/cron.d (read-only)",
     "cronDHint": "Classic cron.d files are shown only, not edited.",
     "noCronD": "No files in /etc/cron.d.",
-    "failed": "Action failed"
+    "failed": "Action failed",
+    "last": "Last run"
   },
   "ufw": {
     "title": "UFW",
-    "description": "Firewall status from ufw status. New rules are applied with ufw --force.",
+    "description": "Firewall rules of this server.",
     "status": "Status",
     "rule": "Rule",
     "allow": "Allow",
@@ -563,7 +562,7 @@
   },
   "wg": {
     "title": "WireGuard",
-    "description": "Peers from {{path}} and wg show. Client configs live under /etc/wireguard/clients.",
+    "description": "Tunnel and devices. New devices get a QR code or a file.",
     "status": "Status",
     "up": "{{name}} up",
     "down": "{{name}} down",
@@ -785,7 +784,7 @@
   },
   "mail": {
     "title": "E-mail",
-    "description": "Mail server with domains, mailboxes, aliases, forwarding, DKIM and spam filter (Postfix, Dovecot, Rspamd). Moving mail into Junk trains the filter; moving it out marks it as wanted.",
+    "description": "Mail server with domains, mailboxes, forwarding and spam filter.",
     "running": "Running …",
     "done": "Done.",
     "failed": "Action failed",
@@ -1025,7 +1024,7 @@
     "hide": "Hide",
     "behindHub": "This server is connected to hub {{hub}}. Players connect to {{hub}}:{{port}}. The hub needs a port forwarding for {{ports}}/udp to {{address}} (plugin “Port forwarding”, template Enshrouded). Here the ports are open inside the tunnel only.",
     "title": "Game servers",
-    "description": "Dedicated game servers via SteamCMD. Each game runs as its own user in a sandboxed systemd service; Windows servers run under Wine.",
+    "description": "Install, update and configure game servers.",
     "installHint": "Installs SteamCMD{{wine}}, downloads the server (about {{size}} GB), creates config and service and opens the UDP ports. Takes 5–20 minutes depending on the connection. The server needs about {{memory}} GB RAM.",
     "wine": " and Wine",
     "account": "Account and service",
@@ -1059,7 +1058,7 @@
   },
   "pf": {
     "title": "Port forwarding",
-    "description": "Forwards public ports of this hub through the WireGuard tunnel to a site, for example the Enshrouded server on the home VM. NAT in an nftables table of its own, allowed via ufw route.",
+    "description": "Forward public ports of this server to a site, e.g. the game server on the home VM.",
     "public": "Public",
     "hub": "Hub in tunnel",
     "forwarding": "IP forwarding",
