@@ -742,3 +742,9 @@ CGO_ENABLED=0 go build -tags netgo -o /tmp/godeb ./backend
 ```
 
 `go.mod` pinnt die Toolchain (`toolchain go1.26.10`); ein älteres lokales Go lädt sie automatisch. Tests setzen `GODEB_DB` und `GODEB_AUTH_DIR` auf temporäre Pfade. Der Dienst auf Port `8080` ist die Installation unter `/usr/bin/godeb` und wird von Tests nicht ersetzt.
+
+### Race-Detector und Fuzz-Tests
+
+- **`go test -race ./...`** läuft in jeder CI (mit `CGO_ENABLED=1` nur für die Tests, das Paket bleibt ohne CGO). Er findet gleichzeitige Zugriffe auf dieselben Daten ohne Sperre.
+- **Fuzz-Tests** (`Fuzz…` in `*_test.go`) füttern die Eingabeprüfungen mit Zufallseingaben und prüfen, dass das Ergebnis seine Form behält: nginx-vhosts (`websites`), Sieve-Abwesenheit und Mailadressen (`mail`), systemd-Timer (`cron`), `wg0.conf` aus Beitrittscode/Datei (`wireguard`, nie `PostUp` & Co.), nftables-Regeln (`portforward`). Die Startbeispiele laufen bei jedem `go test` mit. Richtig gefuzzt wird wöchentlich in `security.yml` (je 2 Minuten) oder lokal mit `scripts/fuzz.sh [zeit]`. Ein Fund landet unter `<paket>/testdata/fuzz/<Test>/`; die Datei mit dem Fix committen, dann bleibt sie ein fester Test.
+- Neue Plugins, die Eingaben in Konfigurationsdateien oder Befehle schreiben, bekommen einen eigenen Fuzz-Test nach demselben Muster (erlaubte Zeilen als Regex, Klammern zählen, Rundlauf wo möglich).

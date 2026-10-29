@@ -5,7 +5,7 @@ Architektur, API und Sicherheitskonzept stehen in `DOCUMENTATION.md`, offene Arb
 
 ## Befehle
 
-- Backend-Tests: `go test ./...`
+- Backend-Tests: `go test ./...` (CI zusätzlich `go test -race`); Fuzz-Tests ausführlich: `scripts/fuzz.sh [zeit]`
 - Frontend-Build (inkl. Typecheck): `cd frontend && npm run build`
 - Paket: `scripts/build-deb.sh` (baut Frontend + statisches Binary, prüft `DEBIAN/control` und `postinst`)
 - Gesamtdiagnose ohne Server: `scripts/diagnose.sh` (`--quick` ohne Build/Netz); der Skill `/diagnose` (`.claude/skills/diagnose`) beschreibt den ganzen Ablauf inkl. Server-Befehlsblock
@@ -33,7 +33,7 @@ GoDeb läuft als zwei Prozesse desselben Programms: die Weboberfläche (`godeb.s
 - Standardmäßig nur auf Loopback und das WireGuard-Interface binden, nie Klartext-HTTP auf LAN/WAN. Ausnahmen nur per HTTPS: die Ersteinrichtung (`backend/firstrun`, Einmal-Token, schließt sich nach Abschluss) und der vom Admin gewählte LAN-Zugang (`access.json`, nur LAN-Subnetz).
 - Neue `/api`-Routen sind automatisch geschützt (`auth.RequireSession`). Ausnahmen nur in `auth.protected()` und nur mit Begründung im Kommentar.
 - Externe Befehle nur über `core.Run*`/`core.RunAdmin*`: kein `sh -c`, Argumente als Liste, Secrets über stdin.
-- Jede Eingabe, die in einem Befehl, Pfad oder einer Konfigdatei landet, gegen eine enge Regex/Allowlist prüfen. Vorhandene Muster (`unitPattern`, `clientName`, …) wiederverwenden.
+- Jede Eingabe, die in einem Befehl, Pfad oder einer Konfigdatei landet, gegen eine enge Regex/Allowlist prüfen. Vorhandene Muster (`unitPattern`, `clientName`, …) wiederverwenden. Wer eine neue Konfigdatei schreibt, legt einen Fuzz-Test an (Vorbild: `plugins/websites/fuzz_test.go`).
 - Dateien nur über `core.ReadAdminFile`/`WriteAdminFile` (Pfad-Allowlist) oder mit eigener Allowlist im Plugin. Secrets mit Modus `0600`.
 - Sensible DB-Felder mit `vault:"secret"` (AES-256-GCM). Die Web-DB versiegelt mit `/var/lib/godeb/master.key`, die Agent-DB mit `/etc/godeb/master.key` (`db.AgentKeyPath`, auch für 2FA). Neue Secret-Spalten in der Agent-DB zusätzlich mit `db.RegisterAgentSecret` anmelden.
 - Zustandsändernde Endpunkte nur mit POST/PUT, nie mit GET.
