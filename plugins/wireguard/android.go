@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -190,9 +189,4 @@ func writeAPKToken(tok string) error {
 		return err
 	}
 	return os.Rename(tmp.Name(), androidTokPath)
-}
-
-// AndroidAPKPath is the on-disk location expected by the packaging docs.
-func AndroidAPKPath() string {
-	return filepath.Clean(androidAPKPath)
 }

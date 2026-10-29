@@ -43,12 +43,6 @@ func (r *jobRunner) snapshot() *Job {
 	return &cp
 }
 
-func (r *jobRunner) running() bool {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	return r.job != nil && r.job.Running
-}
-
 func (r *jobRunner) logf(format string, args ...any) {
 	r.mu.Lock()
 	defer r.mu.Unlock()

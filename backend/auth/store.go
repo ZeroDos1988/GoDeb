@@ -50,15 +50,6 @@ func readJSON(path string, dst any) error {
 	return json.Unmarshal(data, dst)
 }
 
-// writeJSON replaces path atomically with mode 0600 inside a 0700 directory.
-func writeJSON(path string, v any) error {
-	data, err := json.MarshalIndent(v, "", "  ")
-	if err != nil {
-		return err
-	}
-	return writePrivate(path, append(data, '\n'))
-}
-
 func writePrivate(path string, data []byte) error {
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0o700); err != nil {

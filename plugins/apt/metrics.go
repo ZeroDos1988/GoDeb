@@ -98,11 +98,3 @@ func UpdateFindings(pkgs []Package, settings Settings, last Status, hasLast bool
 	}
 	return out
 }
-
-// ResetUpdatesCacheForTest clears the cached findings between unit tests.
-func ResetUpdatesCacheForTest() {
-	updatesMu.Lock()
-	updatesAt = time.Time{}
-	updatesLast = nil
-	updatesMu.Unlock()
-}

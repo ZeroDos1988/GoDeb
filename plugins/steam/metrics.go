@@ -69,14 +69,6 @@ var (
 	lastInfo = map[string]ServerInfo{}
 )
 
-// LastInfo returns the latest A2S answer of a game, if any.
-func LastInfo(id string) (ServerInfo, bool) {
-	infoMu.Lock()
-	defer infoMu.Unlock()
-	i, ok := lastInfo[id]
-	return i, ok
-}
-
 func gameSource(ctx context.Context) []metrics.Sample {
 	var out []metrics.Sample
 	for _, g := range sortedGames() {

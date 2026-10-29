@@ -170,14 +170,3 @@ func validateSystemctl(args []string) error {
 func isManagedTimer(unit string) bool {
 	return strings.HasPrefix(unit, unitPrefix) && strings.HasSuffix(unit, ".timer")
 }
-
-func managedName(unit string) (string, bool) {
-	if !isManagedTimer(unit) {
-		return "", false
-	}
-	name := strings.TrimSuffix(strings.TrimPrefix(unit, unitPrefix), ".timer")
-	if !namePattern.MatchString(name) {
-		return "", false
-	}
-	return name, true
-}
