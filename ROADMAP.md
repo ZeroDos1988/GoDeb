@@ -2,14 +2,14 @@
 
 Stand: 28.10.2026. Reihenfolge = Priorität. `[x]` erledigt, `[ ]` offen. Neue Ideen kommen hierher (passende Phase oder Phase 7), getroffene Entscheidungen unten unter „Entscheidungen“.
 
-## Aktueller Stand (29.10., nach v0.2.11)
+## Aktueller Stand (29.10., nach v0.2.12)
 
 Für einen neuen Chat: zuerst `/diagnose` (Skill in `.claude/skills/diagnose`, Skript `scripts/diagnose.sh`), dann hier weiterlesen.
 
 - **Veröffentlicht** (alle öffentlich, nur unter ZeroDos1988):
-  - `ZeroDos1988/GoDeb`: GPL-3.0, Release **v0.2.11** (29.10., Vorabversion, Sicherheitsupdate: Webseiten-Proxy-Pfad, `/var/vmail` per `os.Root`, PostgreSQL-2FA; dazu Datenbank-Prüfung, Hub-Überwachung von der Heim-VM, stabile und Test-Suite) im APT-Repo `https://zerodos1988.github.io/GoDeb` (amd64 und arm64, Suiten `trixie` und `trixie-testing`). v0.2.10 brachte arm64 ins APT-Repo, v0.2.9 brachte die Sicherheitsfixes für Webseiten, PostgreSQL und Cron aus v0.2.8; v0.2.8 Mail-Ausbau, nginx/Webseiten, PostgreSQL, Cron, Mobil-Feinschliff, Volltunnel. Jeder Tag `vX.Y.Z` baut Release (immer als Vorabversion, erst nach dem Update-Test) und APT-Repo automatisch; den Release-Text danach von Hand im Stil der vorigen Releases ersetzen. Ab 1.0 das Vorab-Häkchen entfernen, damit die Version in `trixie` landet.
+  - `ZeroDos1988/GoDeb`: GPL-3.0, Release **v0.2.12** (29.10., Vorabversion: Fehlergrund und Hintergrundjobs im Journal, keine Fehlalarme bei Zustandsabfragen, go-jose 4.1.6 und weitere Abhängigkeiten) im APT-Repo `https://zerodos1988.github.io/GoDeb`. v0.2.11 (Sicherheitsupdate: Webseiten-Proxy-Pfad, `/var/vmail` per `os.Root`, PostgreSQL-2FA; dazu Datenbank-Prüfung, Hub-Überwachung von der Heim-VM, stabile und Test-Suite; amd64 und arm64, Suiten `trixie` und `trixie-testing`). v0.2.10 brachte arm64 ins APT-Repo, v0.2.9 brachte die Sicherheitsfixes für Webseiten, PostgreSQL und Cron aus v0.2.8; v0.2.8 Mail-Ausbau, nginx/Webseiten, PostgreSQL, Cron, Mobil-Feinschliff, Volltunnel. Jeder Tag `vX.Y.Z` baut Release (immer als Vorabversion, erst nach dem Update-Test) und APT-Repo automatisch; den Release-Text danach von Hand im Stil der vorigen Releases ersetzen. Ab 1.0 das Vorab-Häkchen entfernen, damit die Version in `trixie` landet.
   - `ZeroDos1988/godeb-tunnel-android` (Release 1.1.0), `ZeroDos1988/godeb-tunnel-arch` (1.0.1). Privat: `godeb-wireguard-windows`.
-- **Auf den Servern:** Hetzner-VPS zuletzt mit älterer 0.2.x; Heim-VM noch nicht neu eingerichtet. **v0.2.11 auf dem VPS noch nicht eingespielt.**
+- **Auf den Servern:** Hetzner-VPS zuletzt mit älterer 0.2.x; Heim-VM noch nicht neu eingerichtet. **v0.2.12 auf dem VPS noch nicht eingespielt.**
 - **Nächste Schritte:** der Fahrplan „Produktionsreife“ direkt unten. Alles, was ohne die Server ging, ist erledigt (28.10.); offen sind die Punkte beim Nutzer: Durchlauf auf beiden Servern, Hetzner-Grundschutz, Wiederherstellung üben, danach 1.0.
 
 ## Produktionsreife – Weg zu 1.0 (Prüfung 28.10.)
