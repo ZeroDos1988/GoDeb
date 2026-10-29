@@ -1,4 +1,4 @@
-# Aufgabenliste für Coding-Agenten (Stand 27.10.2026)
+# Aufgabenliste für Coding-Agenten (Stand 29.10.2026)
 
 Diese Liste ist zum Abarbeiten durch einen Agenten (Cursor, Claude Code) gedacht. Hintergrund und Begründungen stehen in `ROADMAP.md`, Architektur und Sicherheitskonzept in `DOCUMENTATION.md`.
 
@@ -29,71 +29,29 @@ Diese Liste ist zum Abarbeiten durch einen Agenten (Cursor, Claude Code) gedacht
 
 ## A. Für den Agenten
 
-### 1. Passwort und 2FA bei kritischen Aktionen („sudo mit 2FA“) – erledigt 27.10.
+Alles aus der Liste vom 27.10. ist erledigt (sudo mit 2FA, Update-Hinweise, Doctor auf der Startseite, Mail-Ausbau, Mobil-Feinschliff, Webseiten, Cron, PostgreSQL, Volltunnel, arm64 im APT-Repo); dazu am 28./29.10. die Punkte aus `ROADMAP.md` „Produktionsreife“, die ohne Server gehen (Sicherheitsdurchsicht, Datenbank-Prüfung, Hub-Überwachung, stabile und Test-Suite, Update-Test in der CI, Dependabot, aussagekräftigere Logs). Einzelheiten stehen in der Git-Historie und in `ROADMAP.md`.
 
-Umgesetzt: `X-GoDeb-Password` bei `stepUpFresh`, Prüfung in der Weboberfläche vor dem Code, Header wird vor dem Agenten entfernt, Dialog mit Passwort+Code, Tests und Doku.
+**Bis 1.0 gilt Feature-Freeze:** nur Fixes aus den Servertests unten, jeder als Fix-Release `0.2.x`. Offen für den Agenten:
 
-### 2. Update-Hinweise in der Überwachung – erledigt 27.10.
-
-Umgesetzt in `plugins/apt/metrics.go`: Warnung bei offenen Sicherheitsupdates nur wenn AutoCheck/AutoSecurity aus ist, Warnung bei fehlgeschlagenem automatischem Lauf (`status.json`), Neustart weiter über `rebootCheck`. Läuft in Ampel und Alarme.
-
-### 3. Befunde von `godeb doctor` auf der Startseite – erledigt 27.10.
-
-`GET /api/doctor` (Web) bzw. `GET /internal/doctor` (Agent, nur lesend); Kachel auf der Übersicht mit FAIL/WARN.
-
-### 4. Mail-Ausbau (Plugin `mail`, Dovecot **2.4**-Syntax)
-
-Jeden Unterpunkt einzeln committen:
-- [x] **Abwesenheitsnotiz** per Sieve (Pigeonhole) pro Postfach, in der UI ein- und ausschaltbar – 28.10.
-- [x] **Autoconfig (Thunderbird) und Autodiscover (Outlook)** für die Maildomains – 28.10. (nginx, nach Webseiten-Plugin).
-- [x] **MTA-STS und TLS-RPT**: Richtlinie und DNS-Einträge, über `domains.RegisterNeeds` melden – 28.10. (HTTPS-Auslieferung der Richtlinie mit Webserver-Plugin).
-- [x] **Quota-Warnungen** (Dovecot-Quota-Warning) und Belegung pro Postfach in der UI – 28.10.
-- [x] **Spam lernen**: Verschieben in den Junk-Ordner bzw. aus ihm heraus trainiert Rspamd (imapsieve) – 28.10.
-- [x] **Mail-Queue**: Postfix-Queue anzeigen, einzelne Mails löschen oder erneut senden. Die Queue-IDs gegen eine Regex prüfen – 28.10.
-- Danach mit `scripts/check-mail-config.sh` gegen die echten Debian-13-Werkzeuge prüfen.
-
-### 5. Mobil-Feinschliff (ROADMAP Phase 6) – erledigt 28.10.
-
-- [x] Kompakte Kopfzeile mit Menü-Button statt der Seitenleiste auf dem Handy.
-- [x] Touch-Ziele mindestens 44 px. Unter `sm` Tabellen als Karten (WireGuard-Peers, UFW-Regeln).
-- [x] Playwright-Smoke-Test mit iPhone- und Pixel-Viewport in der CI (`.github/workflows`): prüft `scrollWidth == innerWidth` auf allen Seiten, die API wird per `page.route` mit Beispieldaten bedient.
-
-### 6. Webseiten und Reverse-Proxy (neues Plugin, nginx) – erledigt 28.10.
-
-nginx-vhosts für eigene Webseiten und Reverse-Proxy auf interne Ziele, auch hinter dem Tunnel. Zertifikate über Certbot, DNS über `domains.RegisterNeeds`. Entschieden: PHP ja, Docroot `/var/www/godeb/<name>` mit Symlink `~/www/<name>`, Ports 80/443 bei Bedarf.
-
-### 7. Cron-Aufgaben (neues Plugin) – erledigt 28.10.
-
-Geplante Aufgaben (systemd-Timer und `/etc/cron.d`) anzeigen. Neue Aufgaben nur als systemd-Timer mit einem Befehl aus einer Allowlist bzw. einem streng geprüften Pfad, kein freier Shell-Befehl.
-
-### 8. Datenbanken (neues Plugin) – erledigt 28.10.
-
-PostgreSQL (Entscheidung Nutzer). Datenbanken und Benutzer anlegen, Tabellenbetrachter nur lesend. Zugangsdaten versiegelt (`vault:"secret"`, Agent-DB). Ports nie öffentlich.
-
-### 9. Kleinere offene Punkte
-
-- [x] WireGuard: Option „Schlüssel auf dem Gerät erzeugen“ (Public Key einfügen), Client-Dateien nach dem Download optional löschen – 27.10.
-- [x] APK-Download optional mit Token – 28.10.
-- [x] `godeb doctor` und Ampel: SSH nur per Schlüssel und unattended-upgrades (nur melden) – 27.10.
-- [x] Steam/Enshrouded: Formular für `gameSettings` beim Preset „Custom“, Warnfenster vor Update/Neustart – 28.10. (zeitgesteuerte Jobs über Plugin „Geplante Aufgaben“ / Skript).
-- [x] Volltunnel als bewusste Option im Setup (IP-Forwarding und NAT, eigene nftables-Tabelle wie `portforward`) – 28.10.
-
-### 10. Ganz hinten (niedrige Priorität, erst nach allem anderen)
-
-- [x] **arm64 im APT-Repo** – 28.10. (`build-apt-repo.sh` mit beiden Architekturen, Steam auf arm64 gesperrt).
-
----
+- [ ] Update-Test in der CI auch für arm64 (QEMU).
+- [ ] Fehler, die der Nutzer bei den Servertests meldet.
 
 ## B. Für den Nutzer (braucht die echten Server, nicht für den Agenten)
 
-1. **VPS auf v0.2.11 bringen:** vorher einen Snapshot ziehen, dann APT → „Alle aktualisieren“. Prüfen: `godeb version`, Dienste-Seite, Protokoll, Plugins abschalten, automatische Updates.
-2. **Mailserver auf dem VPS:**
+Reihenfolge wie in `ROADMAP.md` „Produktionsreife“, Anleitung in `DOCUMENTATION.md` unter „Produktivbetrieb (Checkliste)“ und „Notfall“.
+
+1. **VPS vorbereiten:** Hetzner-Backups an, Snapshot, Hetzner Cloud Firewall, SSH nur mit Schlüssel.
+2. **VPS auf v0.2.11 bringen:** APT → „Alle aktualisieren“. Prüfen: `godeb version`, `sudo godeb doctor` (Datenbanken OK), Dienste-Seite, Protokoll, Plugins, automatische Updates.
+3. **Mailserver auf dem VPS:**
    - Vorher: A-Eintrag `mail.<domain>`, Reverse-DNS, Freigabe für ausgehend 25/465 bei Hetzner beantragen.
-   - Dann: Domain und Postfach anlegen, mit Thunderbird und Handy testen, mail-tester.com.
-3. **Domains-Plugin** mit echter Zone und echtem Hetzner-Token prüfen.
-4. **Release v0.2.8** – Tag und Vorabversion gesetzt 28.10. (CI baut die `.deb`-Pakete).
+   - Dann: Domain und Postfach anlegen, mit Thunderbird und Handy testen, mail-tester.com (mindestens 9/10).
+4. **Domains-Plugin** mit echter Zone und echtem Hetzner-Token prüfen.
 5. **Heim-VM** per Beitrittscode anbinden, Enshrouded installieren, Portweiterleitung am VPS einrichten, im Spiel testen.
-6. **Tunnel-App am Handy:** Auto-Disconnect im Heim-WLAN und Wiederverbinden im Mobilnetz.
+6. **Beide Server neu starten:** Tunnel, nftables, ufw und Dienste müssen von selbst wiederkommen.
+7. **Alarme:** ntfy auf beiden Servern einschalten; einmal den Tunnel trennen und prüfen, dass die Heim-VM „Hub nicht erreichbar“ meldet.
+8. **Notfall üben:** `sudo godeb 2fa reset` an einem Testkonto, einmal einen Snapshot zurückspielen.
+9. **Tunnel-App am Handy:** Auto-Disconnect im Heim-WLAN und Wiederverbinden im Mobilnetz.
+10. Zwei Wochen ohne Eingriff, dann **1.0**.
 
 ## C. Andere Repos (nicht in diesem Repo bearbeiten)
 
