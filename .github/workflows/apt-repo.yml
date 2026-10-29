@@ -28,7 +28,7 @@ jobs:
           apt-get update
           apt-get install -y --no-install-recommends apt-utils ca-certificates gh git sq sqv
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Pakete aus den Releases
         env:
@@ -58,7 +58,7 @@ jobs:
           ./scripts/build-apt-repo.sh debs/stable debs/testing site "$key"
           rm -f "$key"
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: site
 
@@ -73,4 +73,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

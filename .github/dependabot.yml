@@ -20,6 +20,11 @@ updates:
       frontend:
         patterns: ["*"]
         update-types: [minor, patch]
+    # Feature freeze until 1.0: no major jumps (vite, TypeScript, React
+    # plugin), they need their own migration.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
