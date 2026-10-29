@@ -656,8 +656,9 @@ Beide Prozesse schreiben strukturiert (`log/slog`) ins systemd-Journal, mit Stuf
 level=INFO msg=Aktion komponente=agent methode=POST pfad=/api/plugins/wireguard/peers status=200 dauer=412ms benutzer=admin ip=10.8.0.5 2fa=bestätigt
 ```
 
-- **Aktionen**: Jede ändernde Anfrage loggt der Agent selbst mit Benutzer, Pfad, Status, Dauer und 2FA-Ergebnis (`verlangt`, `bestätigt`, `falsch`, `gesperrt`). Abgelehnte Anfragen kommen als Warnung, Serverfehler als Fehler. Eine übernommene Weboberfläche kann die IP falsch angeben, aber nicht verbergen, dass eine Änderung lief.
-- **Befehle**: Fehlgeschlagene Befehle als Warnung mit Exit-Code und gekürztem stderr, erfolgreiche nur bei `debug`. stdin (Secrets) wird nie geloggt. Fehlende Werkzeuge bei reinen Abfragen bleiben auf `debug`.
+- **Aktionen**: Jede ändernde Anfrage loggt der Agent selbst mit Benutzer, Pfad, Status, Dauer und 2FA-Ergebnis (`verlangt`, `bestätigt`, `falsch`, `gesperrt`). Abgelehnte Anfragen kommen als Warnung, Serverfehler als Fehler, beide mit dem Grund (`fehler=…`, dieselbe Meldung wie in der Oberfläche, gekürzt auf 300 Zeichen).
+- **Hintergrundjobs** (Spielserver installieren/aktualisieren, Mailserver installieren): Start, Ende und Dauer; bei einem Fehler zusätzlich der Grund und die letzten acht Zeilen des Job-Logs (`letzte_zeilen`), denn das Job-Log in der Oberfläche überlebt keinen Neustart. Eine übernommene Weboberfläche kann die IP falsch angeben, aber nicht verbergen, dass eine Änderung lief.
+- **Befehle**: Fehlgeschlagene Befehle als Warnung mit Exit-Code und gekürztem stderr, erfolgreiche nur bei `debug`. stdin (Secrets) wird nie geloggt. Fehlende Werkzeuge bei reinen Abfragen und Zustandsabfragen, deren Exit-Code die Antwort ist (`dpkg-query` für nicht installierte Pakete, `systemctl is-enabled`, `nft list table` einer noch nicht angelegten Tabelle), bleiben auf `debug` (`core.RunAdminQuiet`), damit Warnungen im Journal echte Probleme sind.
 - **Anmeldungen**: Erfolg, Abmeldung und Fehlversuch mit Benutzer und IP. Fehlversuche stehen weiterhin auch in `/var/log/godeb/auth.log` (für fail2ban).
 - In der Oberfläche zeigt **Protokoll** dieselben Einträge mit Filtern.
 
@@ -665,6 +666,8 @@ level=INFO msg=Aktion komponente=agent methode=POST pfad=/api/plugins/wireguard/
 sudo journalctl -u godeb -u godeb-agent -f               # live
 sudo journalctl -u godeb -u godeb-agent -p warning -b    # nur Warnungen und Fehler seit Boot
 sudo journalctl -u godeb-agent -g 'msg=Aktion' --since today
+sudo journalctl -u godeb -u godeb-agent -g 'fehler=' --since '-1h'   # was ist in der letzten Stunde schiefgegangen
+sudo journalctl -u godeb-agent -g 'Job' --since today                # Installationen und Updates
 sudo systemctl edit godeb-agent   # [Service] Environment=GODEB_LOG_LEVEL=debug, danach restart
 ```
 

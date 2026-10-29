@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"os/exec"
 	"strings"
@@ -60,6 +61,7 @@ func (r *jobRunner) start(game, action string, fn func(ctx context.Context, j *j
 	h := &jobHandle{r: r}
 	started := time.Now()
 	jobEvent(game, action, started, nil, false)
+	slog.Info("Spielserver-Job gestartet", "spiel", game, "aktion", action)
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Hour)
 		defer cancel()
@@ -67,6 +69,7 @@ func (r *jobRunner) start(game, action string, fn func(ctx context.Context, j *j
 		jobEvent(game, action, started, err, true)
 		r.mu.Lock()
 		defer r.mu.Unlock()
+		logJobEnd("Spielserver-Job", err, started, r.job.Log, "spiel", game, "aktion", action)
 		r.job.Running = false
 		r.job.Finished = time.Now().UTC().Format(time.RFC3339)
 		if err != nil {
@@ -151,4 +154,21 @@ func appendLog(lines []string, line string) []string {
 		lines = lines[len(lines)-maxLogLines:]
 	}
 	return lines
+}
+
+// logJobEnd writes the outcome of a background job to the journal. The job
+// log in the UI is lost on restart; on failure the last lines go along, so
+// the journal alone explains what went wrong.
+func logJobEnd(what string, err error, started time.Time, log []string, attrs ...any) {
+	attrs = append(attrs, "dauer", time.Since(started).Round(time.Second))
+	if err == nil {
+		slog.Info(what+" fertig", attrs...)
+		return
+	}
+	tail := log
+	if len(tail) > 8 {
+		tail = tail[len(tail)-8:]
+	}
+	attrs = append(attrs, "fehler", err.Error(), "letzte_zeilen", strings.Join(tail, " | "))
+	slog.Error(what+" fehlgeschlagen", attrs...)
 }

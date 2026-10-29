@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net"
 	"os"
 	"strings"
@@ -68,12 +69,24 @@ func (r *jobRunner) start(action string, fn func(ctx context.Context) error) err
 		return fmt.Errorf("%s läuft bereits", r.job.Action)
 	}
 	r.job = &Job{Action: action, Running: true, Started: time.Now().UTC().Format(time.RFC3339), Log: []string{}}
+	started := time.Now()
+	slog.Info("Mail-Job gestartet", "aktion", action)
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 45*time.Minute)
 		defer cancel()
 		err := fn(ctx)
 		r.mu.Lock()
 		defer r.mu.Unlock()
+		attrs := []any{"aktion", action, "dauer", time.Since(started).Round(time.Second)}
+		if err != nil {
+			tail := r.job.Log
+			if len(tail) > 8 {
+				tail = tail[len(tail)-8:]
+			}
+			slog.Error("Mail-Job fehlgeschlagen", append(attrs, "fehler", err.Error(), "letzte_zeilen", strings.Join(tail, " | "))...)
+		} else {
+			slog.Info("Mail-Job fertig", attrs...)
+		}
 		r.job.Running = false
 		r.job.Finished = time.Now().UTC().Format(time.RFC3339)
 		if err != nil {
