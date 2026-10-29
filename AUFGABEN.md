@@ -86,7 +86,7 @@ PostgreSQL (Entscheidung Nutzer). Datenbanken und Benutzer anlegen, Tabellenbetr
 
 ## B. Für den Nutzer (braucht die echten Server, nicht für den Agenten)
 
-1. **VPS auf v0.2.10 bringen:** vorher einen Snapshot ziehen, dann APT → „Alle aktualisieren“. Prüfen: `godeb version`, Dienste-Seite, Protokoll, Plugins abschalten, automatische Updates.
+1. **VPS auf v0.2.11 bringen:** vorher einen Snapshot ziehen, dann APT → „Alle aktualisieren“. Prüfen: `godeb version`, Dienste-Seite, Protokoll, Plugins abschalten, automatische Updates.
 2. **Mailserver auf dem VPS:**
    - Vorher: A-Eintrag `mail.<domain>`, Reverse-DNS, Freigabe für ausgehend 25/465 bei Hetzner beantragen.
    - Dann: Domain und Postfach anlegen, mit Thunderbird und Handy testen, mail-tester.com.
