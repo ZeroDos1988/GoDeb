@@ -18,6 +18,9 @@ type ShellProps = {
 };
 
 type Health = { status: "ok" | "info" | "warning" | "critical" };
+type Doctor = { fails: number; warns: number };
+
+const rank: Health["status"][] = ["ok", "info", "warning", "critical"];
 
 // The tabs below the header, like the tab row of a GitHub repository.
 // Every plugin names its group in manifest.json; settings sit at the end.
@@ -42,6 +45,12 @@ export function Shell({ plugins, pluginsError, route, username, onLogout, childr
   const host = useGet<{ hostname?: string }>("/api/system").data?.hostname ?? "";
   // Missing when the monitor plugin is off; the dot then hides.
   const state = useGet<Health>("/api/plugins/monitor/summary");
+  // Doctor is slower; it loads once per page load and only darkens the dot.
+  const doctor = useGet<Doctor>("/api/doctor").data;
+  const doctorStatus: Health["status"] = doctor?.fails ? "critical" : doctor?.warns ? "warning" : "ok";
+  const status = state.data
+    ? rank[Math.max(rank.indexOf(state.data.status), rank.indexOf(doctorStatus))]
+    : undefined;
   const reloadState = state.reload;
   useEffect(() => {
     reloadState();
@@ -91,14 +100,14 @@ export function Shell({ plugins, pluginsError, route, username, onLogout, childr
             </>
           ) : null}
           <div className="ms-auto flex items-center gap-2">
-            {state.data ? (
+            {status ? (
               <a
                 href="#/monitor"
-                title={t(`monitor.status.${state.data.status}`)}
+                title={t(`monitor.status.${status}`)}
                 className="flex min-h-9 items-center gap-2 rounded-full border border-white/10 px-3 text-xs text-white/80 transition-all duration-200 ease-in-out hover:bg-white/10"
               >
-                <span className={`h-2 w-2 rounded-full ${healthDot[state.data.status]}`} aria-hidden />
-                <span className="hidden sm:inline">{t(`monitor.status.${state.data.status}`)}</span>
+                <span className={`h-2 w-2 rounded-full ${healthDot[status]}`} aria-hidden />
+                <span className="hidden sm:inline">{t(`monitor.status.${status}`)}</span>
               </a>
             ) : null}
             <UserMenu
