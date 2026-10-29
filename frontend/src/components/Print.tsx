@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { createPortal, flushSync } from "react-dom";
+import { Shield, Wordmark } from "@/components/Brand.tsx";
 
 // PrintSheet renders its children only for printing, as a plain sheet
 // directly below <body> while the app itself is hidden (index.css). The app
@@ -40,7 +41,10 @@ export function SheetHeader({ title, subtitle }: { title: string; subtitle?: str
         <h1 className="text-xl font-semibold">{title}</h1>
         {subtitle ? <p className="text-xs text-neutral-600">{subtitle}</p> : null}
       </div>
-      <span className="font-semibold">GoDeb</span>
+      <span className="flex items-center gap-2">
+        <Shield className="h-8 w-auto" />
+        <Wordmark className="h-4 w-auto" />
+      </span>
     </header>
   );
 }

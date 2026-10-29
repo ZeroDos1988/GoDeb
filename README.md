@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/brand/godeb-logo-horizontal.png" alt="GoDeb" width="420"></p>
+
 # GoDeb
 
 **Schlanke, modulare Admin-Oberfläche für Debian 13 (Trixie).**

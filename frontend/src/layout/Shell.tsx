@@ -4,6 +4,7 @@ import { useGet } from "@/lib/useAsync.ts";
 import { PluginIcon } from "@/components/Icons.tsx";
 import { SessionsDialog } from "@/components/SessionsDialog.tsx";
 import { ThemeSettings } from "@/components/ThemeSettings.tsx";
+import { Shield, Wordmark } from "@/components/Brand.tsx";
 import { UserMenu } from "@/components/UserMenu.tsx";
 import type { PluginMeta } from "@/lib/types.ts";
 
@@ -90,11 +91,9 @@ export function Shell({ plugins, pluginsError, route, username, onLogout, childr
             <MenuIcon open={navOpen} />
           </button>
           <div className="flex min-w-0 flex-1 items-center gap-2">
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-2xl bg-debian text-xs font-semibold text-white">
-              gd
-            </span>
+            <Shield className="h-9 w-auto" />
             <div className="min-w-0">
-              <div className="truncate text-sm font-semibold tracking-tight">GoDeb</div>
+              <Wordmark className="h-4 w-auto" />
               <div className="truncate text-[10px] tracking-wide text-white/60 uppercase">
                 {t("nav.subtitle")}
               </div>
@@ -119,11 +118,9 @@ export function Shell({ plugins, pluginsError, route, username, onLogout, childr
           } md:sticky md:top-4 md:h-[calc(100vh-2rem)] md:translate-x-0`}
         >
           <div className="hidden items-center gap-3 px-5 py-5 md:flex">
-            <span className="grid h-10 w-10 place-items-center rounded-2xl bg-debian text-sm font-semibold text-white">
-              gd
-            </span>
+            <Shield className="h-11 w-auto" />
             <div className="min-w-0 flex-1">
-              <div className="text-base leading-none font-semibold tracking-tight">GoDeb</div>
+              <Wordmark className="h-5 w-auto" />
               <div className="mt-1 text-[11px] tracking-wide text-white/60 uppercase">
                 {t("nav.subtitle")}
               </div>

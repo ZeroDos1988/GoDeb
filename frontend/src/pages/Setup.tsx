@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { LanguageSelect } from "@/components/LanguageSelect.tsx";
+import { Shield, Wordmark } from "@/components/Brand.tsx";
 import { ConfigUpload } from "@/components/ConfigUpload.tsx";
 import { SetupSummary, type SetupSummaryData } from "@/components/SetupSummary.tsx";
 import { TunnelClients, type ClientResult } from "@/components/TunnelClients.tsx";
@@ -46,9 +47,9 @@ export function SetupFrame({ step, total, children, wide = false }: { step: numb
     <div className="grid min-h-screen place-items-center bg-paper px-4 py-8 text-ink">
       <div className={`w-full ${wide ? "max-w-2xl" : "max-w-sm"}`}>
         <div className="mb-6 flex items-center gap-3">
-          <span className="grid h-10 w-10 place-items-center bg-debian text-sm font-semibold text-white">gd</span>
+          <Shield className="h-12 w-auto" />
           <div className="min-w-0 flex-1">
-            <div className="text-lg leading-none font-semibold tracking-tight">GoDeb</div>
+            <Wordmark className="h-6 w-auto" />
             <div className="mt-1 text-[11px] tracking-wide text-muted uppercase">{t("setup.title")}</div>
           </div>
           <LanguageSelect persist={false} className="text-xs" />
