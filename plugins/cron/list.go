@@ -2,59 +2,66 @@ package cron
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"godeb/backend/core"
 )
 
-const sampleTimers = `NEXT                        LEFT          LAST                        PASSED       UNIT                         ACTIVATES
-Wed 2026-10-28 12:00:00 CEST 1h 0min left Wed 2026-10-28 11:00:00 CEST 1min ago     apt-daily.timer              apt-daily.service
-Wed 2026-10-28 18:00:00 CEST 7h left      n/a                         n/a          godeb-cron-demo.timer        godeb-cron-demo.service
+// sampleTimers is what systemd 257 (Debian 13) prints for
+// "systemctl list-timers --all --output=json": times in microseconds since
+// the epoch, 0 or null when a timer never ran or has no next run.
+const sampleTimers = `[{"next":1793311200000000,"left":1793311200000000,"last":1793307600000000,"passed":60000000,"unit":"apt-daily.timer","activates":"apt-daily.service"},` +
+	`{"next":1793332800000000,"left":1793332800000000,"last":null,"passed":null,"unit":"godeb-cron-demo.timer","activates":"godeb-cron-demo.service"}]`
 
-2 timers listed.
-`
-
-// listTimers runs systemctl list-timers --all.
+// listTimers runs systemctl list-timers --all. The JSON form has fixed
+// fields; the table form packs next run, time left and last run into
+// columns of varying width.
 func listTimers(ctx context.Context) ([]Timer, core.CommandEnvelope) {
-	out, env := core.ReadCommand(ctx, sampleTimers, "systemctl", "list-timers", "--all", "--no-pager", "--no-legend")
-	return parseTimers(out), env
+	out, env := core.ReadCommand(ctx, sampleTimers, "systemctl", "list-timers", "--all", "--no-pager", "--output=json")
+	list, err := parseTimers(out)
+	if err != nil && !env.Mocked {
+		env.Mocked, env.Detail = true, "systemctl list-timers: "+err.Error()
+		list, _ = parseTimers(sampleTimers)
+	}
+	return list, env
 }
 
-func parseTimers(out string) []Timer {
-	var list []Timer
-	for _, line := range strings.Split(out, "\n") {
-		line = strings.TrimSpace(line)
-		if line == "" || strings.HasPrefix(line, "NEXT") || strings.Contains(line, "timers listed") {
+type timerJSON struct {
+	Next      *int64 `json:"next"`
+	Last      *int64 `json:"last"`
+	Unit      string `json:"unit"`
+	Activates string `json:"activates"`
+}
+
+func parseTimers(out string) ([]Timer, error) {
+	var raw []timerJSON
+	if err := json.Unmarshal([]byte(strings.TrimSpace(out)), &raw); err != nil {
+		return []Timer{}, err
+	}
+	list := make([]Timer, 0, len(raw))
+	for _, r := range raw {
+		if !strings.HasSuffix(r.Unit, ".timer") {
 			continue
 		}
-		fields := strings.Fields(line)
-		// Columns: NEXT (often multi-token date), LEFT, LAST, PASSED, UNIT, ACTIVATES
-		// systemctl without --legend still uses variable-width columns; find *.timer.
-		unitIdx := -1
-		for i, f := range fields {
-			if strings.HasSuffix(f, ".timer") {
-				unitIdx = i
-				break
-			}
-		}
-		if unitIdx < 0 || unitIdx+1 >= len(fields) {
-			continue
-		}
-		unit := fields[unitIdx]
-		activates := fields[unitIdx+1]
-		t := Timer{Unit: unit, Activates: activates, Managed: isManagedTimer(unit)}
-		// Best-effort: everything before unit is NEXT/LEFT/LAST/PASSED joined.
-		if unitIdx >= 1 {
-			t.Next = strings.Join(fields[:unitIdx], " ")
-		}
-		list = append(list, t)
+		list = append(list, Timer{
+			Unit: r.Unit, Activates: r.Activates, Managed: isManagedTimer(r.Unit),
+			Next: microTime(r.Next), Last: microTime(r.Last),
+		})
 	}
-	if list == nil {
-		list = []Timer{}
+	return list, nil
+}
+
+// microTime turns systemd's microseconds since the epoch into RFC 3339;
+// "" for never.
+func microTime(us *int64) string {
+	if us == nil || *us <= 0 {
+		return ""
 	}
-	return list
+	return time.UnixMicro(*us).UTC().Format(time.RFC3339)
 }
 
 func listCronD(_ context.Context) ([]CronFile, bool) {

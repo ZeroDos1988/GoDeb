@@ -7,7 +7,8 @@ import { useGet } from "@/lib/useAsync.ts";
 
 type Timer = {
   unit: string;
-  next: string;
+  next: string; // RFC 3339, "" if none
+  last: string; // RFC 3339, "" if never ran
   activates: string;
   managed: boolean;
 };
@@ -32,7 +33,7 @@ const card =
   "rounded-2xl border border-white/10 bg-slate-900/60 p-4 text-white backdrop-blur-xl";
 
 export default function Panel() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const query = useGet<Status>("/api/plugins/cron/status");
   const [name, setName] = useState("");
   const [calendar, setCalendar] = useState("*-*-* 03:00:00");
@@ -105,7 +106,7 @@ export default function Panel() {
         ) : (
           <DataTable
             mobileCards
-            head={[t("cron.unit"), t("cron.next"), t("cron.activates"), ""]}
+            head={[t("cron.unit"), t("cron.next"), t("cron.last"), ""]}
           >
             {timers.map((tm) => (
               <tr key={tm.unit}>
@@ -117,8 +118,8 @@ export default function Panel() {
                     </span>
                   ) : null}
                 </td>
-                <td className="px-3 py-2 text-xs">{tm.next || "–"}</td>
-                <td className="px-3 py-2 font-mono text-xs">{tm.activates || "–"}</td>
+                <td className="px-3 py-2 text-xs">{when(tm.next, i18n.language)}</td>
+                <td className="px-3 py-2 text-xs text-white/60">{when(tm.last, i18n.language)}</td>
                 <td className="px-3 py-2 text-right">
                   {tm.managed ? (
                     <button
@@ -196,10 +197,10 @@ export default function Panel() {
           <ul className="space-y-2">
             {files.map((f) => (
               <li key={f.name} className="rounded-xl border border-white/10 bg-slate-950/40 p-3">
-                <div className="font-mono text-xs text-white/80">{f.name}</div>
-                <pre className="mt-2 overflow-x-auto font-mono text-[11px] whitespace-pre-wrap text-white/50">
-                  {f.preview}
-                </pre>
+                <details>
+                  <summary className="cursor-pointer font-mono text-xs text-white/80">{f.name}</summary>
+                  <pre className="mt-2 overflow-x-auto font-mono text-[11px] whitespace-pre-wrap text-white/50">{f.preview}</pre>
+                </details>
               </li>
             ))}
           </ul>
@@ -207,4 +208,11 @@ export default function Panel() {
       </section>
     </PanelFrame>
   );
+}
+
+// when formats a timer time in the user's language; "–" for none.
+function when(iso: string, lang: string): string {
+  if (!iso) return "–";
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "–" : d.toLocaleString(lang, { dateStyle: "medium", timeStyle: "short" });
 }

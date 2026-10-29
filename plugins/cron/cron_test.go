@@ -37,9 +37,15 @@ func TestCleanJob(t *testing.T) {
 }
 
 func TestParseTimers(t *testing.T) {
-	list := parseTimers(sampleTimers)
-	if len(list) < 2 {
-		t.Fatalf("%d", len(list))
+	list, err := parseTimers(sampleTimers)
+	if err != nil || len(list) != 2 {
+		t.Fatalf("%d %v", len(list), err)
+	}
+	if list[0].Next != "2026-10-29T22:00:00Z" || list[0].Last != "2026-10-29T21:00:00Z" || list[1].Last != "" {
+		t.Fatalf("times: %+v", list)
+	}
+	if _, err := parseTimers("NEXT LEFT LAST"); err == nil {
+		t.Fatal("table output must be rejected, not misparsed")
 	}
 	var managed bool
 	for _, tmr := range list {
