@@ -22,13 +22,13 @@
   },
   "login": {
     "title": "Connexion",
-    "step": "Étape {{step}} sur 2",
+    "step": "Étape {{step}} sur 3",
     "username": "Utilisateur",
     "password": "Mot de passe",
     "next": "Continuer",
     "checking": "Vérification …",
     "session": "Vérification de la session …",
-    "codeHint": "Connecté en tant que {{user}}. Saisissez le code à 6 chiffres ou un code de secours.",
+    "codeHint": "Saisis le code à 6 chiffres de ton application d’authentification ou un code de secours.",
     "code": "Code",
     "codePlaceholder": "123456 ou ABCDE-23456",
     "signIn": "Se connecter",
@@ -36,7 +36,11 @@
     "lostAccess": "Accès perdu ?",
     "withProvider": "Se connecter avec {{name}}",
     "failed": "Échec de la connexion",
-    "badCode": "Code invalide"
+    "badCode": "Code invalide",
+    "stepUser": "Se connecter",
+    "stepPassword": "Saisir le mot de passe",
+    "stepCode": "Saisir le code",
+    "change": "Modifier"
   },
   "theme": {
     "title": "Apparence",

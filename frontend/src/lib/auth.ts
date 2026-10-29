@@ -26,6 +26,7 @@ function post<T>(path: string, body?: unknown): Promise<T> {
 
 export const authApi = {
   me: () => api<{ username: string }>("/api/auth/me"),
+  identify: (username: string) => post<{ ok: boolean }>("/api/auth/identify", { username }),
   login: (username: string, password: string) =>
     post<LoginResponse>("/api/auth/login", { username, password }),
   enroll: () => post<Enrollment>("/api/auth/2fa/enroll"),

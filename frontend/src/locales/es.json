@@ -22,13 +22,13 @@
   },
   "login": {
     "title": "Acceso",
-    "step": "Paso {{step}} de 2",
+    "step": "Paso {{step}} de 3",
     "username": "Usuario",
     "password": "Contraseña",
     "next": "Continuar",
     "checking": "Comprobando …",
     "session": "Comprobando la sesión …",
-    "codeHint": "Sesión de {{user}}. Introduce el código de 6 dígitos o un código de respaldo.",
+    "codeHint": "Introduce el código de 6 dígitos de tu app de autenticación o un código de respaldo.",
     "code": "Código",
     "codePlaceholder": "123456 o ABCDE-23456",
     "signIn": "Entrar",
@@ -36,7 +36,11 @@
     "lostAccess": "¿Perdiste el acceso?",
     "withProvider": "Entrar con {{name}}",
     "failed": "El acceso ha fallado",
-    "badCode": "Código no válido"
+    "badCode": "Código no válido",
+    "stepUser": "Iniciar sesión",
+    "stepPassword": "Introduce la contraseña",
+    "stepCode": "Introduce el código",
+    "change": "Cambiar"
   },
   "theme": {
     "title": "Apariencia",

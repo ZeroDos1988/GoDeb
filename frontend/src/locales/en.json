@@ -47,13 +47,13 @@
   },
   "login": {
     "title": "Sign in",
-    "step": "Step {{step}} of 2",
+    "step": "Step {{step}} of 3",
     "username": "Username",
     "password": "Password",
     "next": "Continue",
     "checking": "Checking …",
     "session": "Checking session …",
-    "codeHint": "Signed in as {{user}}. Enter the 6-digit code or a backup code.",
+    "codeHint": "Enter the 6-digit code from your authenticator app or a backup code.",
     "code": "Code",
     "codePlaceholder": "123456 or ABCDE-23456",
     "signIn": "Sign in",
@@ -61,7 +61,11 @@
     "lostAccess": "Lost access?",
     "withProvider": "Sign in with {{name}}",
     "failed": "Sign-in failed",
-    "badCode": "Invalid code"
+    "badCode": "Invalid code",
+    "stepUser": "Sign in",
+    "stepPassword": "Enter password",
+    "stepCode": "Enter code",
+    "change": "Change"
   },
   "theme": {
     "title": "Appearance",

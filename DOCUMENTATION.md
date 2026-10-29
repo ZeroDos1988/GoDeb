@@ -256,10 +256,13 @@ Lokal getestet sind Download und Konfiguration, noch nicht der Start unter Wine 
 
 ## Sicherheitskonzept
 
-Die Anmeldung hat zwei Stufen.
+Die Anmeldung hat drei Schritte, jeder auf einer eigenen Seite.
 
-1. `POST /api/auth/login` prüft das bcrypt-Passwort. Bei Erfolg setzt der Daemon das Cookie `godeb_pending` (fünf Minuten, Pfad `/api/auth/2fa`).
-2. `POST /api/auth/2fa/authenticate` prüft das TOTP oder einen Backup-Code. Danach gilt `godeb_session` zwölf Stunden.
+1. **Benutzername:** `POST /api/auth/identify` prüft, ob es das Konto gibt. Ein unbekannter Name zählt sofort als Fehlversuch (`FAILED_LOGIN`, fail2ban), die Antwort ist aber für jeden Namen gleich (`{"ok":true}`, mindestens 300 ms). Sonst ließen sich gültige Namen sammeln, und ein Angreifer müsste nur noch Passwörter raten.
+2. **Passwort:** `POST /api/auth/login` prüft Name und bcrypt-Passwort (unbekannte Namen laufen gegen einen Platzhalter-Hash, gleiche Dauer). Bei Erfolg setzt der Daemon das Cookie `godeb_pending` (fünf Minuten, Pfad `/api/auth/2fa`). Ein falsches Passwort zählt als Fehlversuch.
+3. **2FA:** `POST /api/auth/2fa/authenticate` prüft das TOTP oder einen Backup-Code. Danach gilt `godeb_session` zwölf Stunden. Ein falscher Code zählt als Fehlversuch; nach fünf falschen Codes ist die Anmeldung verworfen.
+
+Die Anmeldeseite zeigt nur Logo, Schritt und Eingabefeld; die Sprache kommt aus dem Browser.
 
 Ist noch kein TOTP bestätigt, liefert der Login die Stufe `enroll`. `POST /api/auth/2fa/enroll` erzeugt Geheimnis, QR-Code und Backup-Codes. `POST /api/auth/2fa/verify` bestätigt den ersten Code. Geheimnis und Backup-Codes (gehasht) liegen beim Agenten in `/etc/godeb/godeb.db`, nie in der Datenbank der Weboberfläche. Weitere Konten dürfen 2FA nur einrichten, wenn root es mit `godeb user passwd` oder `godeb 2fa reset` freigegeben hat.
 
@@ -269,7 +272,9 @@ Alle `/api`-Routen außer Gesundheit, Login, Logout, 2FA und den öffentlichen O
 
 Alles, was das eigene Konto betrifft, liegt hinter dem Avatar oben rechts: Sprache, Darstellung, Sitzungen, Einrichtungsübersicht, Abmelden und die Version. Auf dem Handy sitzt der Avatar in der Kopfzeile neben dem Logo, die Seiten selbst bleiben frei davon.
 
-Die Sprache folgt standardmäßig dem Browser (erste unterstützte Sprache aus `navigator.languages`, sonst Englisch). Wer eine Sprache wählt, legt sie im Browser (`localStorage`) und im Konto (`/api/user/settings`) ab; „Auto“ kehrt zum Browser zurück. Anmeldung und Ersteinrichtung haben oben rechts eine eigene Auswahl, die nur im Browser gilt. Nach der Anmeldung gewinnt eine im Konto gespeicherte Sprache.
+Die Sprache folgt standardmäßig dem Browser (erste unterstützte Sprache aus `navigator.languages`, sonst Englisch). Wer eine Sprache wählt, legt sie im Browser (`localStorage`) und im Konto (`/api/user/settings`) ab; „Auto“ kehrt zum Browser zurück. Die Anmeldung hat keine eigene Auswahl mehr und folgt dem Browser bzw. der zuletzt gewählten Sprache; die Ersteinrichtung hat oben rechts eine Auswahl, die nur im Browser gilt. Nach der Anmeldung gewinnt eine im Konto gespeicherte Sprache.
+
+**Cookies:** GoDeb setzt nur technisch nötige Cookies: `godeb_pending` (zwischen Passwort und 2FA, fünf Minuten) und `godeb_session` (die Anmeldung), beide `HttpOnly` und `SameSite=Strict`. Dazu kommen im `localStorage` die selbst gewählte Sprache und Darstellung. Es gibt keine Analyse, keine Werbung und keine Dienste Dritter. Ein Cookie-Banner ist dafür nicht nötig: Unbedingt erforderliche Speicherungen brauchen keine Einwilligung (§ 25 Abs. 2 Nr. 2 TDDDG, Art. 5 Abs. 3 ePrivacy-Richtlinie).
 
 ### Sitzungen
 
@@ -315,7 +320,7 @@ Das Passwort muss 12 bis 72 Zeichen lang sein. `sudo` ist nötig: Nur root darf 
 
 ### Fail2ban
 
-`scripts/setup-fail2ban.sh` und die Dateien unter `package/debian/etc/fail2ban/` richten ein Filter und ein Jail für GoDeb ein. Das Filter erkennt `FAILED_LOGIN`. Das Jail gilt für die Ports `8080` und `8443`, mit drei Versuchen in zehn Minuten und einer Sperre von einer Stunde. Das Fail2ban-Plugin zeigt Jails und hebt Sperren mit `fail2ban-client unban` auf.
+`scripts/setup-fail2ban.sh` und die Dateien unter `package/debian/etc/fail2ban/` richten ein Filter und ein Jail für GoDeb ein. Das Filter erkennt `FAILED_LOGIN`. Das Jail gilt für die Ports `8080` und `8443`. Es zählt jeden fehlgeschlagenen Anmeldeschritt: unbekannter Benutzername (Schritt 1, ein unbekannter Name zählt beim Passwort in Schritt 2 noch einmal), falsches Passwort, falscher 2FA- oder Backup-Code, auch bei der Bestätigung kritischer Aktionen. Fünf Fehlversuche in zehn Minuten sperren die Adresse für zehn Minuten; jede weitere Sperre derselben Adresse dauert doppelt so lang, höchstens einen Tag (`bantime.increment`). Wer sich selbst ausgesperrt hat: per SSH `sudo fail2ban-client set godeb unbanip <ip>`. Das Fail2ban-Plugin zeigt Jails und hebt Sperren mit `fail2ban-client unban` auf.
 
 ### OIDC
 
@@ -478,6 +483,7 @@ Alle außer `status` antworten nach dem Abschluss mit `410`.
 | GET | `/api/system` | Hostname, OS, Kernel, CPU, RAM, Platte |
 | GET | `/api/doctor` | Server-Diagnose wie `godeb doctor` (nur lesen; mit Agent über `/internal/doctor`, Ausgabe ohne Geheimnisse) |
 | GET | `/api/plugins` | Sidebar-Metadaten |
+| POST | `/api/auth/identify` | Schritt 1: Benutzername; gleiche Antwort für jeden Namen, unbekannte zählen als Fehlversuch |
 | POST | `/api/auth/login` | Passwort, setzt Pending-Cookie |
 | POST | `/api/auth/2fa/enroll` | TOTP anlegen |
 | POST | `/api/auth/2fa/verify` | Einrichtung bestätigen |

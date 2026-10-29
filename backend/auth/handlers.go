@@ -8,6 +8,7 @@ import (
 	"path"
 	"regexp"
 	"strings"
+	"time"
 
 	"godeb/backend/core"
 )
@@ -32,6 +33,7 @@ func Mount(mux *http.ServeMux, fail FailureFunc) {
 		onFailure = fail
 	}
 	h := handlers{fail: onFailure}
+	mux.HandleFunc("POST /api/auth/identify", h.identify)
 	mux.HandleFunc("POST /api/auth/login", h.login)
 	mux.HandleFunc("POST /api/auth/2fa/enroll", h.enroll)
 	mux.HandleFunc("POST /api/auth/2fa/verify", h.verify)
@@ -60,6 +62,43 @@ type loginRequest struct {
 
 type codeRequest struct {
 	Code string `json:"code"`
+}
+
+// identifyDelay is the least time /api/auth/identify takes. An unknown name
+// also writes to auth.log; the fixed duration keeps that from telling
+// known and unknown names apart. Tests set it to 0.
+var identifyDelay = 300 * time.Millisecond
+
+// identify is the first of the three login steps (name, password, code).
+// An unknown name counts as a failed login for fail2ban right away, but the
+// answer is the same for every name: telling "no such user" would let
+// anyone collect the valid names and then only guess passwords.
+func (h handlers) identify(w http.ResponseWriter, r *http.Request) {
+	noStore(w)
+	start := time.Now()
+	var req struct {
+		Username string `json:"username"`
+	}
+	if !core.DecodeJSON(w, r, &req) {
+		return
+	}
+	username := strings.TrimSpace(req.Username)
+	exists, err := UserExists(username)
+	if err != nil && !errors.Is(err, ErrInvalidUsername) {
+		core.WriteError(w, http.StatusInternalServerError, "Benutzerdaten nicht lesbar")
+		return
+	}
+	if !exists {
+		h.fail(r, username)
+	}
+	if wait := identifyDelay - time.Since(start); wait > 0 {
+		select {
+		case <-time.After(wait):
+		case <-r.Context().Done():
+			return
+		}
+	}
+	core.WriteJSON(w, http.StatusOK, map[string]any{"ok": true})
 }
 
 func (h handlers) login(w http.ResponseWriter, r *http.Request) {
@@ -330,7 +369,8 @@ func protected(raw string) bool {
 	case "/api/setup/status", "/api/setup/admin":
 		return false
 	case "/api/health", "/api/plugins/wireguard/trust/info", "/api/plugins/wireguard/android", "/api/plugins/wireguard/android/apk",
-		"/api/auth/login", "/api/auth/logout", "/api/auth/oidc/providers", "/api/auth/oidc/resume":
+		// identify: first login step, same answer for every name (see identify).
+		"/api/auth/identify", "/api/auth/login", "/api/auth/logout", "/api/auth/oidc/providers", "/api/auth/oidc/resume":
 		return false
 	}
 	// monitor/site: health summary of a site for its hub. The agent answers

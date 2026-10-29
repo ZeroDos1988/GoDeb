@@ -47,13 +47,13 @@
   },
   "login": {
     "title": "Anmeldung",
-    "step": "Schritt {{step}} von 2",
+    "step": "Schritt {{step}} von 3",
     "username": "Benutzername",
     "password": "Passwort",
     "next": "Weiter",
     "checking": "Prüfe …",
     "session": "Prüfe Sitzung …",
-    "codeHint": "Angemeldet als {{user}}. Gib den 6-stelligen Code oder einen Backup-Code ein.",
+    "codeHint": "Gib den 6-stelligen Code aus deiner Authenticator-App oder einen Backup-Code ein.",
     "code": "Code",
     "codePlaceholder": "123456 oder ABCDE-23456",
     "signIn": "Anmelden",
@@ -61,7 +61,11 @@
     "lostAccess": "Zugang verloren?",
     "withProvider": "Mit {{name}} anmelden",
     "failed": "Anmeldung fehlgeschlagen",
-    "badCode": "Code ungültig"
+    "badCode": "Code ungültig",
+    "stepUser": "Anmelden",
+    "stepPassword": "Passwort eingeben",
+    "stepCode": "Code eingeben",
+    "change": "Ändern"
   },
   "theme": {
     "title": "Darstellung",

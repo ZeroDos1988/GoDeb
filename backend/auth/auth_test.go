@@ -330,3 +330,45 @@ func TestRequireSessionPathsAndOrigin(t *testing.T) {
 		t.Fatalf("cross-origin status=%d", rec.Code)
 	}
 }
+
+func TestIdentifySameAnswerCountsUnknown(t *testing.T) {
+	setup(t)
+	identifyDelay = 0
+	t.Cleanup(func() { identifyDelay = 300 * time.Millisecond })
+	if err := SetPassword("admin", "correct horse battery"); err != nil {
+		t.Fatal(err)
+	}
+	var failures []string
+	mux := http.NewServeMux()
+	Mount(mux, func(r *http.Request, username string) { failures = append(failures, username) })
+	c := &client{t: t, handler: RequireSession(mux), cookies: map[string]*http.Cookie{}}
+
+	known := c.do("POST", "/api/auth/identify", `{"username":"admin"}`)
+	unknown := c.do("POST", "/api/auth/identify", `{"username":"root"}`)
+	invalid := c.do("POST", "/api/auth/identify", `{"username":"a b;c"}`)
+	for _, rec := range []*httptest.ResponseRecorder{known, unknown, invalid} {
+		if rec.Code != http.StatusOK || rec.Body.String() != known.Body.String() {
+			t.Fatalf("answers differ: %d %q vs %q", rec.Code, rec.Body.String(), known.Body.String())
+		}
+	}
+	if len(failures) != 2 || failures[0] != "root" {
+		t.Fatalf("unknown names must count as failures, got %v", failures)
+	}
+	if len(c.cookies) != 0 {
+		t.Fatalf("identify must not start a session: %v", c.cookies)
+	}
+}
+
+func TestIdentifyTakesFixedTime(t *testing.T) {
+	setup(t)
+	identifyDelay = 50 * time.Millisecond
+	t.Cleanup(func() { identifyDelay = 300 * time.Millisecond })
+	mux := http.NewServeMux()
+	Mount(mux, func(*http.Request, string) {})
+	c := &client{t: t, handler: RequireSession(mux), cookies: map[string]*http.Cookie{}}
+	start := time.Now()
+	c.do("POST", "/api/auth/identify", `{"username":"nobody"}`)
+	if d := time.Since(start); d < 50*time.Millisecond {
+		t.Fatalf("identify answered after %s, want at least 50ms", d)
+	}
+}
