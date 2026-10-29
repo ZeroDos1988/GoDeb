@@ -22,15 +22,21 @@ type Meta struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Icon        string `json:"icon"`
+	Group       string `json:"group"`
 	Order       int    `json:"order"`
 	Ready       bool   `json:"ready"`
 }
+
+// pluginGroups are the tabs of the top navigation. A manifest without a
+// known group lands under "apps".
+var pluginGroups = map[string]bool{"system": true, "network": true, "apps": true}
 
 type manifestFile struct {
 	ID          string `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Icon        string `json:"icon"`
+	Group       string `json:"group"`
 	Order       int    `json:"order"`
 }
 
@@ -156,11 +162,15 @@ func (r *Registry) loadOne(pluginsDir, name string, mux *http.ServeMux) (Meta, b
 	if file.Order == 0 {
 		file.Order = 100
 	}
+	if !pluginGroups[file.Group] {
+		file.Group = "apps"
+	}
 	meta := Meta{
 		ID:          file.ID,
 		Name:        file.Name,
 		Description: file.Description,
 		Icon:        file.Icon,
+		Group:       file.Group,
 		Order:       file.Order,
 	}
 	mount := r.handlers[file.ID]

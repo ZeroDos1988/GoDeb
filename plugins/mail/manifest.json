@@ -3,5 +3,6 @@
   "name": "E-Mail",
   "description": "Mailserver: Domains, Postfächer, Aliase, DKIM, Spamfilter",
   "icon": "mail",
+  "group": "apps",
   "order": 34
 }

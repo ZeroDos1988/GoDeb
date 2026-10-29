@@ -3,5 +3,6 @@
   "name": "Protokoll",
   "description": "Log der Weboberfläche und des Agenten: Aktionen, Befehle, Anmeldungen",
   "icon": "log",
+  "group": "system",
   "order": 90
 }

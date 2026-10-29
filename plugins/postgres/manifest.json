@@ -3,5 +3,6 @@
   "name": "PostgreSQL",
   "description": "Datenbanken und Benutzer",
   "icon": "server",
+  "group": "apps",
   "order": 50
 }

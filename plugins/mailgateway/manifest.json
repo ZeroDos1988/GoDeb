@@ -3,5 +3,6 @@
   "name": "Mail-Gateway",
   "description": "Postfix-Relay über WireGuard, OpenDKIM und Queue",
   "icon": "mail",
+  "group": "apps",
   "order": 35
 }

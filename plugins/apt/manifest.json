@@ -3,5 +3,6 @@
   "name": "APT",
   "description": "Aktualisierbare Pakete aus apt list --upgradable",
   "icon": "upgrade",
+  "group": "system",
   "order": 10
 }

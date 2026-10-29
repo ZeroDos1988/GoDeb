@@ -21,7 +21,7 @@ func writeManifest(t *testing.T, dir, id, body string) {
 
 func TestLoadMountsOnlyReadyPlugins(t *testing.T) {
 	dir := t.TempDir()
-	writeManifest(t, dir, "demo", `{"id":"demo","name":"Demo","description":"Beispiel","icon":"server","order":20}`)
+	writeManifest(t, dir, "demo", `{"id":"demo","name":"Demo","description":"Beispiel","icon":"server","group":"network","order":20}`)
 	writeManifest(t, dir, "ghost", `{"id":"ghost","name":"Geist","description":"ohne Handler","icon":"server","order":10}`)
 	writeManifest(t, dir, "bad", `{"id":"other","name":"Falsch","description":"id weicht ab","icon":"server"}`)
 	if err := os.WriteFile(filepath.Join(dir, "notes.txt"), []byte("ignore"), 0o644); err != nil {
@@ -46,7 +46,10 @@ func TestLoadMountsOnlyReadyPlugins(t *testing.T) {
 	if metas[0].ID != "ghost" || metas[0].Ready {
 		t.Fatalf("first = %#v", metas[0])
 	}
-	if metas[1].ID != "demo" || !metas[1].Ready || metas[1].Name != "Demo" {
+	if metas[0].Group != "apps" {
+		t.Fatalf("group fallback = %q", metas[0].Group)
+	}
+	if metas[1].ID != "demo" || !metas[1].Ready || metas[1].Name != "Demo" || metas[1].Group != "network" {
 		t.Fatalf("second = %#v", metas[1])
 	}
 

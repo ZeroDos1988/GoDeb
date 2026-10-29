@@ -3,5 +3,6 @@
   "name": "Fail2ban",
   "description": "Aktive Jails, gesperrte IPs und Entsperren",
   "icon": "lock",
+  "group": "network",
   "order": 25
 }

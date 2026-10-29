@@ -3,5 +3,6 @@
   "name": "Spielserver",
   "description": "Dedizierte Spielserver über SteamCMD, zum Beispiel Enshrouded",
   "icon": "game",
+  "group": "apps",
   "order": 80
 }

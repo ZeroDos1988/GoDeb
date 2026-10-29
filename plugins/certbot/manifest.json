@@ -3,5 +3,6 @@
   "name": "Certbot",
   "description": "Zertifikate unter /etc/letsencrypt",
   "icon": "certificate",
+  "group": "network",
   "order": 40
 }

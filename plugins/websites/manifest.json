@@ -3,5 +3,6 @@
   "name": "Webseiten",
   "description": "nginx, PHP und Reverse-Proxy",
   "icon": "server",
+  "group": "apps",
   "order": 45
 }
