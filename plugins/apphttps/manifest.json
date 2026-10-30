@@ -1,0 +1,8 @@
+{
+  "id": "apphttps",
+  "name": "App-Zugang",
+  "description": "HTTPS mit eigenem Namen im Tunnel, damit sich GoDeb auf dem Handy als App installieren lässt",
+  "icon": "lock",
+  "group": "network",
+  "order": 58
+}

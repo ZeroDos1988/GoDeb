@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "godeb/plugins/apphttps"
 	_ "godeb/plugins/apt"
 	_ "godeb/plugins/certbot"
 	_ "godeb/plugins/cron"

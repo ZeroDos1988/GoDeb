@@ -16,6 +16,11 @@ if (!root) {
   throw new Error("root element missing");
 }
 
+// Only over real HTTPS (app access in the tunnel); the worker caches nothing.
+if ("serviceWorker" in navigator && window.location.protocol === "https:") {
+  navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+}
+
 createRoot(root).render(
   <StrictMode>
     <App />

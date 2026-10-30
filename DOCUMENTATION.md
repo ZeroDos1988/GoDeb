@@ -2,7 +2,7 @@
 
 GoDeb ist eine lokale Verwaltungsoberfläche für Debian 13 (Trixie). Ein statisch gebautes Go-Programm spricht mit dem Betriebssystem, eine React-Oberfläche zeigt den Zustand, und eingebettete SQLite-Dateien halten nur Metadaten. Laufende Dienste bleiben in ihren eigenen Dateien unter `/etc`. Dasselbe Programm läuft als zwei Dienste: die Weboberfläche als unprivilegierter Benutzer `godeb` und ein kleiner root-Agent ohne Netzwerkzugang, der alle Änderungen am System ausführt.
 
-Die Oberfläche hört auf `127.0.0.1:8080` und auf der Adresse von `wg0` (üblich `10.8.0.1:8080`). Auf Wunsch kommt HTTPS auf der LAN-Adresse dazu (`<lan-ip>:8443`, nur für das LAN-Subnetz). Öffentlich erreichbar ist sie nur während der Ersteinrichtung per HTTPS mit Einmal-Token, nie als dauerhaftes Portal und nie per Klartext-HTTP. Sie ist ab 360 px Breite bedienbar, also auch vom Handy über den Tunnel. Über „Zum Startbildschirm hinzufügen“ bekommt sie ein eigenes Symbol (`manifest.webmanifest`); ohne HTTPS öffnet der Browser sie damit wie ein Lesezeichen, nicht als eigenes Fenster.
+Die Oberfläche hört auf `127.0.0.1:8080` und auf der Adresse von `wg0` (üblich `10.8.0.1:8080`). Auf Wunsch kommt HTTPS auf der LAN-Adresse dazu (`<lan-ip>:8443`, nur für das LAN-Subnetz). Öffentlich erreichbar ist sie nur während der Ersteinrichtung per HTTPS mit Einmal-Token, nie als dauerhaftes Portal und nie per Klartext-HTTP. Sie ist ab 360 px Breite bedienbar, also auch vom Handy über den Tunnel. Über „Zum Startbildschirm hinzufügen“ bekommt sie ein eigenes Symbol (`manifest.webmanifest`). Als echte App (eigenes Fenster) lässt sie sich nur über HTTPS installieren; dafür gibt es den App-Zugang (`https://godeb.<domain>:8443` im Tunnel, siehe „App-Zugang“).
 
 ## Architektur
 
@@ -389,6 +389,18 @@ Das Plugin `monitor` sammelt im Agenten alle 10 Sekunden Messwerte und prüft je
 
 Nur auf dem Hub. Eine Regel besteht aus Name, Protokoll, Portbereich und einem Ziel, das als Peer in `wg0.conf` steht. Sie liegt in `/etc/godeb/portforward.json` (`0600`). Beim Speichern prüft GoDeb alle Regeln, testet das erzeugte Skript mit `nft -c` und ersetzt die Tabelle `godeb_portforward` atomar. Danach gleicht es die `ufw route`-Regeln mit dem Kommentar `GoDeb-PF …` ab. Scheitert ufw, wird die vorige Tabelle wiederhergestellt. Abgelehnt werden Ports unter 1024, die SSH-Ports, der WireGuard-Port, `8080/tcp`, Bereiche über 1000 Ports, Überschneidungen und Ziele außerhalb des Tunnelnetzes. Nur IPv4.
 
+### App-Zugang (HTTPS im Tunnel)
+
+Damit sich die Oberfläche auf dem Handy als App installieren lässt, braucht sie HTTPS mit einem Zertifikat, dem der Browser vertraut. Das Plugin `apphttps` richtet dafür einen eigenen Namen ein, z. B. `godeb.example.com`:
+
+- **Voraussetzung:** Unter Domains ein Hetzner-API-Token und die Domain im Modus Hetzner, dazu `wg0` auf diesem Server.
+- **Einschalten** (Agent): A-Eintrag `godeb.<domain>` → Adresse von `wg0` (RRSet mit Label `godeb=1`), dann ein Let's-Encrypt-Zertifikat per ACME DNS-01 (`golang.org/x/crypto/acme`). Der TXT-Eintrag `_acme-challenge.<name>` wird über die Hetzner-API gesetzt, erst bei allen Nameservern der Zone abgewartet und danach wieder gelöscht. Fremde Einträge (ohne `godeb=1`) werden nie geändert, sie führen zu einer Fehlermeldung.
+- **Ablage:** Kontoschlüssel und Zertifikatsschlüssel versiegelt in der Agent-Datenbank (`apphttps_settings`). Der Agent schreibt `listen.json`, `cert.pem` und `key.pem` (`0600`) über `state.WriteFile` nach `/var/lib/godeb/apphttps/` und stellt sie nach einem Neustart wieder her. Er liest dort nichts zurück.
+- **Weboberfläche:** Ist `listen.json` eingeschaltet, lauscht sie per HTTPS auf der Adresse von `wg0`, Port `8443`, nie auf LAN oder WAN. Ein erneuertes Zertifikat lädt sie ohne Neustart. ufw: `allow in on wg0 to any port 8443 proto tcp` (Kommentar „GoDeb HTTPS im Tunnel“), beim Ausschalten wieder entfernt.
+- **Erneuerung:** Der Agent prüft alle sechs Stunden und holt 30 Tage vor Ablauf ein neues Zertifikat. Die Überwachung warnt 14 Tage vor Ablauf, kritisch 3 Tage vorher. `GODEB_ACME_DIRECTORY` (nur `https://`) zeigt zum Testen auf einen anderen ACME-Server, etwa die Staging-Umgebung von Let's Encrypt.
+- **Service Worker:** `/sw.js` wird nur über HTTPS registriert. Er speichert nichts und hat keinen Fetch-Handler, `/api` geht immer ans Netz.
+- **Grenze:** Der A-Eintrag ist öffentlich, zeigt aber auf eine private Tunnel-Adresse; ohne Tunnel ist darüber nichts erreichbar. Auf einem Standort (Heim-VM) erlaubt der Hub zwischen Peers bisher nur Port 8080, dort ist der Name vom Handy also noch nicht erreichbar.
+
 ### Spielserver (Steam)
 
 Ein Plugin für alle Spiele, deren dedizierter Server über SteamCMD kommt. Die Oberfläche zeigt pro Spiel einen Reiter. Das Plugin übernimmt alles, was für jedes Spiel gleich ist. Ein Spiel beschreibt sich in Go (`plugins/steam/game.go`, Typ `Game`): App-ID, Plattform (Linux oder Windows unter Wine), Startdatei und Argumente, zusätzliche APT-Pakete, Stoppsignal, Ports und optional eine Konfigurationsdatei mit Standardinhalt und Prüfung. Enshrouded steht in `plugins/steam/enshrouded.go`. Ein Formular für die Konfiguration ist optional (`plugins/steam/ui/games/`); ohne Formular gibt es den Datei-Editor.
@@ -537,6 +549,10 @@ Alle außer `status` antworten nach dem Abschluss mit `410`.
 | GET | `/api/plugins/portforward/status` |
 | POST | `/api/plugins/portforward/rules` (`name`, `proto`, `from`, `to`, `target`) |
 | POST | `/api/plugins/portforward/rules/{name}/delete` |
+| GET | `/api/plugins/apphttps/status` (Name, Zustand, Ablauf, Hetzner-Domains, Tunnel-Adresse, `running`) |
+| POST | `/api/plugins/apphttps/enable` (`label`, `zone`; holt das Zertifikat im Hintergrund; frischer 2FA-Code) |
+| POST | `/api/plugins/apphttps/renew` (Zertifikat neu holen) |
+| POST | `/api/plugins/apphttps/disable` (HTTPS im Tunnel aus, Port zu) |
 | GET | `/api/plugins/domains/status` (Domains, Token hinterlegt?, öffentliche IP) |
 | POST | `/api/plugins/domains/token` (`token` oder `clear`, optional `serverId`; frischer 2FA-Code) |
 | POST | `/api/plugins/domains/domains` (`name`, `mode`: `manual` oder `hetzner`) |

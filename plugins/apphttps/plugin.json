@@ -1,0 +1,6 @@
+{
+  "id": "apphttps",
+  "name": "App-Zugang",
+  "apt_dependencies": [],
+  "systemd_services": []
+}

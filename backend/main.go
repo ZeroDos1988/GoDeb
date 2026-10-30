@@ -91,6 +91,7 @@ func main() {
 		log.Fatal(err)
 	}
 	go newTLSListeners(handler).run(ctx)
+	go (&appTLS{handler: handler}).run(ctx)
 	if agent.SocketPath() == "" {
 		// Without an agent this process runs the plugins and their services.
 		core.Default.StartServices(ctx)
