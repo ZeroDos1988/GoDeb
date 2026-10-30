@@ -21,9 +21,22 @@ func doctorEnv() doctor.Env {
 		if err != nil {
 			return nil, err
 		}
+		// Records of zones in Hetzner mode can be published with one click
+		// (the same apply as on the Domains page; a conflict with a foreign
+		// record stays a conflict there).
+		hetzner := map[string]bool{}
+		if zones, tokenSet, err := domains.HetznerZones(); err == nil && tokenSet {
+			for _, z := range zones {
+				hetzner[z] = true
+			}
+		}
 		out := make([]doctor.DNSRecord, 0, len(recs))
 		for _, r := range recs {
-			out = append(out, doctor.DNSRecord{Name: r.Name, Type: r.Type, Status: r.Status, Expected: r.ZoneLine, Found: r.Found})
+			rec := doctor.DNSRecord{Name: r.Name, Type: r.Type, Status: r.Status, Expected: r.ZoneLine, Found: r.Found}
+			if hetzner[r.Zone] && r.Kind != "ptr" && r.Status != "conflict" {
+				rec.Fix = &core.Fix{Action: "dnsApply", Path: "/api/plugins/domains/domains/" + r.Zone + "/apply"}
+			}
+			out = append(out, rec)
 		}
 		return out, nil
 	}

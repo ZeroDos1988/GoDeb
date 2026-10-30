@@ -11,6 +11,8 @@ import (
 	"context"
 	"sort"
 	"sync"
+
+	"godeb/backend/core"
 )
 
 // Sample is one value of a series. Counter values grow monotonically (bytes
@@ -58,6 +60,8 @@ type Finding struct {
 	Status Status `json:"status"`
 	Title  string `json:"title"`
 	Detail string `json:"detail,omitempty"`
+	// Fix, when set, resolves the finding with one click on the overview.
+	Fix *core.Fix `json:"fix,omitempty"`
 }
 
 // Check returns findings; an empty result means all is well.

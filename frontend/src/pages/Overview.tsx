@@ -1,20 +1,23 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { formatBytes } from "@/components/Metrics.tsx";
 import { Help } from "@/components/Help.tsx";
 import { PluginIcon } from "@/components/Icons.tsx";
 import * as ui from "@/components/ui.ts";
+import { api } from "@/lib/api.ts";
 import { useGet } from "@/lib/useAsync.ts";
 import type { PluginMeta, SystemInfo } from "@/lib/types.ts";
 
 type Level = "ok" | "info" | "warning" | "critical";
+// Fix is the one-click action of a finding: POST body to an existing route.
+type Fix = { action: string; path: string; body?: unknown };
 type Health = {
   status: Level;
-  findings: { id: string; status: string; title: string }[] | null;
+  findings: { id: string; status: string; title: string; fix?: Fix }[] | null;
   series: { name: string; value: number }[] | null;
 };
 type DoctorReport = {
-  findings: { area: string; level: string; text: string; page?: string }[];
+  findings: { area: string; level: string; text: string; page?: string; fix?: Fix }[];
   fails: number;
   warns: number;
 };
@@ -70,6 +73,12 @@ export function Overview() {
     }, REFRESH_MS);
     return () => window.clearInterval(id);
   }, [reloadSystem, reloadHealth]);
+
+  const reloadDoctor = doctor.reload;
+  const refresh = () => {
+    reloadDoctor();
+    reloadHealth();
+  };
 
   const info = system.data;
   const series = (name: string) => health.data?.series?.find((s) => s.name === name)?.value;
@@ -131,10 +140,7 @@ export function Overview() {
             disabled={doctor.loading}
             title={t("overview.doctorOpen")}
             aria-label={t("overview.doctorOpen")}
-            onClick={() => {
-              doctor.reload();
-              reloadHealth();
-            }}
+            onClick={refresh}
           >
             <span aria-hidden className={doctor.loading ? "animate-spin" : ""}>
               ↻
@@ -144,7 +150,15 @@ export function Overview() {
         {issueCount > 0 ? (
           <ul className="mt-4 divide-y divide-white/10 border-t border-white/10 text-sm">
             {monitorIssues.map((f) => (
-              <Issue key={f.id} level={f.status === "critical" ? "critical" : "warning"} area={t("monitor.tile")} text={f.title} href="#/monitor" />
+              <Issue
+                key={f.id}
+                level={f.status === "critical" ? "critical" : "warning"}
+                area={t("monitor.tile")}
+                text={f.title}
+                href="#/monitor"
+                fix={f.fix}
+                onFixed={refresh}
+              />
             ))}
             {doctorIssues.slice(0, 10).map((f, i) => (
               <Issue
@@ -153,6 +167,8 @@ export function Overview() {
                 area={f.area}
                 text={f.text}
                 href={pageLink(f.page)}
+                fix={f.fix}
+                onFixed={refresh}
               />
             ))}
           </ul>
@@ -374,12 +390,43 @@ function Bar({ label, value, detail }: { label: string; value: number; detail: s
   );
 }
 
-function Issue({ level, area, text, href }: { level: Level; area: string; text: string; href?: string }) {
+function Issue({
+  level,
+  area,
+  text,
+  href,
+  fix,
+  onFixed,
+}: {
+  level: Level;
+  area: string;
+  text: string;
+  href?: string;
+  fix?: Fix;
+  onFixed: () => void;
+}) {
+  const { t } = useTranslation();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  async function run(f: Fix) {
+    setBusy(true);
+    setError("");
+    try {
+      await api(f.path, { method: "POST", body: f.body === undefined ? undefined : JSON.stringify(f.body) });
+      onFixed();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : t("fix.failed"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const body = (
     <>
       <span className={`h-2 w-2 shrink-0 rounded-full ${dot[level]}`} aria-hidden />
       <span className="w-16 shrink-0 truncate text-xs text-white/55 sm:w-24">{area}</span>
-      <span className="min-w-0 flex-1">{text}</span>
+      <span className="min-w-0 flex-1 break-words">{text}</span>
       {href ? (
         <span aria-hidden className="text-white/40 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-brand-cyan">
           →
@@ -388,14 +435,22 @@ function Issue({ level, area, text, href }: { level: Level; area: string; text: 
     </>
   );
   return (
-    <li>
-      {href ? (
-        <a href={href} className="group -mx-2 flex min-h-11 items-center gap-3 rounded-lg px-2 py-2 transition-all duration-200 hover:bg-white/5">
-          {body}
-        </a>
-      ) : (
-        <div className="flex min-h-11 items-center gap-3 py-2">{body}</div>
-      )}
+    <li className="py-1">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        {href ? (
+          <a href={href} className="group -mx-2 flex min-h-11 min-w-0 basis-full items-center gap-3 rounded-lg px-2 py-1 transition-all duration-200 hover:bg-white/5 sm:flex-1 sm:basis-0">
+            {body}
+          </a>
+        ) : (
+          <div className="flex min-h-11 min-w-0 basis-full items-center gap-3 py-1 sm:flex-1 sm:basis-0">{body}</div>
+        )}
+        {fix ? (
+          <button type="button" className={`${ui.button} ms-auto mb-1 sm:mb-0`} disabled={busy} onClick={() => void run(fix)}>
+            {busy ? t("fix.working") : t(`fix.${fix.action}`, { defaultValue: t("fix.generic") })}
+          </button>
+        ) : null}
+      </div>
+      {error ? <p className="ps-5 pb-1 text-xs break-words text-debian">{error}</p> : null}
     </li>
   );
 }

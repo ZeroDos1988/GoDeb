@@ -15,9 +15,11 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -44,11 +46,13 @@ type Finding struct {
 	Level   Level
 	Text    string
 	Details []string
+	Fix     *core.Fix // button on the overview; nil when only a page helps
 }
 
 // DNSRecord is the live state of one record a plugin needs.
 type DNSRecord struct {
 	Name, Type, Status, Expected, Found string
+	Fix                                 *core.Fix // publish through the provider, if possible
 }
 
 // Env is everything the checks read from the host. Default() fills it with
@@ -91,11 +95,35 @@ func Default(version string) Env {
 	}
 }
 
+// extra are checks of plugins (Register); doctor never imports plugins.
+var (
+	extraMu sync.Mutex
+	extra   []func(context.Context) []Finding
+)
+
+// Register adds a plugin check. It runs after the firewall check.
+func Register(check func(context.Context) []Finding) {
+	extraMu.Lock()
+	extra = append(extra, check)
+	extraMu.Unlock()
+}
+
+func checkRegistered(ctx context.Context, _ Env) []Finding {
+	extraMu.Lock()
+	list := append([]func(context.Context) []Finding(nil), extra...)
+	extraMu.Unlock()
+	var out []Finding
+	for _, c := range list {
+		out = append(out, c(ctx)...)
+	}
+	return out
+}
+
 // Check runs all checks in report order.
 func Check(ctx context.Context, env Env) []Finding {
 	var out []Finding
 	for _, c := range []func(context.Context, Env) []Finding{
-		checkVersion, checkServices, checkPorts, checkFirewall, checkWireGuard,
+		checkVersion, checkServices, checkPorts, checkFirewall, checkRegistered, checkWireGuard,
 		checkCerts, checkDNS, checkJournal, checkUpdates, checkDisk, CheckDatabases, checkHardening,
 	} {
 		out = append(out, c(ctx, env)...)
@@ -129,6 +157,8 @@ type ReportFinding struct {
 	// Page is the plugin page where the finding is fixed, so the overview
 	// can link to it. Empty when no page fits (hardening, databases).
 	Page string `json:"page,omitempty"`
+	// Fix is the one-click action, if the finding has a safe one.
+	Fix *core.Fix `json:"fix,omitempty"`
 }
 
 // pages maps an area to the plugin whose page deals with it.
@@ -143,6 +173,7 @@ var pages = map[string]string{
 	"DNS":                               "domains",
 	"Journal (Fehler seit Systemstart)": "logs",
 	"Speicher":                          "monitor",
+	"Fernzugang":                        "ufw",
 }
 
 // NewReport turns Check results into the API payload.
@@ -155,7 +186,7 @@ func NewReport(findings []Finding, at time.Time) Report {
 // Add appends findings and updates the counters.
 func (r *Report) Add(findings []Finding) {
 	for _, f := range findings {
-		r.Findings = append(r.Findings, ReportFinding{Area: f.Area, Level: f.Level.String(), Text: f.Text, Details: f.Details, Page: pages[f.Area]})
+		r.Findings = append(r.Findings, ReportFinding{Area: f.Area, Level: f.Level.String(), Text: f.Text, Details: f.Details, Page: pages[f.Area], Fix: f.Fix})
 		switch f.Level {
 		case Fail:
 			r.Fails++
@@ -250,17 +281,35 @@ func checkServices(ctx context.Context, env Env) []Finding {
 		}
 	}
 	failed := env.Run(ctx, "systemctl", "--failed", "--plain", "--no-legend", "--no-pager")
-	var names []string
+	var names, others []string
 	for _, l := range lines(failed.Stdout) {
 		names = append(names, strings.Fields(l)[0])
 	}
-	if len(names) > 0 {
-		out = append(out, Finding{Area: area, Level: Fail, Text: fmt.Sprintf("%d fehlgeschlagene Units", len(names)), Details: names})
-	} else if failed.Err == nil {
+	// A failed service gets its own line with a restart button; timers,
+	// mounts and GoDeb's own units stay in one line without.
+	for _, n := range names {
+		if !restartable(n) {
+			others = append(others, n)
+			continue
+		}
+		out = append(out, Finding{Area: area, Level: Fail, Text: "fehlgeschlagen: " + n, Fix: &core.Fix{
+			Action: "restart", Path: "/api/plugins/systemd/action", Body: map[string]string{"unit": n, "action": "restart"},
+		}})
+	}
+	if len(others) > 0 {
+		out = append(out, Finding{Area: area, Level: Fail, Text: fmt.Sprintf("%d fehlgeschlagene Units", len(others)), Details: others})
+	} else if len(names) == 0 && failed.Err == nil {
 		out = append(out, Finding{Area: area, Level: OK, Text: "keine fehlgeschlagenen Units"})
 	}
 	return out
 }
+
+// restartable matches what the systemd plugin may restart.
+func restartable(unit string) bool {
+	return serviceUnit.MatchString(unit) && unit != "godeb.service" && unit != "godeb-agent.service"
+}
+
+var serviceUnit = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9:._@-]{0,120}\.service$`)
 
 // Listener is one listening socket outside loopback.
 type Listener struct {
@@ -504,7 +553,7 @@ func checkDNS(ctx context.Context, env Env) []Finding {
 			ok++
 			continue
 		}
-		f := Finding{Area: area, Level: Warn, Text: fmt.Sprintf("%s %s: %s", r.Type, r.Name, statusText(r.Status)), Details: []string{"erwartet: " + r.Expected}}
+		f := Finding{Area: area, Level: Warn, Text: fmt.Sprintf("%s %s: %s", r.Type, r.Name, statusText(r.Status)), Details: []string{"erwartet: " + r.Expected}, Fix: r.Fix}
 		if r.Found != "" {
 			f.Details = append(f.Details, "gefunden: "+r.Found)
 		}
@@ -552,7 +601,8 @@ func checkUpdates(ctx context.Context, env Env) []Finding {
 		all, security := ParseUpgradable(res.Stdout)
 		switch {
 		case len(security) > 0:
-			out = append(out, Finding{Area: area, Level: Warn, Text: fmt.Sprintf("%d Sicherheitsupdates ausstehend (insgesamt %d)", len(security), len(all)), Details: security})
+			out = append(out, Finding{Area: area, Level: Warn, Text: fmt.Sprintf("%d Sicherheitsupdates ausstehend (insgesamt %d)", len(security), len(all)), Details: security,
+				Fix: &core.Fix{Action: "securityUpdates", Path: "/api/plugins/apt/security"}})
 		case len(all) > 0:
 			out = append(out, Finding{Area: area, Level: Info, Text: fmt.Sprintf("%d Updates verfügbar", len(all))})
 		default:

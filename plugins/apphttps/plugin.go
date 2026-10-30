@@ -338,7 +338,7 @@ func expiryCheck(context.Context) []metrics.Finding {
 }
 
 func expiryFinding(row settingsRow, now time.Time) []metrics.Finding {
-	f := metrics.Finding{ID: "apphttps", Detail: row.LastError}
+	f := metrics.Finding{ID: "apphttps", Detail: row.LastError, Fix: &core.Fix{Action: "renewCert", Path: base + "/renew"}}
 	end, err := time.Parse(time.RFC3339, row.NotAfter)
 	switch {
 	case row.CertPEM == "" || err != nil:
