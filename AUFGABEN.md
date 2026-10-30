@@ -41,7 +41,7 @@ Alles aus der Liste vom 27.10. ist erledigt (sudo mit 2FA, Update-Hinweise, Doct
 Reihenfolge wie in `ROADMAP.md` „Produktionsreife“, Anleitung in `DOCUMENTATION.md` unter „Produktivbetrieb (Checkliste)“ und „Notfall“.
 
 1. **VPS vorbereiten:** Hetzner-Backups an, Snapshot, Hetzner Cloud Firewall, SSH nur mit Schlüssel.
-2. **VPS auf v0.2.18 bringen:** APT → „Alle aktualisieren“. Prüfen: `godeb version`, `sudo godeb doctor` (Datenbanken OK), Dienste-Seite, Protokoll, Plugins, automatische Updates. Danach App-Zugang testen: unter Netzwerk → App-Zugang einschalten, `https://godeb.<domain>:8443` mit aktivem Tunnel auf dem Handy öffnen und als App installieren.
+2. **VPS auf v0.2.18 bringen:** APT → „Alle aktualisieren“. Prüfen: `godeb version`, `sudo godeb doctor` (Datenbanken OK), Dienste-Seite, Protokoll, Plugins, automatische Updates. Fernzugang testen: `sudo godeb access open --for 30m`, von außen `https://<VPS-IP>:8443` (Port vorher in der Hetzner Cloud Firewall freigeben), Warnung und „Jetzt schließen“ auf der Übersicht. Danach App-Zugang testen: unter Netzwerk → App-Zugang einschalten, `https://godeb.<domain>:8443` mit aktivem Tunnel auf dem Handy öffnen und als App installieren.
 3. **Mailserver auf dem VPS:**
    - Vorher: A-Eintrag `mail.<domain>`, Reverse-DNS, Freigabe für ausgehend 25/465 bei Hetzner beantragen.
    - Dann: Domain und Postfach anlegen, mit Thunderbird und Handy testen, mail-tester.com (mindestens 9/10).
