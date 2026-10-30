@@ -5,6 +5,7 @@ import { api } from "@/lib/api.ts";
 import type { CommandEnvelope } from "@/lib/types.ts";
 import { useGet } from "@/lib/useAsync.ts";
 import * as ui from "@/components/ui.ts";
+import { Help } from "@/components/Help.tsx";
 
 type AptPackage = {
   name: string;
@@ -249,7 +250,7 @@ function AutoCard({
               setForm({ ...form, interval: Number(e.target.value) || 0 })
             }
             aria-label={t("apt.interval")}
-            className={`${ui.input} w-16 text-center`}
+            className={`${ui.input} w-20! shrink-0 text-center`}
           />
           <span>{t("apt.autoCheckAfter")}</span>
         </label>
@@ -263,11 +264,9 @@ function AutoCard({
               setForm({ ...form, autoSecurity: e.target.checked })
             }
           />
-          <span>
+          <span className="flex items-center gap-2">
             {t("apt.autoSecurity")}
-            <span className="block text-xs text-white/50">
-              {t("apt.autoSecurityHint")}
-            </span>
+            <Help>{t("apt.autoSecurityHint")}</Help>
           </span>
         </label>
         <p className="text-xs text-white/60">

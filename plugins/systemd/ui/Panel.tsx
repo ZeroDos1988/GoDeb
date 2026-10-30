@@ -339,7 +339,7 @@ function AllUnits({ tabs }: { tabs: ReactNode }) {
           value={filter}
           onChange={(event) => setFilter(event.target.value)}
           placeholder="ssh"
-          className={`${ui.input} w-full font-mono`}
+          className={`${ui.input} font-mono`}
         />
       </label>
       {error ? <p className="mb-4 text-sm text-debian">{error}</p> : null}

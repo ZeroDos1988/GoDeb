@@ -158,7 +158,7 @@ export function TwoFAEnrollment({ onComplete, onCancel }: Props) {
                       autoComplete="one-time-code"
                       placeholder="123456"
                       aria-label={t("enroll.codeLabel")}
-                      className={`${ui.input} w-36 text-center font-mono text-lg tracking-[0.3em]`}
+                      className={`${ui.input} w-36! text-center font-mono text-lg tracking-[0.3em]`}
                     />
                     <button
                       type="submit"

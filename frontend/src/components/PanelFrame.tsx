@@ -49,9 +49,13 @@ export function PanelFrame({
           type="button"
           onClick={onRefresh}
           disabled={loading}
-          className={ui.button}
+          title={t("common.refresh")}
+          aria-label={t("common.refresh")}
+          className={`${ui.button} w-11 px-0 text-lg md:w-10`}
         >
-          {t("common.refresh")}
+          <span aria-hidden className={loading ? "animate-spin" : ""}>
+            ↻
+          </span>
         </button>
       </div>
 

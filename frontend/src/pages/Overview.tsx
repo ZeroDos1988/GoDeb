@@ -124,14 +124,18 @@ export function Overview() {
           </p>
           <button
             type="button"
-            className={ui.button}
+            className={`${ui.button} w-11 px-0 text-lg md:w-10`}
             disabled={doctor.loading}
+            title={t("overview.doctorOpen")}
+            aria-label={t("overview.doctorOpen")}
             onClick={() => {
               doctor.reload();
               reloadHealth();
             }}
           >
-            {t("overview.doctorOpen")}
+            <span aria-hidden className={doctor.loading ? "animate-spin" : ""}>
+              ↻
+            </span>
           </button>
         </div>
         {issueCount > 0 ? (
@@ -365,7 +369,7 @@ function Issue({ level, area, text, href }: { level: Level; area: string; text: 
   const body = (
     <>
       <span className={`h-2 w-2 shrink-0 rounded-full ${dot[level]}`} aria-hidden />
-      <span className="w-20 shrink-0 truncate text-xs text-white/55">{area}</span>
+      <span className="w-16 shrink-0 truncate text-xs text-white/55 sm:w-24">{area}</span>
       <span className="min-w-0 flex-1">{text}</span>
     </>
   );
