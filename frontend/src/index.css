@@ -2,15 +2,15 @@
 @source "../../plugins";
 
 :root {
-  --color-primary: #a80030;
-  --color-bg: #f3efe6;
-  --color-text: #1c1915;
-  --color-accent: #246b45;
-  --color-surface: #fffdf8;
-  --color-border: #e4dccf;
-  --color-muted-fg: #6f675e;
-  --color-sidebar-bg: #1c1915;
-  --gd-sidebar-fg: #f3efe6;
+  --color-primary: #b8304f;
+  --color-bg: #eef2f7;
+  --color-text: #14243a;
+  --color-accent: #0b86ad;
+  --color-surface: #fbfcfe;
+  --color-border: #d3dae4;
+  --color-muted-fg: #5a6b80;
+  --color-sidebar-bg: #14243a;
+  --gd-sidebar-fg: #eef2f7;
   color-scheme: light;
 }
 
@@ -23,6 +23,7 @@
   --color-line: var(--color-border);
   --color-debian: var(--color-primary);
   --color-moss: var(--color-accent);
+  --color-brand-cyan: var(--color-accent);
   --color-amber: #8a5a00;
   --color-muted: var(--color-muted-fg);
   --color-sidebar: var(--color-sidebar-bg);
@@ -35,6 +36,12 @@
    bg-slate-900/60, pale status colours). Instead of doubling every class,
    the light theme maps these tokens to light cards, dark text and darker
    status colours. Unlayered, so it wins over Tailwind's theme layer. */
+/* Dark theme: cards in the navy of the theme instead of Tailwind's slate. */
+[data-theme="dark"] {
+  --color-slate-900: var(--color-surface);
+  --color-slate-950: var(--color-bg);
+}
+
 [data-theme="light"] {
   --color-white: var(--color-text);
   --color-slate-900: var(--color-surface);
@@ -66,7 +73,8 @@ body,
 body {
   margin: 0;
   background:
-    radial-gradient(1200px 500px at 10% -10%, color-mix(in srgb, var(--color-primary) 28%, transparent), transparent 60%),
+    radial-gradient(900px 400px at 0% 0%, color-mix(in srgb, var(--color-accent) 12%, transparent), transparent 70%),
+    radial-gradient(900px 400px at 100% 0%, color-mix(in srgb, var(--color-primary) 10%, transparent), transparent 70%),
     var(--color-paper);
   color: var(--color-ink);
 }

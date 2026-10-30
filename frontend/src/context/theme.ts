@@ -14,18 +14,21 @@ export type ThemeSettings = {
 
 export const themeStorageKey = "godeb-theme";
 
+// Colours of the logo (docs/brand/README.md): red "Deb", cyan "Go", the
+// navy of the shield. Light mode darkens red and cyan a little so text in
+// these colours stays readable on white.
 export const lightColors: ThemeColors = {
-  primary: "#a80030",
-  bg: "#f3efe6",
-  accent: "#246b45",
-  text: "#1c1915",
+  primary: "#b8304f",
+  bg: "#eef2f7",
+  accent: "#0b86ad",
+  text: "#14243a",
 };
 
 export const darkColors: ThemeColors = {
-  primary: "#e23b5a",
-  bg: "#141210",
-  accent: "#3dbe7a",
-  text: "#f4efe6",
+  primary: "#d9466a",
+  bg: "#0d1828",
+  accent: "#14afdd",
+  text: "#e6edf5",
 };
 
 export const defaultSettings: ThemeSettings = {
@@ -91,7 +94,7 @@ function mix(base: string, target: string, amount: number) {
 }
 
 export function themeVars(colors: ThemeColors, dark: boolean): Record<string, string> {
-  const surface = dark ? mix(colors.bg, "#ffffff", 0.08) : mix(colors.bg, "#ffffff", 0.62);
+  const surface = dark ? mix(colors.bg, "#ffffff", 0.06) : mix(colors.bg, "#ffffff", 0.85);
   const border = dark ? mix(colors.bg, "#ffffff", 0.18) : mix(colors.bg, colors.text, 0.14);
   const muted = dark ? mix(colors.text, colors.bg, 0.28) : mix(colors.text, colors.bg, 0.38);
   return {
@@ -102,7 +105,8 @@ export function themeVars(colors: ThemeColors, dark: boolean): Record<string, st
     "--color-surface": surface,
     "--color-border": border,
     "--color-muted-fg": muted,
-    "--color-sidebar-bg": luminance(colors.text) > 0.6 ? colors.bg : colors.text,
+    // Top bar: the dark of the theme (navy like the shield in light mode).
+    "--color-sidebar-bg": luminance(colors.text) > 0.6 ? mix(colors.bg, "#000000", 0.25) : colors.text,
     "--gd-sidebar-fg": luminance(colors.text) > 0.6 ? colors.text : colors.bg,
   };
 }

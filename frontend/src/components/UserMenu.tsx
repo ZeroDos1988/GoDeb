@@ -49,7 +49,7 @@ export function UserMenu({ username, version, onAppearance, onSessions, onLogout
         aria-expanded={open}
         aria-label={t("user.menu", { name: username })}
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 rounded-full p-0.5 pe-1.5 text-white/70 transition-all duration-200 ease-in-out hover:bg-white/10 hover:text-white"
+        className="flex items-center gap-1.5 rounded-full p-0.5 pe-1.5 text-sidebar-fg/70 transition-all duration-200 ease-in-out hover:bg-sidebar-fg/10 hover:text-sidebar-fg"
       >
         <Avatar name={username} />
         <span aria-hidden className={`text-xs transition-transform duration-200 ${open ? "rotate-180" : ""}`}>

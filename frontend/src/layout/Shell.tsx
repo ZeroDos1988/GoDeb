@@ -27,6 +27,14 @@ const rank: Health["status"][] = ["ok", "info", "warning", "critical"];
 const groups = ["system", "network", "apps"] as const;
 type Tab = "overview" | (typeof groups)[number] | "settings";
 
+const tabIcons: Record<Tab, string> = {
+  overview: "dashboard",
+  system: "server",
+  network: "network",
+  apps: "grid",
+  settings: "sliders",
+};
+
 type SubLink = { href: string; route: string; icon: string; label: string };
 
 const healthDot: Record<Health["status"], string> = {
@@ -85,7 +93,9 @@ export function Shell({ plugins, pluginsError, route, username, onLogout, childr
 
   return (
     <div className="min-h-screen bg-paper text-ink">
-      <div className="sticky top-0 z-30 border-b border-white/10 bg-slate-900/80 text-white backdrop-blur-xl">
+      {/* Top bar in the dark of the theme (the navy of the logo's shield),
+          like the main menu bar of HestiaCP. */}
+      <div className="sticky top-0 z-30 bg-sidebar text-sidebar-fg shadow-lg shadow-black/10">
         <header className="mx-auto flex max-w-[1280px] items-center gap-3 px-3 pt-3 pb-2 md:px-6">
           <a href="#/" className="flex min-w-0 items-center gap-2" aria-label={t("nav.overview")}>
             <Shield className="h-8 w-auto" />
@@ -93,7 +103,7 @@ export function Shell({ plugins, pluginsError, route, username, onLogout, childr
           </a>
           {host ? (
             <>
-              <span aria-hidden className="text-white/30">
+              <span aria-hidden className="text-sidebar-fg/35">
                 /
               </span>
               <span className="min-w-0 truncate font-mono text-sm font-semibold">{host}</span>
@@ -104,7 +114,7 @@ export function Shell({ plugins, pluginsError, route, username, onLogout, childr
               <a
                 href="#/monitor"
                 title={t(`monitor.status.${status}`)}
-                className="flex min-h-9 items-center gap-2 rounded-full border border-white/10 px-3 text-xs text-white/80 transition-all duration-200 ease-in-out hover:bg-white/10"
+                className="flex min-h-9 items-center gap-2 rounded-full border border-sidebar-fg/20 px-3 text-xs text-sidebar-fg/85 transition-all duration-200 ease-in-out hover:bg-sidebar-fg/10"
               >
                 <span className={`h-2 w-2 rounded-full ${healthDot[status]}`} aria-hidden />
                 <span className="hidden sm:inline">{t(`monitor.status.${status}`)}</span>
@@ -124,10 +134,15 @@ export function Shell({ plugins, pluginsError, route, username, onLogout, childr
           className="mx-auto flex max-w-[1280px] gap-1 overflow-x-auto px-1 [scrollbar-width:none] md:px-4"
         >
           {tabs.map((item) => (
-            <TabLink key={item.id} href={item.href} active={tab === item.id} label={item.label} />
+            <TabLink key={item.id} href={item.href} active={tab === item.id} icon={tabIcons[item.id]} label={item.label} />
           ))}
           <span className="ms-auto" />
-          <TabLink href="#/plugin-manager" active={tab === "settings"} label={t("nav.groups.settings")} />
+          <TabLink
+            href="#/plugin-manager"
+            active={tab === "settings"}
+            icon={tabIcons.settings}
+            label={t("nav.groups.settings")}
+          />
         </nav>
       </div>
 
@@ -156,20 +171,21 @@ export function Shell({ plugins, pluginsError, route, username, onLogout, childr
   );
 }
 
-// TabLink is one entry of the tab row; the active tab gets the underline.
-function TabLink({ href, active, label }: { href: string; active: boolean; label: string }) {
+// TabLink is one entry of the tab row; the active tab gets the cyan line.
+function TabLink({ href, active, icon, label }: { href: string; active: boolean; icon: string; label: string }) {
   return (
     <a
       href={href}
       aria-current={active ? "page" : undefined}
-      className={`relative flex min-h-11 shrink-0 items-center rounded-t-lg px-3 text-sm whitespace-nowrap transition-all duration-200 ease-in-out ${
-        active ? "font-semibold text-white" : "text-white/65 hover:text-white"
+      className={`relative flex min-h-11 shrink-0 items-center gap-2 rounded-t-lg px-3 text-sm whitespace-nowrap transition-all duration-200 ease-in-out ${
+        active ? "font-semibold text-sidebar-fg" : "text-sidebar-fg/65 hover:text-sidebar-fg"
       }`}
     >
+      <PluginIcon name={icon} />
       {label}
       <span
         aria-hidden
-        className={`absolute inset-x-2 bottom-0 h-0.5 rounded-full ${active ? "bg-debian" : "bg-transparent"}`}
+        className={`absolute inset-x-2 bottom-0 h-[3px] rounded-full ${active ? "bg-brand-cyan" : "bg-transparent"}`}
       />
     </a>
   );
@@ -184,7 +200,7 @@ function SubNavLink({ link, active }: { link: SubLink; active: boolean }) {
       aria-current={active ? "page" : undefined}
       className={`flex min-h-11 shrink-0 items-center gap-2 rounded-2xl px-3 text-sm whitespace-nowrap transition-all duration-200 ease-in-out md:min-h-9 ${
         active
-          ? "bg-slate-900/60 font-medium text-white md:border-s-2 md:border-debian"
+          ? "bg-slate-900/60 font-medium text-white shadow-sm md:border-s-[3px] md:border-brand-cyan"
           : "text-muted hover:bg-slate-900/30 hover:text-ink"
       }`}
     >

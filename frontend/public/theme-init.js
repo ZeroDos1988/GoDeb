@@ -2,8 +2,8 @@
 // flash in the default palette. Kept as a file because the CSP forbids inline scripts.
 try {
   var stored = JSON.parse(localStorage.getItem("godeb-theme") || "null");
-  var light = { primary: "#a80030", bg: "#f3efe6", accent: "#246b45", text: "#1c1915" };
-  var dark = { primary: "#e23b5a", bg: "#141210", accent: "#3dbe7a", text: "#f4efe6" };
+  var light = { primary: "#b8304f", bg: "#eef2f7", accent: "#0b86ad", text: "#14243a" };
+  var dark = { primary: "#d9466a", bg: "#0d1828", accent: "#14afdd", text: "#e6edf5" };
   var mode = stored && stored.mode;
   var colors = mode === "custom" && stored.colors ? stored.colors : mode === "dark" || (mode === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches) ? dark : light;
   var root = document.documentElement;
