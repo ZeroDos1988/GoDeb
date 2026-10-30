@@ -5,6 +5,7 @@ import { api } from "@/lib/api.ts";
 import type { CommandEnvelope } from "@/lib/types.ts";
 import { useGet } from "@/lib/useAsync.ts";
 import * as ui from "@/components/ui.ts";
+import { More } from "@/components/Section.tsx";
 
 type Service = {
   unit: string;
@@ -49,10 +50,8 @@ type Overview = CommandEnvelope & {
 
 type Action = "start" | "stop" | "restart";
 
-const card =
-  "rounded-2xl border border-white/10 bg-slate-900/60 text-white backdrop-blur-xl";
 const action =
-  "rounded-xl border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-white transition-all duration-200 ease-in-out enabled:hover:bg-white/15 disabled:opacity-40";
+  "inline-flex min-h-11 items-center justify-center rounded-lg border border-white/15 bg-white/5 px-3 text-xs text-white transition-all duration-200 ease-in-out enabled:hover:bg-white/15 disabled:opacity-40 md:min-h-8";
 
 // The services page follows HestiaCP: the server's key figures, then the
 // services that matter with status, uptime, CPU and memory, then (second
@@ -143,19 +142,58 @@ function ServerServices({ tabs }: { tabs: ReactNode }) {
       {data ? (
         <>
           {error ? <p className="mb-4 text-sm text-debian">{error}</p> : null}
-          <ul className="space-y-2">
-            {data.services.map((s) => (
-              <ServiceRow
-                key={s.unit}
-                service={s}
-                busy={busy}
-                onAction={(act) => confirmAndRun(s, act)}
-              />
-            ))}
-          </ul>
+          <ServiceTable
+            services={data.services.filter((s) => !unused(s))}
+            busy={busy}
+            onAction={confirmAndRun}
+          />
+          {data.services.some(unused) ? (
+            <More title={t("systemd.unused", { count: data.services.filter(unused).length })}>
+              <ServiceTable services={data.services.filter(unused)} busy={busy} onAction={confirmAndRun} />
+            </More>
+          ) : null}
         </>
       ) : null}
     </PanelFrame>
+  );
+}
+
+// unused: stopped and not started at boot, e.g. the port forwarding on a
+// home VM. Units that cut the admin off when stopped stay visible.
+function unused(s: ServiceView) {
+  return s.active !== "active" && s.active !== "failed" && s.enabled !== "enabled" && !s.critical;
+}
+
+// Fixed columns like the service list of HestiaCP: the values line up no
+// matter how many buttons a row has.
+const columns =
+  "md:grid md:grid-cols-[minmax(0,1fr)_7rem_7rem_9rem_12rem] md:items-center md:gap-4";
+
+function ServiceTable({
+  services,
+  busy,
+  onAction,
+}: {
+  services: ServiceView[];
+  busy: string;
+  onAction: (s: ServiceView, a: Action) => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900/60 text-white backdrop-blur-xl">
+      <div className={`hidden border-b border-white/10 px-4 py-2.5 text-[11px] tracking-wide text-white/50 uppercase ${columns}`}>
+        <span>{t("systemd.service")}</span>
+        <span>{t("systemd.status")}</span>
+        <span>{t("systemd.uptime")}</span>
+        <span>{t("systemd.resources")}</span>
+        <span className="text-end">{t("systemd.actions")}</span>
+      </div>
+      <ul className="divide-y divide-white/10">
+        {services.map((s) => (
+          <ServiceRow key={s.unit} service={s} busy={busy} onAction={(act) => onAction(s, act)} />
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -173,129 +211,76 @@ function ServiceRow({
   // Oneshot units (ufw, wg-quick) stay active without a process.
   const oneshot = running && s.sub === "exited";
   const failed = s.active === "failed";
-  const dot = running
-    ? "bg-emerald-400"
-    : failed
-      ? "bg-rose-400"
-      : "bg-white/30";
+  const dot = running ? "bg-emerald-400" : failed ? "bg-rose-400" : s.critical ? "bg-amber-400" : "bg-white/30";
   const name = t(`services.${s.key}.name`, {
-    defaultValue:
-      s.key === "game"
-        ? s.unit.replace(/^godeb-steam-|\.service$/g, "")
-        : s.unit,
+    defaultValue: s.key === "game" ? s.unit.replace(/^godeb-steam-|\.service$/g, "") : s.unit,
   });
   const desc = t(`services.${s.key}.description`, { defaultValue: s.name });
   const working = busy.startsWith(`${s.unit}:`);
+  const state = oneshot
+    ? t("systemd.activeOneshot")
+    : running
+      ? t("systemd.running")
+      : failed
+        ? t("systemd.failedState")
+        : t("systemd.stopped");
+  const stateTone = running ? "text-emerald-300" : failed ? "text-rose-300" : s.critical ? "text-amber-200" : "text-white/60";
   return (
-    <li className={`${card} px-4 py-3`}>
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <div className="flex min-w-0 flex-1 basis-56 items-start gap-3">
-          <span
-            className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${dot}`}
-            aria-hidden
-          />
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-baseline gap-x-2">
-              <span className="font-medium">{name}</span>
-              <span className="font-mono text-[11px] text-white/40">
-                {s.unit}
-              </span>
-            </div>
-            <div className="text-xs text-white/60">{desc}</div>
+    <li className={`grid grid-cols-2 gap-x-4 gap-y-2 px-4 py-3 transition-all duration-200 hover:bg-white/5 ${columns}`}>
+      <div className="col-span-2 flex min-w-0 items-start gap-3 md:col-span-1">
+        <span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${dot}`} aria-hidden />
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-baseline gap-x-2">
+            <span className="font-medium">{name}</span>
+            <span className="truncate font-mono text-[11px] text-white/40">{s.unit}</span>
           </div>
+          <div className="truncate text-xs text-white/60">{desc}</div>
         </div>
-        <dl className="grid grid-cols-3 gap-x-4 text-xs sm:w-72">
-          <Stat
-            label={t("systemd.status")}
-            value={
-              oneshot
-                ? t("systemd.activeOneshot")
-                : running
-                  ? t("systemd.running")
-                  : failed
-                    ? t("systemd.failedState")
-                    : t("systemd.stopped")
-            }
-            tone={
-              running
-                ? "text-emerald-300"
-                : failed
-                  ? "text-rose-300"
-                  : "text-white/60"
-            }
-          />
-          <Stat
-            label={t("systemd.uptime")}
-            value={
-              running && s.since
-                ? duration(Math.max(0, Date.now() / 1000 - s.since), t)
-                : "–"
-            }
-          />
-          <Stat
-            label={t("systemd.resources")}
-            value={
-              running && !oneshot
-                ? `${s.cpu >= 0 ? `${s.cpu.toFixed(1)} %` : "…"} · ${s.memory >= 0 ? bytes(s.memory) : "–"}`
-                : "–"
-            }
-          />
-        </dl>
-        <div className="flex gap-1.5">
-          {s.locked ? (
-            <span className="text-xs text-white/40">{t("systemd.locked")}</span>
-          ) : (
-            <>
-              <button
-                type="button"
-                className={action}
-                disabled={working || !running}
-                onClick={() => onAction("restart")}
-              >
-                {t("systemd.restart")}
+      </div>
+      <Cell label={t("systemd.status")} value={state} tone={stateTone} />
+      <Cell
+        label={t("systemd.uptime")}
+        value={running && s.since ? duration(Math.max(0, Date.now() / 1000 - s.since), t) : "–"}
+      />
+      <Cell
+        label={t("systemd.resources")}
+        value={
+          running && !oneshot
+            ? `${s.cpu >= 0 ? `${s.cpu.toFixed(1)} %` : "…"} · ${s.memory >= 0 ? bytes(s.memory) : "–"}`
+            : "–"
+        }
+      />
+      <div className="flex items-center justify-end gap-1.5 md:col-auto">
+        {s.locked ? (
+          <span className="text-xs text-white/40">{t("systemd.locked")}</span>
+        ) : (
+          <>
+            <button type="button" className={action} disabled={working || !running} onClick={() => onAction("restart")}>
+              {t("systemd.restart")}
+            </button>
+            {running ? (
+              <button type="button" className={`${action} w-16 text-rose-300`} disabled={working} onClick={() => onAction("stop")}>
+                {t("systemd.stop")}
               </button>
-              {running ? (
-                <button
-                  type="button"
-                  className={`${action} text-rose-200`}
-                  disabled={working}
-                  onClick={() => onAction("stop")}
-                >
-                  {t("systemd.stop")}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className={`${action} text-emerald-200`}
-                  disabled={working}
-                  onClick={() => onAction("start")}
-                >
-                  {t("systemd.start")}
-                </button>
-              )}
-            </>
-          )}
-        </div>
+            ) : (
+              <button type="button" className={`${action} w-16 text-emerald-300`} disabled={working} onClick={() => onAction("start")}>
+                {t("systemd.start")}
+              </button>
+            )}
+          </>
+        )}
       </div>
     </li>
   );
 }
 
-function Stat({
-  label,
-  value,
-  tone = "",
-}: {
-  label: string;
-  value: string;
-  tone?: string;
-}) {
+// Cell is one value of a row; the label only shows on phones, where the
+// header row is hidden.
+function Cell({ label, value, tone = "" }: { label: string; value: string; tone?: string }) {
   return (
-    <div className="min-w-0">
-      <dt className="text-[10px] tracking-wide text-white/40 uppercase">
-        {label}
-      </dt>
-      <dd className={`truncate ${tone}`}>{value}</dd>
+    <div className="min-w-0 text-sm">
+      <div className="text-[10px] tracking-wide text-white/40 uppercase md:hidden">{label}</div>
+      <div className={`truncate ${tone}`}>{value}</div>
     </div>
   );
 }

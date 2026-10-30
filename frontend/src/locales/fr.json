@@ -167,7 +167,10 @@
     "descriptionCol": "Description",
     "start": "Démarrer",
     "stop": "Arrêter",
-    "overviewDescription": "Les services importants de ce serveur avec état et consommation."
+    "overviewDescription": "Les services importants de ce serveur avec état et consommation.",
+    "service": "Service",
+    "actions": "Actions",
+    "unused": "Non utilisés ({{count}})"
   },
   "ufw": {
     "title": "UFW",

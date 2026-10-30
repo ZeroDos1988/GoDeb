@@ -167,7 +167,10 @@
     "descriptionCol": "الوصف",
     "start": "بدء",
     "stop": "إيقاف",
-    "overviewDescription": "الخدمات المهمة لهذا الخادم مع الحالة والاستهلاك."
+    "overviewDescription": "الخدمات المهمة لهذا الخادم مع الحالة والاستهلاك.",
+    "service": "الخدمة",
+    "actions": "الإجراءات",
+    "unused": "غير مستخدمة ({{count}})"
   },
   "ufw": {
     "title": "UFW",

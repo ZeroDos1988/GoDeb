@@ -167,7 +167,10 @@
     "descriptionCol": "描述",
     "start": "启动",
     "stop": "停止",
-    "overviewDescription": "此服务器的重要服务及其状态和资源使用。"
+    "overviewDescription": "此服务器的重要服务及其状态和资源使用。",
+    "service": "服务",
+    "actions": "操作",
+    "unused": "未使用（{{count}}）"
   },
   "ufw": {
     "title": "UFW",

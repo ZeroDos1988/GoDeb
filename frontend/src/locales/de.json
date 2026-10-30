@@ -424,7 +424,10 @@
       "hm": "{{h}} Std {{m}} Min",
       "m": "{{m}} Min"
     },
-    "activeOneshot": "aktiv"
+    "activeOneshot": "aktiv",
+    "service": "Dienst",
+    "actions": "Aktionen",
+    "unused": "Nicht genutzt ({{count}})"
   },
   "services": {
     "godeb": {
