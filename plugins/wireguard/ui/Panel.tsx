@@ -9,6 +9,7 @@ import { useGet } from "@/lib/useAsync.ts";
 import { Modal } from "./Modal.tsx";
 import * as ui from "@/components/ui.ts";
 import { More, SectionHeader, StatGrid } from "@/components/Section.tsx";
+import { Help } from "@/components/Help.tsx";
 
 type WgInterface = {
   name: string;
@@ -771,8 +772,10 @@ function JoinCard({ onJoined }: { onJoined: () => void }) {
         void submit();
       }}
     >
-      <h2 className="text-sm font-semibold">{t("wg.joinTitle")}</h2>
-      <p className="mt-1 text-sm text-white/60">{t("wg.joinText")}</p>
+      <h2 className="flex items-center gap-2 text-base font-semibold">
+        {t("wg.joinTitle")}
+        <Help>{t("wg.joinText")}</Help>
+      </h2>
       <div className="mt-3">
         <ConfigUpload onLoad={setConfig} />
       </div>

@@ -6,6 +6,7 @@ import type { CommandEnvelope } from "@/lib/types.ts";
 import { useGet } from "@/lib/useAsync.ts";
 import * as ui from "@/components/ui.ts";
 import { More, SectionHeader } from "@/components/Section.tsx";
+import { Help } from "@/components/Help.tsx";
 
 type Timer = {
   unit: string;
@@ -107,7 +108,10 @@ export default function Panel() {
       </SectionHeader>
       {adding ? (
       <form onSubmit={(e) => void create(e)} className={`${card} mb-4 space-y-3`}>
-        <p className="text-xs text-white/50">{t("cron.addHint")}</p>
+        <h3 className="flex items-center gap-2 text-base font-semibold">
+          {t("cron.add")}
+          <Help>{t("cron.addHint")}</Help>
+        </h3>
         <label className="block text-xs text-white/60">
           {t("cron.name")}
           <input

@@ -5,6 +5,7 @@ import { api } from "@/lib/api.ts";
 import { useGet } from "@/lib/useAsync.ts";
 import * as ui from "@/components/ui.ts";
 import { More, SectionHeader } from "@/components/Section.tsx";
+import { Help } from "@/components/Help.tsx";
 
 type Settings = {
   tokenSet: boolean;
@@ -124,8 +125,10 @@ export default function Panel() {
 
   const tokenCard = (
   <section className={ui.card}>
-    <h2 className="mb-2 text-base font-semibold">{t("domains.hetzner")}</h2>
-    <p className="mb-3 text-sm text-white/70">{t("domains.hetznerHint")}</p>
+    <h2 className="mb-3 flex items-center gap-2 text-base font-semibold">
+      {t("domains.hetzner")}
+      <Help>{t("domains.hetznerHint")}</Help>
+    </h2>
     {data?.settings.tokenSet ? (
       <div className="mb-3 flex flex-wrap items-center gap-3 text-sm">
         <span>

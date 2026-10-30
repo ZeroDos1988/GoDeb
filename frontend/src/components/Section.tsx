@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Help } from "@/components/Help.tsx";
 
 // Every page follows the same order: state, the main list, forms only on
 // demand, rarely needed settings folded away at the bottom. These two
@@ -9,8 +10,10 @@ export function SectionHeader({ title, hint, children }: { title: string; hint?:
   return (
     <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
       <div className="min-w-0">
-        <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
-        {hint ? <p className="mt-0.5 text-sm text-muted">{hint}</p> : null}
+        <h2 className="flex items-center gap-2 text-lg font-semibold tracking-tight">
+          {title}
+          {hint ? <Help>{hint}</Help> : null}
+        </h2>
       </div>
       {children ? <div className="flex flex-wrap items-center gap-2">{children}</div> : null}
     </div>

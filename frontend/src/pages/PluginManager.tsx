@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { api } from "@/lib/api.ts";
 import { useGet } from "@/lib/useAsync.ts";
 import * as ui from "@/components/ui.ts";
+import { Help } from "@/components/Help.tsx";
 
 type ServiceStatus = {
   unit: string;
@@ -51,8 +52,10 @@ export function PluginManager({ onChanged }: { onChanged?: () => void }) {
 
   return (
     <section>
-      <h1 className="text-2xl font-semibold tracking-tight">{t("pluginManager.title")}</h1>
-      <p className="mt-1 max-w-2xl text-sm text-muted">{t("pluginManager.lead")}</p>
+      <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
+        {t("pluginManager.title")}
+        <Help>{t("pluginManager.lead")}</Help>
+      </h1>
       {query.loading && !query.data ? <p className="mt-6 text-sm text-muted">{t("pluginManager.loading")}</p> : null}
       {query.error || error ? (
         <p className="mt-6 max-w-xl rounded-2xl border border-white/10 bg-rose-950/40 px-4 py-3 text-sm text-rose-100 backdrop-blur-xl">

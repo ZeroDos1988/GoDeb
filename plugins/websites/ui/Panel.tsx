@@ -5,6 +5,7 @@ import { api } from "@/lib/api.ts";
 import { useGet } from "@/lib/useAsync.ts";
 import * as ui from "@/components/ui.ts";
 import { SectionHeader } from "@/components/Section.tsx";
+import { Help } from "@/components/Help.tsx";
 
 type Site = {
   name: string;
@@ -106,7 +107,10 @@ export default function Panel() {
       </SectionHeader>
       {adding ? (
         <form onSubmit={(e) => void create(e)} className={`${card} space-y-3`}>
-          <p className="text-xs text-white/50">{t("websites.addHint")}</p>
+          <h3 className="flex items-center gap-2 text-base font-semibold">
+          {t("websites.add")}
+          <Help>{t("websites.addHint")}</Help>
+        </h3>
           <label className="block text-xs text-white/60">
             {t("websites.name")}
             <input className={`${input} mt-1`} value={name} required pattern="[a-z0-9][a-z0-9-]{0,31}" onChange={(e) => setName(e.target.value)} />
