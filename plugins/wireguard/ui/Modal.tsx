@@ -28,7 +28,7 @@ export function Modal({ title, onClose, children }: ModalProps) {
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="w-full max-w-md rounded-3xl border border-white/10 bg-slate-900/60 text-white shadow-xl backdrop-blur-xl transition-all duration-200 ease-in-out"
+        className="w-full max-w-md rounded-2xl border border-white/10 bg-slate-900/60 text-white shadow-xl backdrop-blur-xl transition-all duration-200 ease-in-out"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">

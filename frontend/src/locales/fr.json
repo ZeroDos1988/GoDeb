@@ -21,7 +21,8 @@
     "print": "Imprimer",
     "active": "actif",
     "inactive": "inactif",
-    "language": "Langue"
+    "language": "Langue",
+    "more": "Autres paramètres"
   },
   "login": {
     "title": "Connexion",
@@ -202,7 +203,8 @@
     "never": "jamais",
     "excluded": "Excluded IPs",
     "excludedPlaceholder": "e.g. 172.16.1.0/24",
-    "excludedHint": "Networks subtracted from AllowedIPs before writing the client config."
+    "excludedHint": "Networks subtracted from AllowedIPs before writing the client config.",
+    "peers": "Appareils et sites"
   },
   "enroll": {
     "title": "Configurer l'authentification à deux facteurs",
@@ -281,10 +283,12 @@
     "description": "Installer, mettre à jour et configurer des serveurs de jeu."
   },
   "websites": {
-    "description": "Vos sites web et proxys vers des services internes, avec certificat Let’s Encrypt."
+    "description": "Vos sites web et proxys vers des services internes, avec certificat Let’s Encrypt.",
+    "sites": "Sites"
   },
   "pf": {
-    "description": "Rediriger des ports publics de ce serveur vers un site, p. ex. le serveur de jeu de la VM à la maison."
+    "description": "Rediriger des ports publics de ce serveur vers un site, p. ex. le serveur de jeu de la VM à la maison.",
+    "rules": "Redirections"
   },
   "pluginManager": {
     "lead": "Activer et désactiver les plugins. Un plugin désactivé disparaît du menu ; les services derrière (p. ex. WireGuard ou le pare-feu) continuent de tourner."

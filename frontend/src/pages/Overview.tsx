@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { MetricRing, StatusPill, formatBytes } from "@/components/Metrics.tsx";
 import { useGet } from "@/lib/useAsync.ts";
 import type { SystemInfo } from "@/lib/types.ts";
+import * as ui from "@/components/ui.ts";
 
 type PeerList = { peers?: { live?: boolean }[]; interface?: { up?: boolean } };
 type JailList = { jails?: { bannedIPs?: string[] }[] };
@@ -91,7 +92,7 @@ export function Overview() {
       {/* One card for the state of the server: green and quiet while it
           runs on its own, a short list as soon as something needs a look. */}
       {health.data || doctor.data || doctor.loading ? (
-        <article className="mt-6 rounded-3xl border border-white/10 bg-slate-900/60 p-5 text-white backdrop-blur-xl">
+        <article className="mt-6 rounded-2xl border border-white/10 bg-slate-900/60 p-5 text-white backdrop-blur-xl">
           <div className="flex flex-wrap items-center gap-4">
             <span className={`h-3 w-3 shrink-0 rounded-full ${healthDot[status]}`} aria-hidden="true" />
             <div className="min-w-0 flex-1">
@@ -111,7 +112,7 @@ export function Overview() {
                 reloadHealth();
               }}
               disabled={doctor.loading}
-              className="min-h-11 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm transition-all duration-200 enabled:hover:bg-white/10 disabled:opacity-50"
+              className={ui.button}
             >
               {t("overview.doctorOpen")}
             </button>
@@ -155,7 +156,7 @@ export function Overview() {
             value={percent(info.diskUsed, info.diskTotal)}
             detail={`${formatBytes(info.diskUsed)} / ${formatBytes(info.diskTotal)}`}
           />
-          <article className="rounded-3xl border border-white/10 bg-slate-900/60 p-5 text-white shadow-xl backdrop-blur-xl transition-all duration-200 ease-in-out hover:-translate-y-0.5"
+          <article className="rounded-2xl border border-white/10 bg-slate-900/60 p-5 text-white shadow-xl backdrop-blur-xl transition-all duration-200 ease-in-out hover:-translate-y-0.5"
           >
             <div className="text-xs tracking-wide text-white/60 uppercase">{t("overview.peers")}</div>
             <div className="mt-3 text-3xl font-semibold tracking-tight">{livePeers}</div>

@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { copyText } from "@/lib/clipboard.ts";
+import * as ui from "@/components/ui.ts";
 
 export type Settings = {
   hostname: string;
@@ -80,16 +81,11 @@ export type Status = {
 
 export const base = "/api/plugins/mail";
 
-export const card =
-  "rounded-3xl border border-white/10 bg-slate-900/60 p-4 text-white backdrop-blur-xl";
-export const input =
-  "w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition-all duration-200 ease-in-out outline-none focus:border-white/30";
-export const button =
-  "rounded-2xl border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white transition-all duration-200 ease-in-out enabled:hover:bg-white/10 disabled:opacity-50";
-export const primary =
-  "rounded-2xl bg-debian px-4 py-2 text-sm text-white transition-all duration-200 ease-in-out enabled:hover:opacity-90 disabled:opacity-50";
-export const danger =
-  "rounded-2xl border border-rose-300/30 bg-rose-500/10 px-3 py-1.5 text-sm text-rose-100 transition-all duration-200 ease-in-out enabled:hover:bg-rose-500/20 disabled:opacity-50";
+export const card = ui.card;
+export const input = ui.input;
+export const button = ui.button;
+export const primary = ui.primary;
+export const danger = ui.danger;
 
 export function Field({
   label,

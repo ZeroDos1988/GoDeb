@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import * as ui from "@/components/ui.ts";
 
 // ConfigUpload reads a WireGuard client file (e.g. heim-vm.conf from the
 // hub) into a text field, so the admin uploads it instead of copying text.
@@ -31,7 +32,7 @@ export function ConfigUpload({ onLoad }: { onLoad: (text: string) => void }) {
       <button
         type="button"
         onClick={() => ref.current?.click()}
-        className="rounded-2xl border border-white/10 bg-white/10 px-3 py-1.5 text-white transition-all duration-200 hover:bg-white/15"
+        className={ui.button}
       >
         {t("upload.choose")}
       </button>

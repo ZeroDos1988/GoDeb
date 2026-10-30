@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import * as ui from "@/components/ui.ts";
 
 type Props = { children: ReactNode; resetKey: string };
 type State = { error: Error | null };
@@ -42,7 +43,7 @@ function Crashed({ error, onRetry }: { error: Error; onRetry: () => void }) {
       <button
         type="button"
         onClick={onRetry}
-        className="mt-3 rounded-2xl border border-white/10 bg-white/10 px-3 py-1.5 text-sm transition-all duration-200 hover:bg-white/15"
+        className={`${ui.button} mt-3`}
       >
         {t("app.crashRetry")}
       </button>

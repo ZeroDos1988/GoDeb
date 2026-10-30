@@ -107,7 +107,7 @@ function Avatar({ name }: { name: string }) {
       .map((part) => part[0]?.toUpperCase())
       .join("") || "?";
   return (
-    <span aria-hidden className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-debian text-xs font-semibold text-white ring-2 ring-white/15">
+    <span aria-hidden className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-debian text-xs font-semibold text-on-solid ring-2 ring-white/15">
       {initials}
     </span>
   );

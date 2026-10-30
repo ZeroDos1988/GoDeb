@@ -21,7 +21,8 @@
     "print": "Imprimir",
     "active": "ativo",
     "inactive": "inativo",
-    "language": "Idioma"
+    "language": "Idioma",
+    "more": "Mais configurações"
   },
   "login": {
     "title": "Entrar",
@@ -202,7 +203,8 @@
     "never": "nunca",
     "excluded": "Excluded IPs",
     "excludedPlaceholder": "e.g. 172.16.1.0/24",
-    "excludedHint": "Networks subtracted from AllowedIPs before writing the client config."
+    "excludedHint": "Networks subtracted from AllowedIPs before writing the client config.",
+    "peers": "Dispositivos e locais"
   },
   "enroll": {
     "title": "Configurar autenticação de dois fatores",
@@ -281,10 +283,12 @@
     "description": "Instalar, atualizar e configurar servidores de jogos."
   },
   "websites": {
-    "description": "Sites próprios e proxies para serviços internos, com certificado Let’s Encrypt."
+    "description": "Sites próprios e proxies para serviços internos, com certificado Let’s Encrypt.",
+    "sites": "Sites"
   },
   "pf": {
-    "description": "Encaminhar portas públicas deste servidor para um local, p. ex. o servidor de jogos na VM de casa."
+    "description": "Encaminhar portas públicas deste servidor para um local, p. ex. o servidor de jogos na VM de casa.",
+    "rules": "Encaminhamentos"
   },
   "pluginManager": {
     "lead": "Ligar e desligar plugins. Um plugin desligado desaparece do menu; os serviços por trás (p. ex. WireGuard ou a firewall) continuam a correr."

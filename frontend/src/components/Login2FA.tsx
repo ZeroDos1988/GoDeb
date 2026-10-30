@@ -4,6 +4,7 @@ import { Shield, Wordmark } from "@/components/Brand.tsx";
 import { TwoFAEnrollment } from "@/components/2FAEnrollment.tsx";
 import { api, ApiError } from "@/lib/api.ts";
 import { authApi } from "@/lib/auth.ts";
+import * as ui from "@/components/ui.ts";
 
 type OIDCProvider = {
   id: string;
@@ -16,10 +17,8 @@ type OIDCProvider = {
 // the page never tells whether an account exists.
 type Step = "user" | "password" | "code" | "enroll";
 
-const input =
-  "w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition-all duration-200 ease-in-out outline-none focus:border-white/30";
-const primary =
-  "w-full rounded-2xl bg-debian px-4 py-2 text-sm text-white transition-all duration-200 ease-in-out enabled:hover:opacity-90 disabled:opacity-50";
+const input = ui.input;
+const primary = `${ui.primary} w-full`;
 
 export function Login2FA({ onAuthenticated }: { onAuthenticated: (username: string) => void }) {
   const { t } = useTranslation();

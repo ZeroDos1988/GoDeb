@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import { useTranslation } from "react-i18next";
+import * as ui from "@/components/ui.ts";
 
 type PanelFrameProps = {
   title: string;
@@ -16,6 +17,8 @@ type PanelFrameProps = {
   loading: boolean;
   error: string;
   onRefresh: () => void;
+  /** Sub tabs of the page, shown right under the heading. */
+  tabs?: ReactNode;
   children?: ReactNode;
 };
 
@@ -28,6 +31,7 @@ export function PanelFrame({
   loading,
   error,
   onRefresh,
+  tabs,
   children,
 }: PanelFrameProps) {
   const { t } = useTranslation();
@@ -42,11 +46,13 @@ export function PanelFrame({
           type="button"
           onClick={onRefresh}
           disabled={loading}
-          className="min-h-11 rounded-2xl border border-white/10 bg-slate-900/60 px-4 py-2 text-sm text-white backdrop-blur-xl transition-all duration-200 ease-in-out enabled:hover:bg-white/10 disabled:opacity-50"
+          className={ui.button}
         >
           {t("common.refresh")}
         </button>
       </div>
+
+      {tabs ? <div className="mt-4 overflow-x-auto">{tabs}</div> : null}
 
       {mocked ? (
         <p className="mt-4 rounded-2xl border border-amber-300/20 bg-amber-950/30 px-4 py-3 text-sm text-amber-100">{t("panel.mocked")}</p>

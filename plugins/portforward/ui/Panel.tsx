@@ -4,6 +4,8 @@ import { DataTable, PanelFrame } from "@/components/PanelFrame.tsx";
 import { api } from "@/lib/api.ts";
 import type { CommandEnvelope } from "@/lib/types.ts";
 import { useGet } from "@/lib/useAsync.ts";
+import * as ui from "@/components/ui.ts";
+import { SectionHeader, StatGrid } from "@/components/Section.tsx";
 
 type Rule = {
   name: string;
@@ -32,13 +34,10 @@ type Status = CommandEnvelope & {
 };
 
 const statusPath = "/api/plugins/portforward/status";
-const button =
-  "rounded-2xl border border-white/10 bg-slate-900/60 px-3 py-2 text-sm text-white backdrop-blur-xl transition-all duration-200 ease-in-out enabled:hover:bg-white/10 disabled:opacity-50";
-const primary =
-  "rounded-2xl bg-debian px-4 py-2 text-sm font-medium text-white transition-all duration-200 ease-in-out enabled:hover:opacity-90 disabled:opacity-50";
-const card = "rounded-3xl border border-white/10 bg-slate-900/60 p-4 text-white backdrop-blur-xl";
-const input =
-  "w-full rounded-2xl border border-white/10 bg-slate-950/40 px-3 py-2 text-sm text-white outline-none transition-all duration-200 ease-in-out focus:border-white/30";
+const button = ui.button;
+const primary = ui.primary;
+const card = ui.card;
+const input = ui.input;
 
 // Templates for services that typically run on a site behind the hub.
 const templates: { label: string; rule: Omit<Rule, "target"> }[] = [
@@ -56,6 +55,7 @@ export default function Panel() {
   const [current, setCurrent] = useState<Status | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState("");
+  const [adding, setAdding] = useState(false);
   const view = current ?? data;
 
   useEffect(() => setCurrent(null), [data]);
@@ -87,17 +87,38 @@ export default function Panel() {
     >
       {view ? (
         <div className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Stat label={t("pf.public")} value={view.publicIp || "—"} hint={view.publicIf} />
-            <Stat label={t("pf.hub")} value={view.hubAddress} hint={view.network} />
-            <Stat label={t("pf.forwarding")} value={view.forwarding ? t("pf.on") : t("pf.off")} ok={view.forwarding} />
-            <Stat
-              label={t("pf.table")}
-              value={view.tableLive ? t("pf.active") : t("pf.inactive")}
-              ok={view.tableLive}
-              hint={view.unit ? `godeb-portforward: ${view.unit}` : undefined}
+          <StatGrid
+            items={[
+              { label: t("pf.public"), value: view.publicIp || "—", mono: true },
+              { label: t("pf.hub"), value: view.hubAddress, mono: true },
+              {
+                label: t("pf.forwarding"),
+                value: view.forwarding ? t("pf.on") : t("pf.off"),
+                tone: view.forwarding ? "text-emerald-300" : "text-amber-200",
+              },
+              {
+                label: t("pf.table"),
+                value: view.tableLive ? t("pf.active") : t("pf.inactive"),
+                tone: view.tableLive ? "text-emerald-300" : "text-amber-200",
+              },
+            ]}
+          />
+
+          <SectionHeader title={t("pf.rules")} hint={t("pf.snatHint", { hub: view.hubAddress })}>
+            <button type="button" className={adding ? ui.button : ui.primary} onClick={() => setAdding((v) => !v)}>
+              {adding ? t("common.cancel") : `+ ${t("pf.new")}`}
+            </button>
+          </SectionHeader>
+          {adding ? (
+            <AddForm
+              status={view}
+              disabled={view.mocked}
+              onSaved={(next) => {
+                setCurrent(next);
+                setAdding(false);
+              }}
             />
-          </div>
+          ) : null}
 
           {view.rules.length === 0 ? (
             <p className="text-sm text-muted">{t("pf.none")}</p>
@@ -125,9 +146,6 @@ export default function Panel() {
           )}
           {error ? <p className="text-sm text-debian">{error}</p> : null}
 
-          <AddForm status={view} disabled={view.mocked} onSaved={setCurrent} />
-
-          <p className="max-w-3xl text-xs text-white/50">{t("pf.snatHint", { hub: view.hubAddress })}</p>
         </div>
       ) : null}
     </PanelFrame>
@@ -175,7 +193,6 @@ function AddForm({ status, disabled, onSaved }: { status: Status; disabled: bool
       }}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold">{t("pf.new")}</h2>
         <div className="flex flex-wrap gap-2">
           {templates.map((tpl) => (
             <button key={tpl.label} type="button" className={button} onClick={() => setRule((r) => ({ ...r, ...tpl.rule }))}>
@@ -233,12 +250,3 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-function Stat({ label, value, ok, hint }: { label: string; value: string; ok?: boolean; hint?: string }) {
-  return (
-    <div className={card}>
-      <div className="text-[11px] tracking-wide text-white/50 uppercase">{label}</div>
-      <div className={`mt-1 text-sm font-medium ${ok === undefined ? "" : ok ? "text-emerald-400" : "text-white/80"}`}>{value}</div>
-      {hint ? <div className="mt-1 font-mono text-xs text-white/50">{hint}</div> : null}
-    </div>
-  );
-}

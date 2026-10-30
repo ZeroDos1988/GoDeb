@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { DataTable, PanelFrame } from "@/components/PanelFrame.tsx";
 import { api } from "@/lib/api.ts";
 import { useGet } from "@/lib/useAsync.ts";
+import * as ui from "@/components/ui.ts";
+import { More, SectionHeader } from "@/components/Section.tsx";
 
 type Settings = {
   tokenSet: boolean;
@@ -36,14 +38,10 @@ type Status = {
 };
 
 const base = "/api/plugins/domains";
-const card =
-  "mb-6 rounded-3xl border border-white/10 bg-slate-900/60 p-4 text-white backdrop-blur-xl";
-const button =
-  "rounded-2xl border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white transition-all duration-200 ease-in-out enabled:hover:bg-white/10 disabled:opacity-50";
-const primary =
-  "rounded-2xl bg-debian px-3 py-1.5 text-sm font-medium text-white transition-all duration-200 ease-in-out enabled:hover:brightness-110 disabled:opacity-50";
-const input =
-  "w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-debian";
+const card = `${ui.card} mb-6`;
+const button = ui.button;
+const primary = ui.primary;
+const input = ui.input;
 
 export default function Panel() {
   const { t } = useTranslation();
@@ -124,6 +122,36 @@ export default function Panel() {
     }
   }
 
+  const tokenCard = (
+  <section className={ui.card}>
+    <h2 className="mb-2 text-base font-semibold">{t("domains.hetzner")}</h2>
+    <p className="mb-3 text-sm text-white/70">{t("domains.hetznerHint")}</p>
+    {data?.settings.tokenSet ? (
+      <div className="mb-3 flex flex-wrap items-center gap-3 text-sm">
+        <span>
+          {t("domains.tokenSet", { hint: data.settings.tokenHint ?? "····" })}
+        </span>
+        <button type="button" className={button} disabled={busy} onClick={clearToken}>
+          {t("domains.tokenClear")}
+        </button>
+      </div>
+    ) : null}
+    <form onSubmit={saveToken} className="grid gap-3 md:grid-cols-[1fr_auto]">
+      <input
+        name="token"
+        type="password"
+        autoComplete="off"
+        required={!data?.settings.tokenSet}
+        placeholder={t("domains.tokenPlaceholder")}
+        className={input}
+      />
+      <button type="submit" className={primary} disabled={busy}>
+        {t("domains.tokenSave")}
+      </button>
+    </form>
+  </section>
+  );
+
   return (
     <PanelFrame
       title={t("domains.title")}
@@ -132,36 +160,8 @@ export default function Panel() {
       error={error || query.error}
       onRefresh={query.reload}
     >
-      <section className={card}>
-        <h2 className="mb-2 text-lg font-semibold">{t("domains.hetzner")}</h2>
-        <p className="mb-3 text-sm text-white/70">{t("domains.hetznerHint")}</p>
-        {data?.settings.tokenSet ? (
-          <div className="mb-3 flex flex-wrap items-center gap-3 text-sm">
-            <span>
-              {t("domains.tokenSet", { hint: data.settings.tokenHint ?? "····" })}
-            </span>
-            <button type="button" className={button} disabled={busy} onClick={clearToken}>
-              {t("domains.tokenClear")}
-            </button>
-          </div>
-        ) : null}
-        <form onSubmit={saveToken} className="grid gap-3 md:grid-cols-[1fr_auto]">
-          <input
-            name="token"
-            type="password"
-            autoComplete="off"
-            required={!data?.settings.tokenSet}
-            placeholder={t("domains.tokenPlaceholder")}
-            className={input}
-          />
-          <button type="submit" className={primary} disabled={busy}>
-            {t("domains.tokenSave")}
-          </button>
-        </form>
-      </section>
-
-      <section className={card}>
-        <h2 className="mb-3 text-lg font-semibold">{t("domains.list")}</h2>
+      <SectionHeader title={t("domains.list")} />
+      <section>
         <DataTable head={[t("domains.name"), t("domains.mode"), ""]}>
           {(data?.domains ?? []).map((d) => (
             <tr key={d.name}>
@@ -199,6 +199,15 @@ export default function Panel() {
           </button>
         </form>
       </section>
+      {data?.settings.tokenSet ? (
+        <More title={t("domains.hetzner")}>
+          {tokenCard}
+        </More>
+      ) : (
+        <div className="mt-6">
+          {tokenCard}
+        </div>
+      )}
     </PanelFrame>
   );
 }

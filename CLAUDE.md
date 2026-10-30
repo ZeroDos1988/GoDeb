@@ -59,6 +59,8 @@ GoDeb läuft als zwei Prozesse desselben Programms: die Weboberfläche (`godeb.s
 - UI-Texte nur über i18n (`frontend/src/locales/*.json`). Neue Schlüssel mindestens in `de.json` und `en.json` (Fallback ist `en`).
 - Jede Ansicht muss ab 360 px Breite bedienbar sein: keine festen Breiten, Tabellen in `DataTable` (scrollt horizontal), Formulare einspaltig unter `md`.
 - Stil wie die vorhandenen Panels: `PanelFrame`, `rounded-2xl`, Glas-Optik. Kein neues UI-Framework.
+- Felder, Knöpfe und Karten nur mit den Klassen aus `frontend/src/components/ui.ts` (gleiche Höhe und Rahmen überall), keine eigenen Varianten pro Plugin.
+- Seitenaufbau: Zustand oben (`StatGrid`), dann die Liste mit `SectionHeader` und „+ Neu…“-Knopf (Formular erst nach Klick), seltene Einstellungen unten in `More` (`components/Section.tsx`). Der helle Modus legt `text-white`/`bg-slate-900` zentral in `index.css` um; Text auf vollfarbigen Flächen ist `text-on-solid`.
 
 ## Git: zeitnah committen und pushen (feste Regel)
 

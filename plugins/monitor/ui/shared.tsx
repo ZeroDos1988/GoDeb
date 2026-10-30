@@ -2,6 +2,7 @@ import { useEffect, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { STATUS_COLORS, type ChartPoint, type ChartMarker } from "@/components/LineChart.tsx";
 import { useGet } from "@/lib/useAsync.ts";
+import * as ui from "@/components/ui.ts";
 
 export type Status = "ok" | "info" | "warning" | "critical";
 
@@ -26,11 +27,9 @@ export type MonitorEvent = { time: number; source: string; level: Status; text: 
 export const RANGES = ["1h", "6h", "24h", "7d", "30d", "1y"] as const;
 export type RangeName = (typeof RANGES)[number];
 
-export const button =
-  "rounded-2xl border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white transition-all duration-200 ease-in-out enabled:hover:bg-white/10 disabled:opacity-50";
+export const button = ui.button;
 
-export const input =
-  "w-full rounded-2xl border border-white/10 bg-slate-950/40 px-3 py-2 text-sm text-white outline-none transition-all duration-200 ease-in-out focus:border-white/30";
+export const input = ui.input;
 
 // usePolling reloads every ms while mounted.
 export function usePolling(reload: () => void, ms: number) {

@@ -4,6 +4,7 @@ import { DataTable, PanelFrame } from "@/components/PanelFrame.tsx";
 import { api } from "@/lib/api.ts";
 import type { CommandEnvelope } from "@/lib/types.ts";
 import { useGet } from "@/lib/useAsync.ts";
+import * as ui from "@/components/ui.ts";
 
 type AptPackage = {
   name: string;
@@ -42,10 +43,8 @@ type AptStatus = CommandEnvelope & {
 };
 
 const base = "/api/plugins/apt";
-const card =
-  "mb-6 rounded-3xl border border-white/10 bg-slate-900/60 p-4 text-white backdrop-blur-xl";
-const button =
-  "rounded-2xl border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white transition-all duration-200 ease-in-out enabled:hover:bg-white/10 disabled:opacity-50";
+const card = `${ui.card} mb-6`;
+const button = ui.button;
 
 export default function Panel() {
   const { t } = useTranslation();
@@ -121,7 +120,7 @@ export default function Panel() {
               </button>
               <button
                 type="button"
-                className="rounded-2xl bg-debian px-3 py-1.5 text-sm text-white transition-all duration-200 ease-in-out enabled:hover:opacity-90 disabled:opacity-50"
+                className={ui.primary}
                 disabled={running || busy || packages.length === 0}
                 onClick={() => void start("upgrade")}
               >
@@ -250,7 +249,7 @@ function AutoCard({
               setForm({ ...form, interval: Number(e.target.value) || 0 })
             }
             aria-label={t("apt.interval")}
-            className="w-16 rounded-2xl border border-white/10 bg-white/5 px-2 py-1 text-center text-sm text-white outline-none disabled:opacity-50"
+            className={`${ui.input} w-16 text-center`}
           />
           <span>{t("apt.autoCheckAfter")}</span>
         </label>

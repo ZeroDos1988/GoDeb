@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { PrintSheet, SheetHeader } from "@/components/Print.tsx";
 import { authApi, type Enrollment } from "@/lib/auth.ts";
 import { copyText } from "@/lib/clipboard.ts";
+import * as ui from "@/components/ui.ts";
 
 type Props = {
   onComplete: (username: string) => void;
@@ -86,7 +87,7 @@ export function TwoFAEnrollment({ onComplete, onCancel }: Props) {
                 type="button"
                 onClick={() => void start()}
                 disabled={busy}
-                className="mt-4 rounded-2xl bg-debian px-4 py-2 text-sm text-white transition-all duration-200 ease-in-out enabled:hover:opacity-90 disabled:opacity-50"
+                className={`${ui.primary} mt-4`}
               >
                 {busy ? t("enroll.starting") : t("enroll.start")}
               </button>
@@ -157,12 +158,12 @@ export function TwoFAEnrollment({ onComplete, onCancel }: Props) {
                       autoComplete="one-time-code"
                       placeholder="123456"
                       aria-label={t("enroll.codeLabel")}
-                      className="w-36 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-center font-mono text-lg tracking-[0.3em] text-white transition-all duration-200 ease-in-out outline-none"
+                      className={`${ui.input} w-36 text-center font-mono text-lg tracking-[0.3em]`}
                     />
                     <button
                       type="submit"
                       disabled={busy || code.length !== 6 || !saved}
-                      className="rounded-2xl bg-debian px-4 py-2 text-sm text-white transition-all duration-200 ease-in-out enabled:hover:opacity-90 disabled:opacity-50"
+                      className={ui.primary}
                     >
                       {t("enroll.activate")}
                     </button>

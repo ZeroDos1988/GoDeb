@@ -21,7 +21,8 @@
     "print": "打印",
     "active": "活动",
     "inactive": "未活动",
-    "language": "语言"
+    "language": "语言",
+    "more": "更多设置"
   },
   "login": {
     "title": "登录",
@@ -202,7 +203,8 @@
     "never": "从未",
     "excluded": "Excluded IPs",
     "excludedPlaceholder": "e.g. 172.16.1.0/24",
-    "excludedHint": "Networks subtracted from AllowedIPs before writing the client config."
+    "excludedHint": "Networks subtracted from AllowedIPs before writing the client config.",
+    "peers": "设备和站点"
   },
   "enroll": {
     "title": "设置双重验证",
@@ -281,10 +283,12 @@
     "description": "安装、更新和配置游戏服务器。"
   },
   "websites": {
-    "description": "自己的网站和到内部服务的反向代理，带 Let’s Encrypt 证书。"
+    "description": "自己的网站和到内部服务的反向代理，带 Let’s Encrypt 证书。",
+    "sites": "站点"
   },
   "pf": {
-    "description": "将此服务器的公共端口转发到某个站点，例如家里虚拟机上的游戏服务器。"
+    "description": "将此服务器的公共端口转发到某个站点，例如家里虚拟机上的游戏服务器。",
+    "rules": "转发规则"
   },
   "pluginManager": {
     "lead": "开启和关闭插件。关闭的插件会从菜单中消失；其背后的服务（例如 WireGuard 或防火墙）继续运行。"

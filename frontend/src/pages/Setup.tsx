@@ -7,6 +7,7 @@ import { SetupSummary, type SetupSummaryData } from "@/components/SetupSummary.t
 import { TunnelClients, type ClientResult } from "@/components/TunnelClients.tsx";
 import { api } from "@/lib/api.ts";
 import { useGet } from "@/lib/useAsync.ts";
+import * as ui from "@/components/ui.ts";
 
 export type SetupStatus = { required: boolean; hasAdmin: boolean };
 
@@ -27,12 +28,9 @@ type HubResult = { publicKey?: string; endpoint: string; first?: ClientResult };
 type JoinResult = { address: string; hub: string; notes: string[]; handshake?: boolean; detail?: string };
 type FinishResult = { ok: boolean; log: string[]; access: { mode: string; address?: string; port?: number }; summary?: SetupSummaryData };
 
-const input =
-  "w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition-all duration-200 ease-in-out outline-none focus:border-white/30";
-const primary =
-  "w-full rounded-2xl bg-debian px-4 py-2 text-sm text-white transition-all duration-200 ease-in-out enabled:hover:opacity-90 disabled:opacity-50 sm:w-auto";
-const secondary =
-  "rounded-2xl border border-white/10 px-4 py-2 text-sm text-white transition-all duration-200 ease-in-out enabled:hover:bg-white/10 disabled:opacity-50";
+const input = ui.input;
+const primary = `${ui.primary} w-full sm:w-auto`;
+const secondary = ui.button;
 
 // tokenFromHash reads ?token= from "#/setup?token=…", the link printed by
 // `godeb setup-url`.

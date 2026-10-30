@@ -44,7 +44,8 @@
     "active": "aktiv",
     "inactive": "inaktiv",
     "language": "Sprache",
-    "languageAuto": "Auto ({{language}})"
+    "languageAuto": "Auto ({{language}})",
+    "more": "Weitere Einstellungen"
   },
   "login": {
     "title": "Anmeldung",
@@ -520,7 +521,8 @@
     "cert": "Zertifikat",
     "delete": "Löschen",
     "confirmDelete": "Website {{name}} inkl. Dateien löschen?",
-    "failed": "Aktion fehlgeschlagen"
+    "failed": "Aktion fehlgeschlagen",
+    "sites": "Seiten"
   },
   "cron": {
     "title": "Geplante Aufgaben",
@@ -668,7 +670,8 @@
     "trustHubHint": "Neue Clients bekommen die Trusted Endpoints dieses Servers und aller Standorte automatisch in ihre Konfiguration. Nach Änderungen an einem Standort „Client-Dateien aktualisieren“ und den QR-Code neu scannen.",
     "trustPeerHint": "Der Hub übernimmt Adresse und Schlüssel automatisch in neue Handy-Konfigurationen. Vorhandene: auf dem Hub „Client-Dateien aktualisieren“, dann QR-Code neu scannen.",
     "codeAction": "Code",
-    "codeTitle": "Beitrittscode · {{name}}"
+    "codeTitle": "Beitrittscode · {{name}}",
+    "peers": "Geräte und Standorte"
   },
   "enroll": {
     "title": "Zwei-Faktor-Authentifizierung einrichten",
@@ -1083,7 +1086,8 @@
     "add": "Weiterleiten",
     "saving": "Speichere …",
     "failed": "Änderung fehlgeschlagen",
-    "snatHint": "Antworten laufen über den Tunnel zurück, weil der Hub die Absenderadresse auf {{hub}} umschreibt. Der Dienst auf dem Standort sieht deshalb alle Verbindungen von {{hub}}; Sperren nach Spieler-IP gehen dort nicht."
+    "snatHint": "Antworten laufen über den Tunnel zurück, weil der Hub die Absenderadresse auf {{hub}} umschreibt. Der Dienst auf dem Standort sieht deshalb alle Verbindungen von {{hub}}; Sperren nach Spieler-IP gehen dort nicht.",
+    "rules": "Weiterleitungen"
   },
   "setup": {
     "title": "Ersteinrichtung",

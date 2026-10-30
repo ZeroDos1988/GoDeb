@@ -4,6 +4,8 @@ import { DataTable, PanelFrame } from "@/components/PanelFrame.tsx";
 import { api } from "@/lib/api.ts";
 import type { CommandEnvelope } from "@/lib/types.ts";
 import { useGet } from "@/lib/useAsync.ts";
+import * as ui from "@/components/ui.ts";
+import { More, SectionHeader } from "@/components/Section.tsx";
 
 type Timer = {
   unit: string;
@@ -25,16 +27,14 @@ type Status = CommandEnvelope & {
   };
 };
 
-const input =
-  "w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 font-mono text-sm text-white outline-none";
-const primary =
-  "min-h-11 rounded-2xl bg-debian px-4 py-2 text-sm font-medium text-white enabled:hover:opacity-90 disabled:opacity-50";
-const card =
-  "rounded-2xl border border-white/10 bg-slate-900/60 p-4 text-white backdrop-blur-xl";
+const input = `${ui.input} font-mono`;
+const primary = ui.primary;
+const card = ui.card;
 
 export default function Panel() {
   const { t, i18n } = useTranslation();
   const query = useGet<Status>("/api/plugins/cron/status");
+  const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const [calendar, setCalendar] = useState("*-*-* 03:00:00");
   const [command, setCommand] = useState("/usr/bin/true");
@@ -57,6 +57,7 @@ export default function Panel() {
         }),
       });
       setName("");
+      setAdding(false);
       query.reload();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : t("cron.failed"));
@@ -99,49 +100,13 @@ export default function Panel() {
     >
       {error ? <p className="mb-4 text-sm text-debian">{error}</p> : null}
 
-      <section className={`${card} mb-4 space-y-3`}>
-        <h2 className="text-sm font-semibold">{t("cron.timers")}</h2>
-        {timers.length === 0 ? (
-          <p className="text-sm text-muted">{t("cron.noTimers")}</p>
-        ) : (
-          <DataTable
-            mobileCards
-            head={[t("cron.unit"), t("cron.next"), t("cron.last"), ""]}
-          >
-            {timers.map((tm) => (
-              <tr key={tm.unit}>
-                <td className="px-3 py-2 font-mono text-xs">
-                  {tm.unit}
-                  {tm.managed ? (
-                    <span className="ms-2 text-[10px] tracking-wide text-emerald-300 uppercase">
-                      GoDeb
-                    </span>
-                  ) : null}
-                </td>
-                <td className="px-3 py-2 text-xs">{when(tm.next, i18n.language)}</td>
-                <td className="px-3 py-2 text-xs text-white/60">{when(tm.last, i18n.language)}</td>
-                <td className="px-3 py-2 text-right">
-                  {tm.managed ? (
-                    <button
-                      type="button"
-                      className="min-h-11 text-xs text-rose-300 hover:underline"
-                      disabled={busy}
-                      onClick={() => void remove(tm.unit)}
-                    >
-                      {t("cron.delete")}
-                    </button>
-                  ) : (
-                    "–"
-                  )}
-                </td>
-              </tr>
-            ))}
-          </DataTable>
-        )}
-      </section>
-
-      <form onSubmit={(e) => void create(e)} className={`${card} mb-4 max-w-2xl space-y-3`}>
-        <h2 className="text-sm font-semibold">{t("cron.add")}</h2>
+      <SectionHeader title={t("cron.timers")}>
+        <button type="button" className={adding ? ui.button : ui.primary} onClick={() => setAdding((v) => !v)}>
+          {adding ? t("common.cancel") : `+ ${t("cron.add")}`}
+        </button>
+      </SectionHeader>
+      {adding ? (
+      <form onSubmit={(e) => void create(e)} className={`${card} mb-4 space-y-3`}>
         <p className="text-xs text-white/50">{t("cron.addHint")}</p>
         <label className="block text-xs text-white/60">
           {t("cron.name")}
@@ -187,10 +152,48 @@ export default function Panel() {
           {t("cron.create")}
         </button>
       </form>
+      ) : null}
+      {timers.length === 0 ? (
+          <p className="text-sm text-muted">{t("cron.noTimers")}</p>
+        ) : (
+          <DataTable
+            mobileCards
+            head={[t("cron.unit"), t("cron.next"), t("cron.last"), ""]}
+          >
+            {timers.map((tm) => (
+              <tr key={tm.unit}>
+                <td className="px-3 py-2 font-mono text-xs">
+                  {tm.unit}
+                  {tm.managed ? (
+                    <span className="ms-2 text-[10px] tracking-wide text-emerald-300 uppercase">
+                      GoDeb
+                    </span>
+                  ) : null}
+                </td>
+                <td className="px-3 py-2 text-xs">{when(tm.next, i18n.language)}</td>
+                <td className="px-3 py-2 text-xs text-white/60">{when(tm.last, i18n.language)}</td>
+                <td className="px-3 py-2 text-right">
+                  {tm.managed ? (
+                    <button
+                      type="button"
+                      className="min-h-11 text-xs text-rose-300 hover:underline"
+                      disabled={busy}
+                      onClick={() => void remove(tm.unit)}
+                    >
+                      {t("cron.delete")}
+                    </button>
+                  ) : (
+                    "–"
+                  )}
+                </td>
+              </tr>
+            ))}
+          </DataTable>
+        )}
 
-      <section className={`${card} space-y-3`}>
-        <h2 className="text-sm font-semibold">{t("cron.cronD")}</h2>
-        <p className="text-xs text-white/50">{t("cron.cronDHint")}</p>
+
+      <More title={t("cron.cronD")}>
+        <p className="text-sm text-muted">{t("cron.cronDHint")}</p>
         {files.length === 0 ? (
           <p className="text-sm text-muted">{t("cron.noCronD")}</p>
         ) : (
@@ -205,7 +208,7 @@ export default function Panel() {
             ))}
           </ul>
         )}
-      </section>
+      </More>
     </PanelFrame>
   );
 }

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 const glass =
-  "rounded-3xl border border-white/10 bg-slate-900/60 text-white shadow-xl backdrop-blur-xl transition-all duration-200 ease-in-out";
+  "rounded-2xl border border-white/10 bg-slate-900/60 text-white shadow-xl backdrop-blur-xl transition-all duration-200 ease-in-out";
 
 export function MetricRing({
   label,
@@ -21,7 +21,7 @@ export function MetricRing({
     <article className={`${glass} p-5 hover:-translate-y-0.5`}>
       <div className="flex items-center gap-4">
         <svg viewBox="0 0 96 96" className="h-20 w-20 shrink-0" aria-hidden="true">
-          <circle cx="48" cy="48" r={radius} fill="none" stroke="rgb(255 255 255 / 0.12)" strokeWidth="8" />
+          <circle cx="48" cy="48" r={radius} fill="none" className="stroke-white/12" strokeWidth="8" />
           <circle
             cx="48"
             cy="48"
@@ -34,7 +34,7 @@ export function MetricRing({
             strokeDasharray={`${dash} ${circumference - dash}`}
             transform="rotate(-90 48 48)"
           />
-          <text x="48" y="53" textAnchor="middle" fill="white" fontSize="14" fontWeight="600">
+          <text x="48" y="53" textAnchor="middle" className="fill-white" fontSize="14" fontWeight="600">
             {Math.round(pct)}%
           </text>
         </svg>

@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { SetupSummary, type SetupSummaryData } from "@/components/SetupSummary.tsx";
 import { useGet } from "@/lib/useAsync.ts";
+import * as ui from "@/components/ui.ts";
 
 export function SetupSummaryPage() {
   const { t } = useTranslation();
@@ -16,7 +17,7 @@ export function SetupSummaryPage() {
             <button
               type="button"
               onClick={query.reload}
-              className="rounded-2xl border border-white/10 bg-slate-900/60 px-3 py-1.5 text-sm text-white transition-all duration-200 hover:bg-white/10"
+              className={ui.button}
             >
               {t("common.refresh")}
             </button>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { setStepUpPrompt, type StepUpCredentials, type StepUpRequest } from "@/lib/api.ts";
+import * as ui from "@/components/ui.ts";
 
 type Pending = StepUpRequest & { resolve: (value: StepUpCredentials | null) => void };
 
@@ -141,7 +142,7 @@ export function StepUpDialog() {
           <button
             type="submit"
             disabled={!canSubmit}
-            className="rounded-2xl bg-debian px-4 py-2 text-sm font-semibold text-white transition-all duration-200 ease-in-out hover:opacity-90 disabled:opacity-50"
+            className={ui.primary}
           >
             {t("stepUp.confirm")}
           </button>

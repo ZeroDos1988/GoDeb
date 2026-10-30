@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { DataTable, PanelFrame } from "@/components/PanelFrame.tsx";
 import { api } from "@/lib/api.ts";
 import { useGet } from "@/lib/useAsync.ts";
+import * as ui from "@/components/ui.ts";
 
 type Status = {
   active: string;
@@ -14,12 +15,9 @@ type Status = {
   listen: string;
 };
 
-const input =
-  "w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 font-mono text-sm text-white outline-none";
-const primary =
-  "min-h-11 rounded-2xl bg-debian px-4 py-2 text-sm font-medium text-white disabled:opacity-50";
-const card =
-  "rounded-2xl border border-white/10 bg-slate-900/60 p-4 text-white backdrop-blur-xl";
+const input = `${ui.input} font-mono`;
+const primary = ui.primary;
+const card = ui.card;
 
 export default function Panel() {
   const { t } = useTranslation();

@@ -126,7 +126,7 @@ function Setup({
   return (
     <form
       onSubmit={(e) => void submit(e)}
-      className={`${card} max-w-2xl space-y-4`}
+      className={`${card} space-y-4`}
     >
       <div>
         <h2 className="text-base font-semibold">{t("mail.setup.title")}</h2>

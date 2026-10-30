@@ -146,9 +146,12 @@ function GameView({ id, onChanged }: { id: string; onChanged: () => void }) {
 
   return (
     <div className="space-y-4">
-      <p className="overflow-x-auto rounded-2xl border border-white/10 bg-slate-900/60 px-3 py-2 font-mono text-xs text-white/80 backdrop-blur-xl">
-        $ {data.command.join(" ")}
-      </p>
+      <details className="text-xs text-muted">
+        <summary className="w-fit cursor-pointer select-none hover:text-debian">{t("panel.technical")}</summary>
+        <p className="mt-2 overflow-x-auto rounded-2xl border border-white/10 bg-slate-900/60 px-3 py-2 font-mono text-white/80 backdrop-blur-xl">
+          $ {data.command.join(" ")}
+        </p>
+      </details>
       {data.mocked ? (
         <p className="rounded-2xl border border-amber-300/20 bg-amber-950/30 px-4 py-3 text-sm text-amber-100">
           {t("panel.mocked")}

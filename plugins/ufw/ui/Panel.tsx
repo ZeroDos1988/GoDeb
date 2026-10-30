@@ -4,6 +4,7 @@ import { DataTable, PanelFrame } from "@/components/PanelFrame.tsx";
 import { api } from "@/lib/api.ts";
 import type { CommandEnvelope } from "@/lib/types.ts";
 import { useGet } from "@/lib/useAsync.ts";
+import * as ui from "@/components/ui.ts";
 
 type UfwRule = {
   to: string;
@@ -76,7 +77,7 @@ export default function Panel() {
           <input
             value={rule}
             onChange={(event) => setRule(event.target.value)}
-            className="rounded-2xl border border-white/10 bg-slate-900/60 px-3 py-1.5 font-mono text-sm text-white backdrop-blur-xl transition-all duration-200 ease-in-out outline-none"
+            className={`${ui.input} font-mono`}
             placeholder="22/tcp"
           />
         </label>

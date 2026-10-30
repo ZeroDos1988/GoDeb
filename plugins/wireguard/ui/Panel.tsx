@@ -7,6 +7,8 @@ import { api, apiBlob } from "@/lib/api.ts";
 import type { CommandEnvelope } from "@/lib/types.ts";
 import { useGet } from "@/lib/useAsync.ts";
 import { Modal } from "./Modal.tsx";
+import * as ui from "@/components/ui.ts";
+import { More, SectionHeader, StatGrid } from "@/components/Section.tsx";
 
 type WgInterface = {
   name: string;
@@ -96,11 +98,9 @@ const peersPath = "/api/plugins/wireguard/peers";
 const androidPath = "/api/plugins/wireguard/android";
 const androidApkDiskPath = "/etc/godeb/android/godeb-tunnel.apk";
 
-const buttonClass =
-  "rounded-2xl border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white transition-all duration-200 ease-in-out enabled:hover:bg-white/10 disabled:opacity-50";
+const buttonClass = ui.button;
 const linkClass = "text-xs text-white/80 transition-all duration-200 ease-in-out enabled:hover:text-white disabled:opacity-40";
-const inputClass =
-  "w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-1.5 font-mono text-sm text-white transition-all duration-200 ease-in-out outline-none";
+const inputClass = `${ui.input} font-mono`;
 
 export default function Panel() {
   const { t, i18n } = useTranslation();
@@ -110,6 +110,7 @@ export default function Panel() {
   const [mailPeer, setMailPeer] = useState<WgPeer | null>(null);
   const [codePeer, setCodePeer] = useState<WgPeer | null>(null);
   const [notice, setNotice] = useState("");
+  const [adding, setAdding] = useState(false);
   const [actionError, setActionError] = useState("");
   const [deleteAfterDownload, setDeleteAfterDownload] = useState(false);
   const info = query.data?.interface;
@@ -196,18 +197,18 @@ export default function Panel() {
     >
       {query.data && info ? (
         <>
-          <dl className="mb-6 max-w-3xl overflow-hidden rounded-3xl border border-white/10 bg-slate-900/60 text-white backdrop-blur-xl">
-            <Row
-              label={t("wg.status")}
-              value={info.up ? t("wg.up", { name: info.name }) : t("wg.down", { name: info.name })}
-              tone={info.up ? "text-emerald-300" : "text-rose-300"}
-            />
-            <Row label={t("wg.address")} value={info.addresses.join(", ") || "—"} />
-            <Row label={t("wg.listen")} value={info.listenPort || "—"} />
-            <Row label={t("wg.dns")} value={info.dns.join(", ") || "—"} />
-            <Row label={t("wg.publicKey")} value={info.publicKey || "—"} mono />
-            <Row label={t("wg.file")} value={query.data.path} mono />
-          </dl>
+          <StatGrid
+            items={[
+              {
+                label: t("wg.status"),
+                value: info.up ? t("wg.up", { name: info.name }) : t("wg.down", { name: info.name }),
+                tone: info.up ? "text-emerald-300" : "text-rose-300",
+              },
+              { label: t("wg.address"), value: info.addresses.join(", ") || "—", mono: true },
+              { label: t("wg.listen"), value: info.listenPort || "—", mono: true },
+              { label: t("wg.dns"), value: info.dns.join(", ") || "—", mono: true },
+            ]}
+          />
           {query.data.liveDetail ? (
             <p className="mb-4 text-sm text-muted">wg show: {query.data.liveDetail}</p>
           ) : null}
@@ -215,7 +216,7 @@ export default function Panel() {
           {!query.data.configured ? <JoinCard onJoined={query.reload} /> : null}
 
           {isPeer ? (
-            <section className="mb-6 max-w-3xl rounded-3xl border border-emerald-300/20 bg-emerald-400/5 px-4 py-3 text-sm text-white backdrop-blur-xl">
+            <section className="mb-6 rounded-2xl border border-emerald-300/20 bg-emerald-400/5 px-4 py-3 text-sm text-white backdrop-blur-xl">
               <h2 className="font-medium">{t("wg.peerRoleTitle")}</h2>
               <p className="mt-1 text-white/70">
                 {t("wg.peerRoleText", { hub: query.data.role.hub ?? "—", address: query.data.role.address ?? "—" })}
@@ -223,33 +224,22 @@ export default function Panel() {
             </section>
           ) : null}
 
-          {query.data.configured ? <TrustCard hub={!isPeer} hasSites={peers.some((p) => p.site)} /> : null}
+          <SectionHeader title={t("wg.peers")}>
+            {!isPeer ? (
+              <button type="button" className={adding ? ui.button : ui.primary} onClick={() => setAdding((v) => !v)}>
+                {adding ? t("common.cancel") : `+ ${t("wg.new")}`}
+              </button>
+            ) : null}
+          </SectionHeader>
 
-          {!isPeer && query.data.configured ? (
-            <VolltunnelCard
-              enabled={Boolean(query.data.volltunnel)}
-              disabled={Boolean(query.data.mocked)}
-              onChanged={query.reload}
-            />
-          ) : null}
-
-          {!isPeer ? (
-            <AndroidClientCard
-              info={android.data ?? undefined}
-              loading={android.loading}
-              onDownload={() => void downloadApk()}
-              onRefresh={android.reload}
-              onToken={(action) => void setApkToken(action)}
-            />
-          ) : null}
-
-          {!isPeer ? (
+          {!isPeer && adding ? (
             <CreateForm
               disabled={query.data.mocked}
               listenPort={info.listenPort}
               defaultEndpoint={query.data.defaultEndpoint}
               dns={info.dns}
               onCreated={(result) => {
+                setAdding(false);
                 setActionError("");
                 setNotice(
                   result.live
@@ -272,18 +262,6 @@ export default function Panel() {
             <p className="text-sm text-muted">{t("wg.none")}</p>
           ) : (
             <>
-            <label className="mb-3 flex items-start gap-2 text-sm text-white/80">
-              <input
-                type="checkbox"
-                checked={deleteAfterDownload}
-                onChange={(event) => setDeleteAfterDownload(event.target.checked)}
-                className="mt-1"
-              />
-              <span>
-                {t("wg.deleteAfterDownload")}
-                <span className="block text-xs text-white/50">{t("wg.deleteAfterDownloadHint")}</span>
-              </span>
-            </label>
             <DataTable mobileCards head={[t("wg.name"), t("wg.ip"), t("wg.publicKey"), t("wg.endpoint"), t("wg.handshake"), t("wg.transfer"), ""]}>
               {peers.map((peer, index) => (
                 <tr key={`${peer.publicKey || "peer"}-${index}`}>
@@ -333,8 +311,44 @@ export default function Panel() {
                 </tr>
               ))}
             </DataTable>
+            <label className="mt-3 flex items-start gap-2 text-sm text-muted">
+              <input
+                type="checkbox"
+                checked={deleteAfterDownload}
+                onChange={(event) => setDeleteAfterDownload(event.target.checked)}
+                className="mt-1"
+              />
+              <span>
+                {t("wg.deleteAfterDownload")}
+                <span className="block text-xs">{t("wg.deleteAfterDownloadHint")}</span>
+              </span>
+            </label>
             </>
           )}
+
+          <More title={t("common.more")}>
+            <dl className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900/60 text-white backdrop-blur-xl">
+              <Row label={t("wg.publicKey")} value={info.publicKey || "—"} mono />
+              <Row label={t("wg.file")} value={query.data.path} mono />
+            </dl>
+            {query.data.configured ? <TrustCard hub={!isPeer} hasSites={peers.some((p) => p.site)} /> : null}
+            {!isPeer && query.data.configured ? (
+              <VolltunnelCard
+                enabled={Boolean(query.data.volltunnel)}
+                disabled={Boolean(query.data.mocked)}
+                onChanged={query.reload}
+              />
+            ) : null}
+            {!isPeer ? (
+              <AndroidClientCard
+                info={android.data ?? undefined}
+                loading={android.loading}
+                onDownload={() => void downloadApk()}
+                onRefresh={android.reload}
+                onToken={(action) => void setApkToken(action)}
+              />
+            ) : null}
+          </More>
 
           {qrPeer?.id ? <QrModal peer={qrPeer} onClose={() => setQrPeer(null)} /> : null}
           {codePeer?.id ? <CodeModal peer={codePeer} onClose={() => setCodePeer(null)} /> : null}
@@ -370,7 +384,7 @@ function AndroidClientCard({
 }) {
   const { t } = useTranslation();
   return (
-    <section className="mb-6 max-w-3xl overflow-hidden rounded-3xl border border-white/10 bg-slate-900/60 text-white backdrop-blur-xl">
+    <section className="mb-6 overflow-hidden rounded-2xl border border-white/10 bg-slate-900/60 text-white backdrop-blur-xl">
       <div className="border-b border-white/10 px-4 py-3">
         <h2 className="text-sm font-medium tracking-wide text-white/90">{t("wg.androidTitle")}</h2>
         <p className="mt-1 text-sm text-white/60">{t("wg.androidDescription")}</p>
@@ -465,7 +479,7 @@ function TrustCard({ hub, hasSites }: { hub: boolean; hasSites: boolean }) {
 
   const enabled = data?.config.enabled ?? false;
   return (
-    <section className="mb-6 max-w-3xl overflow-hidden rounded-3xl border border-white/10 bg-slate-900/60 text-white backdrop-blur-xl">
+    <section className="mb-6 overflow-hidden rounded-2xl border border-white/10 bg-slate-900/60 text-white backdrop-blur-xl">
       <div className="border-b border-white/10 px-4 py-3">
         <h2 className="text-sm font-medium tracking-wide text-white/90">{t("wg.trustTitle")}</h2>
         <p className="mt-1 text-sm text-white/60">{t("wg.trustDescription")}</p>
@@ -561,7 +575,7 @@ function VolltunnelCard({
   }
 
   return (
-    <section className="mb-6 max-w-3xl rounded-3xl border border-white/10 bg-slate-900/60 px-4 py-3 text-sm text-white backdrop-blur-xl">
+    <section className="mb-6 rounded-2xl border border-white/10 bg-slate-900/60 px-4 py-3 text-sm text-white backdrop-blur-xl">
       <h2 className="font-medium">{t("wg.volltunnelTitle")}</h2>
       <p className="mt-1 text-white/70">{t("wg.volltunnelText")}</p>
       <p className="mt-2 text-xs text-amber-200/90">{t("wg.volltunnelWarn")}</p>
@@ -643,7 +657,7 @@ function CreateForm({
 
   return (
     <form
-      className="mb-6 rounded-3xl border border-white/10 bg-slate-900/60 p-4 text-white backdrop-blur-xl transition-all duration-200 ease-in-out"
+      className="mb-6 rounded-2xl border border-white/10 bg-slate-900/60 p-4 text-white backdrop-blur-xl transition-all duration-200 ease-in-out"
       onSubmit={(event) => {
         event.preventDefault();
         void submit();
@@ -751,7 +765,7 @@ function JoinCard({ onJoined }: { onJoined: () => void }) {
 
   return (
     <form
-      className="mb-6 max-w-3xl rounded-3xl border border-white/10 bg-slate-900/60 p-4 text-white backdrop-blur-xl"
+      className="mb-6 rounded-2xl border border-white/10 bg-slate-900/60 p-4 text-white backdrop-blur-xl"
       onSubmit={(event) => {
         event.preventDefault();
         void submit();

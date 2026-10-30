@@ -44,7 +44,8 @@
     "active": "active",
     "inactive": "inactive",
     "language": "Language",
-    "languageAuto": "Auto ({{language}})"
+    "languageAuto": "Auto ({{language}})",
+    "more": "More settings"
   },
   "login": {
     "title": "Sign in",
@@ -520,7 +521,8 @@
     "cert": "Certificate",
     "delete": "Delete",
     "confirmDelete": "Delete website {{name}} including files?",
-    "failed": "Action failed"
+    "failed": "Action failed",
+    "sites": "Sites"
   },
   "cron": {
     "title": "Scheduled tasks",
@@ -668,7 +670,8 @@
     "trustHubHint": "New clients get the trusted endpoints of this server and all sites in their configuration automatically. After changes on a site, “Update client files” and re-scan the QR code.",
     "trustPeerHint": "The hub copies address and key into new phone configurations automatically. Existing ones: “Update client files” on the hub, then re-scan the QR code.",
     "codeAction": "Code",
-    "codeTitle": "Join code · {{name}}"
+    "codeTitle": "Join code · {{name}}",
+    "peers": "Devices and sites"
   },
   "enroll": {
     "title": "Set up two-factor authentication",
@@ -1083,7 +1086,8 @@
     "add": "Forward",
     "saving": "Saving …",
     "failed": "Change failed",
-    "snatHint": "Replies return through the tunnel because the hub rewrites the source address to {{hub}}. The service on the site therefore sees every connection from {{hub}}; banning players by IP does not work there."
+    "snatHint": "Replies return through the tunnel because the hub rewrites the source address to {{hub}}. The service on the site therefore sees every connection from {{hub}}; banning players by IP does not work there.",
+    "rules": "Forwards"
   },
   "setup": {
     "title": "First-run setup",

@@ -174,8 +174,8 @@ export function LineChart({ title, series, unit, from, to, step, markers = [], r
             >
               {ticks.map((v) => (
                 <g key={v}>
-                  <line x1={PAD.left} x2={width - PAD.right} y1={y(v)} y2={y(v)} stroke="rgb(255 255 255 / 0.08)" />
-                  <text x={PAD.left - 6} y={y(v) + 4} textAnchor="end" fontSize="10" fill="rgb(255 255 255 / 0.5)">
+                  <line x1={PAD.left} x2={width - PAD.right} y1={y(v)} y2={y(v)} className="stroke-white/8" />
+                  <text x={PAD.left - 6} y={y(v) + 4} textAnchor="end" fontSize="10" className="fill-white/50">
                     {formatValue(v, unit)}
                   </text>
                 </g>
@@ -189,7 +189,7 @@ export function LineChart({ title, series, unit, from, to, step, markers = [], r
                     y={height - 6}
                     textAnchor={f === 0 ? "start" : f === 1 ? "end" : "middle"}
                     fontSize="10"
-                    fill="rgb(255 255 255 / 0.5)"
+                    className="fill-white/50"
                   >
                     {formatTime(t)}
                   </text>
@@ -202,12 +202,12 @@ export function LineChart({ title, series, unit, from, to, step, markers = [], r
                   x2={x(m.time)}
                   y1={PAD.top}
                   y2={PAD.top + plotH}
-                  stroke={m.level === "critical" ? STATUS_COLORS.critical : m.level === "warning" ? STATUS_COLORS.warning : "rgb(255 255 255 / 0.35)"}
+                  style={{ stroke: m.level === "critical" ? STATUS_COLORS.critical : m.level === "warning" ? STATUS_COLORS.warning : "color-mix(in oklab, var(--color-white) 35%, transparent)" }}
                   strokeDasharray="3 3"
                 />
               ))}
               {reference && reference.length > 0 ? (
-                <path d={path(reference, 3600)} fill="none" stroke="rgb(255 255 255 / 0.55)" strokeWidth="1.5" strokeDasharray="5 4" />
+                <path d={path(reference, 3600)} fill="none" className="stroke-white/55" strokeWidth="1.5" strokeDasharray="5 4" />
               ) : null}
               {series.map((s, i) => (
                 <path
@@ -222,7 +222,7 @@ export function LineChart({ title, series, unit, from, to, step, markers = [], r
               ))}
               {hover !== null ? (
                 <>
-                  <line x1={x(hover)} x2={x(hover)} y1={PAD.top} y2={PAD.top + plotH} stroke="rgb(255 255 255 / 0.4)" />
+                  <line x1={x(hover)} x2={x(hover)} y1={PAD.top} y2={PAD.top + plotH} className="stroke-white/40" />
                   {hoverRows.map(({ s, i, p }) =>
                     p ? (
                       <circle
@@ -231,7 +231,7 @@ export function LineChart({ title, series, unit, from, to, step, markers = [], r
                         cy={y(p[1])}
                         r="4"
                         fill={SERIES_COLORS[i % SERIES_COLORS.length]}
-                        stroke="#0f172a"
+                        className="stroke-slate-900"
                         strokeWidth="2"
                       />
                     ) : null,

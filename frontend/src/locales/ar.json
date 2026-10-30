@@ -21,7 +21,8 @@
     "print": "طباعة",
     "active": "نشط",
     "inactive": "غير نشط",
-    "language": "اللغة"
+    "language": "اللغة",
+    "more": "إعدادات إضافية"
   },
   "login": {
     "title": "تسجيل الدخول",
@@ -202,7 +203,8 @@
     "never": "أبدًا",
     "excluded": "Excluded IPs",
     "excludedPlaceholder": "e.g. 172.16.1.0/24",
-    "excludedHint": "Networks subtracted from AllowedIPs before writing the client config."
+    "excludedHint": "Networks subtracted from AllowedIPs before writing the client config.",
+    "peers": "الأجهزة والمواقع"
   },
   "enroll": {
     "title": "إعداد التحقق بخطوتين",
@@ -281,10 +283,12 @@
     "description": "تثبيت خوادم الألعاب وتحديثها وضبطها."
   },
   "websites": {
-    "description": "مواقعك الخاصة ووكلاء إلى خدمات داخلية، مع شهادة Let’s Encrypt."
+    "description": "مواقعك الخاصة ووكلاء إلى خدمات داخلية، مع شهادة Let’s Encrypt.",
+    "sites": "المواقع"
   },
   "pf": {
-    "description": "تحويل منافذ عامة من هذا الخادم إلى موقع، مثل خادم الألعاب على الجهاز الافتراضي في المنزل."
+    "description": "تحويل منافذ عامة من هذا الخادم إلى موقع، مثل خادم الألعاب على الجهاز الافتراضي في المنزل.",
+    "rules": "إعادات التوجيه"
   },
   "pluginManager": {
     "lead": "تشغيل الإضافات وإيقافها. تختفي الإضافة المتوقفة من القائمة؛ وتستمر الخدمات خلفها (مثل WireGuard أو جدار الحماية) في العمل."

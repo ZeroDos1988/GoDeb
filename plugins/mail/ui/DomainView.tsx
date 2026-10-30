@@ -786,7 +786,7 @@ function DomainSettings({
     <div className="space-y-4">
       <form
         onSubmit={(e) => void save(e)}
-        className={`${card} max-w-2xl space-y-4`}
+        className={`${card} space-y-4`}
       >
         <Field label={t("mail.catchAll")} hint={t("mail.catchAllHint")}>
           <input
@@ -825,7 +825,7 @@ function DomainSettings({
           {saved ? t("mail.saved") : t("mail.save")}
         </button>
       </form>
-      <section className={`${card} max-w-2xl border-rose-300/30`}>
+      <section className={`${card} border-rose-300/30`}>
         <h2 className="text-sm font-semibold text-rose-200">
           {t("mail.deleteDomain")}
         </h2>
@@ -885,7 +885,7 @@ function ClientSettings({
     [t("mail.client.auth"), t("mail.client.authValue")],
   ];
   return (
-    <section className={`${card} max-w-2xl`}>
+    <section className={`${card}`}>
       <p className="mb-3 text-sm text-white/70">{t("mail.client.text")}</p>
       <dl className="grid gap-x-4 gap-y-2 text-sm sm:grid-cols-[10rem_1fr]">
         {rows.map(([k, v]) => (

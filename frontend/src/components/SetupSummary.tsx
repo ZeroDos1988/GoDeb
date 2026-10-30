@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { PrintSheet, SheetHeader, SheetRow, SheetSection } from "@/components/Print.tsx";
+import * as ui from "@/components/ui.ts";
 
 export type SetupLink = { kind: string; label: string; url: string; note?: string; command?: string };
 
@@ -55,7 +56,7 @@ export function SetupSummary({ data, actions }: { data: SetupSummaryData; action
           <button
             type="button"
             onClick={() => window.print()}
-            className="rounded-2xl border border-white/10 bg-white/10 px-3 py-1.5 text-sm text-white transition-all duration-200 hover:bg-white/15"
+            className={ui.button}
           >
             {t("summary.print")}
           </button>

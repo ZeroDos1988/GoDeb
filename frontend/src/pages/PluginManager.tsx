@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "@/lib/api.ts";
 import { useGet } from "@/lib/useAsync.ts";
+import * as ui from "@/components/ui.ts";
 
 type ServiceStatus = {
   unit: string;
@@ -109,7 +110,7 @@ export function PluginManager({ onChanged }: { onChanged?: () => void }) {
                   type="button"
                   disabled={working}
                   onClick={() => void run(plugin.id, "install")}
-                  className="mt-4 rounded-2xl bg-debian px-4 py-2 text-sm font-medium text-white transition-all duration-200 ease-in-out hover:brightness-110 disabled:opacity-50"
+                  className={`${ui.primary} mt-4`}
                 >
                   {working ? t("pluginManager.working") : t("pluginManager.install")}
                 </button>

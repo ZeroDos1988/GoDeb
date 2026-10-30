@@ -158,6 +158,7 @@ Ziel: auf einen Blick sehen, ob der Server gesund ist, ob der Traffic normal aus
 - [x] **Benutzermenü wie bei GitHub** (Wunsch und Umsetzung 25.10.): Avatar oben rechts mit Sprache, Darstellung, Sitzungen, Einrichtungsübersicht, Abmelden und Version. Die Sprache folgt standardmäßig dem Browser („Auto“); Login und Ersteinrichtung haben eine eigene Sprachwahl.
 - [x] Touch-Ziele mindestens 44 px, Tabellen als Karten unter `sm` (WireGuard-Peers, UFW-Regeln) – 28.10.
 - [x] **Navigation wie bei GitHub** (Wunsch und Umsetzung 29.10.): keine Seitenleiste mehr. Kopfzeile mit Logo, Hostname, Zustand und Benutzermenü, darunter Reiter Übersicht · System · Netzwerk · Anwendungen · Einstellungen (Plugin-Manager, Einrichtungsübersicht); innerhalb eines Reiters links die Plugins (auf dem Handy als Chips). Gruppe über `group` im Manifest. Übersicht: Zustand und Diagnose in einer Karte, still bei „Alles in Ordnung“.
+- [x] **Einheitliche Felder und ruhigere Seiten** (Rückmeldung nach dem Test zu Hause, 30.10.): Eingabefelder, Knöpfe und Karten aus einer Quelle (`components/ui.ts`), gleiche Höhe und Rahmen auf allen Seiten. Heller Modus mit hellen Karten und dunkler Schrift (vorher graue Karten, teils unsichtbare Schrift). Seiten nach festem Muster: Zustand, Liste, „+ Neu…“, „Weitere Einstellungen“ eingeklappt (WireGuard, Geplante Aufgaben, Portweiterleitung, Webseiten, Domains, Dienste).
 - [x] Playwright-Smoke-Test mit iPhone- und Pixel-Viewport in CI (prüft `scrollWidth == innerWidth`) – 28.10.
 
 ## Phase 7 – Weitere Plugins (Wunschliste, 20.10.)

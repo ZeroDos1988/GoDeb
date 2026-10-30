@@ -1,12 +1,10 @@
 import type { ReactNode } from "react";
+import * as ui from "@/components/ui.ts";
 
-export const button =
-  "rounded-2xl border border-white/10 bg-slate-900/60 px-3 py-2 text-sm text-white backdrop-blur-xl transition-all duration-200 ease-in-out enabled:hover:bg-white/10 disabled:opacity-50";
-export const primary =
-  "rounded-2xl bg-debian px-4 py-2 text-sm font-medium text-white transition-all duration-200 ease-in-out enabled:hover:opacity-90 disabled:opacity-50";
-export const card = "rounded-3xl border border-white/10 bg-slate-900/60 p-4 text-white backdrop-blur-xl";
-export const input =
-  "w-full rounded-2xl border border-white/10 bg-slate-950/40 px-3 py-2 text-sm text-white outline-none transition-all duration-200 ease-in-out focus:border-white/30";
+export const button = ui.button;
+export const primary = ui.primary;
+export const card = ui.card;
+export const input = ui.input;
 
 export function Stat({ label, value, ok, hint }: { label: string; value: string; ok?: boolean; hint?: string }) {
   return (

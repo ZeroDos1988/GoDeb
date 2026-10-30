@@ -106,7 +106,7 @@ export function SessionsDialog({ onClose, onSignedOut }: { onClose: () => void; 
               type="button"
               disabled={busy !== ""}
               onClick={() => void run("others", "/api/auth/sessions/revoke-others", false)}
-              className="rounded-2xl bg-rose-600/80 px-4 py-2 text-sm font-semibold text-white transition-all duration-200 ease-in-out hover:bg-rose-600 disabled:opacity-50"
+              className="rounded-2xl bg-rose-600/80 px-4 py-2 text-sm font-semibold text-on-solid transition-all duration-200 ease-in-out hover:bg-rose-600 disabled:opacity-50"
             >
               {t("sessions.endOthers", { count: others })}
             </button>

@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "@/lib/api.ts";
 import { copyText, downloadText } from "@/lib/clipboard.ts";
+import * as ui from "@/components/ui.ts";
 
 // ClientResult is a client created on the hub during the setup
 // (firstrun.ClientResult). Config, QR and code all hold its private key.
@@ -15,10 +16,8 @@ export type ClientResult = {
   detail?: string;
 };
 
-const glass =
-  "rounded-2xl border border-white/10 bg-white/10 px-3 py-1.5 text-sm text-white transition-all duration-200 ease-in-out enabled:hover:bg-white/15 disabled:opacity-50";
-const input =
-  "w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition-all duration-200 ease-in-out outline-none focus:border-white/30";
+const glass = ui.button;
+const input = ui.input;
 
 // TunnelClients lists the clients created in the wizard and adds more with
 // "+": phones and laptops get a QR code and the file, GoDeb hosts at home
@@ -236,7 +235,7 @@ function AddClient({
       </div>
       {error ? <p className="text-sm text-debian">{error}</p> : null}
       <div className="flex flex-wrap gap-2">
-        <button type="submit" disabled={busy || name.trim() === ""} className="rounded-2xl bg-debian px-4 py-2 text-sm text-white transition-all duration-200 ease-in-out enabled:hover:opacity-90 disabled:opacity-50">
+        <button type="submit" disabled={busy || name.trim() === ""} className={ui.primary}>
           {busy ? t("setup.working") : t("clients.create")}
         </button>
         <button type="button" className={glass} onClick={onCancel} disabled={busy}>

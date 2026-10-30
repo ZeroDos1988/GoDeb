@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { DataTable, PanelFrame } from "@/components/PanelFrame.tsx";
 import { api } from "@/lib/api.ts";
 import type { CommandEnvelope } from "@/lib/types.ts";
 import { useGet } from "@/lib/useAsync.ts";
+import * as ui from "@/components/ui.ts";
 
 type Service = {
   unit: string;
@@ -49,7 +50,7 @@ type Overview = CommandEnvelope & {
 type Action = "start" | "stop" | "restart";
 
 const card =
-  "rounded-3xl border border-white/10 bg-slate-900/60 text-white backdrop-blur-xl";
+  "rounded-2xl border border-white/10 bg-slate-900/60 text-white backdrop-blur-xl";
 const action =
   "rounded-xl border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-white transition-all duration-200 ease-in-out enabled:hover:bg-white/15 disabled:opacity-40";
 
@@ -59,24 +60,22 @@ const action =
 export default function Panel() {
   const { t } = useTranslation();
   const [tab, setTab] = useState<"server" | "all">("server");
-  return (
-    <div>
-      <div className="mb-4 inline-flex rounded-2xl border border-white/10 bg-slate-900/60 p-1 text-sm text-white backdrop-blur-xl">
-        {(["server", "all"] as const).map((id) => (
-          <button
-            key={id}
-            type="button"
-            aria-pressed={tab === id}
-            onClick={() => setTab(id)}
-            className={`rounded-xl px-3 py-1.5 transition-all duration-200 ease-in-out ${tab === id ? "bg-white/15" : "text-white/70 hover:text-white"}`}
-          >
-            {t(`systemd.tab.${id}`)}
-          </button>
-        ))}
-      </div>
-      {tab === "server" ? <ServerServices /> : <AllUnits />}
+  const tabs = (
+    <div className="inline-flex rounded-xl border border-white/10 bg-slate-900/60 p-1 text-sm text-white backdrop-blur-xl">
+      {(["server", "all"] as const).map((id) => (
+        <button
+          key={id}
+          type="button"
+          aria-pressed={tab === id}
+          onClick={() => setTab(id)}
+          className={`min-h-9 rounded-lg px-3 transition-all duration-200 ease-in-out ${tab === id ? "bg-white/15 font-medium" : "text-white/70 hover:text-white"}`}
+        >
+          {t(`systemd.tab.${id}`)}
+        </button>
+      ))}
     </div>
   );
+  return tab === "server" ? <ServerServices tabs={tabs} /> : <AllUnits tabs={tabs} />;
 }
 
 function useAction(reload: () => void) {
@@ -101,7 +100,7 @@ function useAction(reload: () => void) {
   return { busy, error, run };
 }
 
-function ServerServices() {
+function ServerServices({ tabs }: { tabs: ReactNode }) {
   const { t } = useTranslation();
   const query = useGet<Overview>("/api/plugins/systemd/overview");
   const { reload } = query;
@@ -131,6 +130,7 @@ function ServerServices() {
   const data = query.data;
   return (
     <PanelFrame
+      tabs={tabs}
       title={t("systemd.title")}
       description={t("systemd.overviewDescription")}
       command={data?.command}
@@ -142,7 +142,6 @@ function ServerServices() {
     >
       {data ? (
         <>
-          <ServerCard info={data.server} />
           {error ? <p className="mb-4 text-sm text-debian">{error}</p> : null}
           <ul className="space-y-2">
             {data.services.map((s) => (
@@ -157,47 +156,6 @@ function ServerServices() {
         </>
       ) : null}
     </PanelFrame>
-  );
-}
-
-function ServerCard({ info }: { info: ServerInfo }) {
-  const { t } = useTranslation();
-  const memPct =
-    info.memTotal > 0 ? Math.round((info.memUsed / info.memTotal) * 100) : 0;
-  const items: [string, string][] = [
-    [t("systemd.server.host"), info.hostname],
-    [t("systemd.server.os"), info.os || "–"],
-    [t("systemd.server.kernel"), info.kernel || "–"],
-    [t("systemd.server.uptime"), duration(info.uptime, t)],
-    [
-      t("systemd.server.load"),
-      info.load.map((l) => l.toFixed(2)).join(" · ") +
-        (info.cpus
-          ? ` (${t("systemd.server.cpus", { count: info.cpus })})`
-          : ""),
-    ],
-    [
-      t("systemd.server.memory"),
-      info.memTotal
-        ? `${bytes(info.memUsed)} / ${bytes(info.memTotal)} (${memPct} %)`
-        : "–",
-    ],
-  ];
-  return (
-    <dl
-      className={`${card} mb-4 grid gap-x-6 gap-y-3 p-4 sm:grid-cols-2 xl:grid-cols-3`}
-    >
-      {items.map(([label, value]) => (
-        <div key={label} className="min-w-0">
-          <dt className="text-[11px] tracking-wide text-white/50 uppercase">
-            {label}
-          </dt>
-          <dd className="truncate text-sm" title={value}>
-            {value}
-          </dd>
-        </div>
-      ))}
-    </dl>
   );
 }
 
@@ -342,7 +300,7 @@ function Stat({
   );
 }
 
-function AllUnits() {
+function AllUnits({ tabs }: { tabs: ReactNode }) {
   const { t } = useTranslation();
   const query = useGet<ServiceList>("/api/plugins/systemd/services");
   const [filter, setFilter] = useState("");
@@ -363,6 +321,7 @@ function AllUnits() {
 
   return (
     <PanelFrame
+      tabs={tabs}
       title={t("systemd.allTitle")}
       description={t("systemd.description")}
       command={query.data?.command}
@@ -380,7 +339,7 @@ function AllUnits() {
           value={filter}
           onChange={(event) => setFilter(event.target.value)}
           placeholder="ssh"
-          className="w-full rounded-2xl border border-white/10 bg-slate-900/60 px-3 py-1.5 font-mono text-sm text-white backdrop-blur-xl transition-all duration-200 ease-in-out outline-none"
+          className={`${ui.input} w-full font-mono`}
         />
       </label>
       {error ? <p className="mb-4 text-sm text-debian">{error}</p> : null}

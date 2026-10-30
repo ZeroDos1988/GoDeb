@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { PanelFrame } from "@/components/PanelFrame.tsx";
 import type { CommandEnvelope } from "@/lib/types.ts";
 import { useGet } from "@/lib/useAsync.ts";
+import * as ui from "@/components/ui.ts";
 
 type Field = { key: string; value: string };
 
@@ -18,11 +19,9 @@ type LogResponse = CommandEnvelope & { entries: Entry[] };
 
 type Filter = { source: string; level: string; since: string; q: string };
 
-const input =
-  "w-full rounded-2xl border border-white/10 bg-slate-950/40 px-3 py-2 text-sm text-white outline-none transition-all duration-200 ease-in-out focus:border-white/30";
+const input = ui.input;
 
-const button =
-  "rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition-all duration-200 ease-in-out enabled:hover:bg-white/10 disabled:opacity-50";
+const button = ui.button;
 
 // Journal priorities: 3 error, 4 warning, 6 info, 7 debug.
 function levelStyle(priority: number): { key: string; className: string } {
