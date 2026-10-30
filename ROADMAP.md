@@ -155,6 +155,9 @@ Ziel: auf einen Blick sehen, ob der Server gesund ist, ob der Traffic normal aus
 ## Phase 6 – Mobile Feinschliff
 
 - [x] Kompakte Kopfzeile mit Menü-Button statt der vollen Seitenleiste auf dem Handy – 28.10.
+- [x] **Punkte der Übersicht anklickbar** (Wunsch und Umsetzung 30.10.): Jeder Diagnose-Befund bringt seine Seite mit (`page` in `/api/doctor`), die Zeile verlinkt dorthin; der Zustandspunkt der Kopfzeile führt zur Übersicht. In `main`, noch in keinem Release.
+- [ ] **PWA, Stufe 1** (Wunsch 30.10., vor 1.0 erlaubt, klein): `manifest.webmanifest` (Name, `icon-192/512.png`, Farbe, `display: standalone`) und Link in `index.html`; CSP bleibt. Ergibt ein Startbildschirm-Symbol; ohne HTTPS öffnet Android es wie ein Lesezeichen.
+- [ ] **PWA, Stufe 2: HTTPS im Tunnel** (Wunsch 30.10., nach 1.0): eigener Name (z. B. `godeb.<domain>` → A `10.8.0.1`), Let's-Encrypt-Zertifikat per DNS-01 über den Hetzner-Token des Domains-Plugins, HTTPS-Listener nur auf `wg0`, Erneuerung, dazu ein Service Worker ohne Cache für `/api`. Erst damit echte Installation als App (eigenes Fenster); die Oberfläche bleibt von außen zu.
 - [x] **Benutzermenü wie bei GitHub** (Wunsch und Umsetzung 25.10.): Avatar oben rechts mit Sprache, Darstellung, Sitzungen, Einrichtungsübersicht, Abmelden und Version. Die Sprache folgt standardmäßig dem Browser („Auto“); Login und Ersteinrichtung haben eine eigene Sprachwahl.
 - [x] Touch-Ziele mindestens 44 px, Tabellen als Karten unter `sm` (WireGuard-Peers, UFW-Regeln) – 28.10.
 - [x] **Navigation wie bei GitHub** (Wunsch und Umsetzung 29.10.): keine Seitenleiste mehr. Kopfzeile mit Logo, Hostname, Zustand und Benutzermenü, darunter Reiter Übersicht · System · Netzwerk · Anwendungen · Einstellungen (Plugin-Manager, Einrichtungsübersicht); innerhalb eines Reiters links die Plugins (auf dem Handy als Chips). Gruppe über `group` im Manifest. Übersicht: Zustand und Diagnose in einer Karte, still bei „Alles in Ordnung“.
