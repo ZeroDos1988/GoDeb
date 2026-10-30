@@ -126,6 +126,6 @@ func handleEntries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	out, env := core.ReadCommand(r.Context(), sampleJournal, "journalctl", q.Args()...)
-	entries := Filter(ParseJournal(out), q.Text, q.Lines)
+	entries := Filter(MergeForwarded(ParseJournal(out)), q.Text, q.Lines)
 	core.WriteJSON(w, http.StatusOK, entriesResponse{CommandEnvelope: env, Entries: entries})
 }

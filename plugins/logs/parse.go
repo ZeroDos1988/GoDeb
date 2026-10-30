@@ -14,6 +14,9 @@ type Entry struct {
 	Unit     string  `json:"unit"`
 	Message  string  `json:"message"`
 	Fields   []Field `json:"fields"`
+	// Sources is set when one action was logged by both processes (the web
+	// UI forwards it, the agent runs it) and the two lines became one.
+	Sources []string `json:"sources,omitempty"`
 }
 
 // Field is a key=value pair of a structured (slog) line, in log order.
@@ -147,6 +150,83 @@ func closingQuote(s string) int {
 		}
 	}
 	return -1
+}
+
+// pairWindow is how far apart the web UI's and the agent's line of the
+// same forwarded request may be.
+const pairWindow = 2000 // ms
+
+// MergeForwarded folds the two lines of a forwarded request into one: the
+// web UI logs the request it passed on, the agent the one it ran, both
+// with the same message, method, path and status. The agent's line is
+// kept (it knows the 2FA state); fields only the web UI has are added.
+// Entries are expected oldest first, as journalctl prints them.
+func MergeForwarded(entries []Entry) []Entry {
+	used := make([]bool, len(entries))
+	out := make([]Entry, 0, len(entries))
+	for i := range entries {
+		if used[i] {
+			continue
+		}
+		e := entries[i]
+		if key := requestKey(e); key != "" {
+			for j := i + 1; j < len(entries) && entries[j].Time-e.Time <= pairWindow; j++ {
+				if used[j] || entries[j].Unit == e.Unit || requestKey(entries[j]) != key {
+					continue
+				}
+				used[j] = true
+				web, agent := e, entries[j]
+				if e.Unit == agentUnit {
+					web, agent = entries[j], e
+				}
+				e = agent
+				e.Time = min(web.Time, agent.Time)
+				e.Fields = unionFields(agent.Fields, web.Fields)
+				e.Sources = []string{"web", "agent"}
+				break
+			}
+		}
+		out = append(out, e)
+	}
+	return out
+}
+
+const agentUnit = "godeb-agent.service"
+
+// requestKey identifies the request behind a line; empty for lines that
+// are not about a request.
+func requestKey(e Entry) string {
+	var method, path, status string
+	for _, f := range e.Fields {
+		switch f.Key {
+		case "methode":
+			method = f.Value
+		case "pfad":
+			path = f.Value
+		case "status":
+			status = f.Value
+		}
+	}
+	if method == "" || path == "" {
+		return ""
+	}
+	return e.Message + "\x00" + method + "\x00" + path + "\x00" + status
+}
+
+// unionFields keeps a's fields in order and appends the keys only b has.
+func unionFields(a, b []Field) []Field {
+	seen := map[string]bool{}
+	out := make([]Field, 0, len(a)+len(b))
+	for _, list := range [][]Field{a, b} {
+		for _, f := range list {
+			if seen[f.Key] {
+				continue
+			}
+			seen[f.Key] = true
+			out = append(out, f)
+		}
+	}
+	return out
 }
 
 // Filter keeps entries containing text (case-insensitive, message and field

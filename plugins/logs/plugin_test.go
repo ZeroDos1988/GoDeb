@@ -104,3 +104,50 @@ func TestPlainLinesHaveEmptyFields(t *testing.T) {
 		t.Fatalf("empty journal = %s", data)
 	}
 }
+
+func TestMergeForwarded(t *testing.T) {
+	web := "godeb.service"
+	line := func(ms int64, unit, msg string, fields ...Field) Entry {
+		return Entry{Time: ms, Priority: 3, Unit: unit, Message: msg, Fields: fields}
+	}
+	req := func(status string, extra ...Field) []Field {
+		return append([]Field{{"methode", "POST"}, {"pfad", "/api/plugin-manager/mailgateway/disable"}, {"status", status}}, extra...)
+	}
+	entries := []Entry{
+		line(1000, web, "Aktion fehlgeschlagen", req("502", Field{"dauer", "42ms"}, Field{"benutzer", "admin"})...),
+		line(1010, agentUnit, "Aktion fehlgeschlagen", req("502", Field{"dauer", "25ms"}, Field{"2fa", "bestätigt"})...),
+		// Same request again 20 s later: its own pair, not merged with the first.
+		line(21000, web, "Aktion fehlgeschlagen", req("502")...),
+		line(21005, agentUnit, "Aktion fehlgeschlagen", req("502")...),
+		// Different status: two separate entries.
+		line(30000, web, "Aktion fehlgeschlagen", req("502")...),
+		line(30001, agentUnit, "Aktion fehlgeschlagen", req("500")...),
+		// Same unit twice: never merged.
+		line(40000, web, "Aktion", req("200")...),
+		line(40001, web, "Aktion", req("200")...),
+		// Too far apart.
+		line(50000, web, "Aktion", req("200")...),
+		line(53000, agentUnit, "Aktion", req("200")...),
+		// Lines without a request are kept as they are.
+		line(60000, web, "GoDeb lauscht"),
+		line(60001, agentUnit, "GoDeb lauscht"),
+	}
+	out := MergeForwarded(entries)
+	if len(out) != 10 {
+		t.Fatalf("entries = %d: %+v", len(out), out)
+	}
+	m := out[0]
+	if m.Unit != agentUnit || m.Time != 1000 || len(m.Sources) != 2 {
+		t.Fatalf("merged = %+v", m)
+	}
+	got := map[string]string{}
+	for _, f := range m.Fields {
+		got[f.Key] = f.Value
+	}
+	if got["dauer"] != "25ms" || got["2fa"] != "bestätigt" || got["benutzer"] != "admin" {
+		t.Fatalf("fields = %+v", m.Fields)
+	}
+	if len(out[1].Sources) != 2 || out[2].Sources != nil || out[3].Sources != nil {
+		t.Fatalf("pairs = %+v", out[1:4])
+	}
+}

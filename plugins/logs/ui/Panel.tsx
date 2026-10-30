@@ -13,6 +13,8 @@ type Entry = {
   unit: string;
   message: string;
   fields: Field[];
+  /** Set when the web UI's and the agent's line of one request were merged. */
+  sources?: string[];
 };
 
 type LogResponse = CommandEnvelope & { entries: Entry[] };
@@ -136,12 +138,16 @@ export default function Panel() {
                     </span>
                     <span className="font-mono text-xs text-white/50">{entry.time ? timeFormat.format(entry.time) : ""}</span>
                     <span className="text-xs text-white/50">
-                      {entry.unit === "godeb-agent.service" ? t("logs.sourceAgent") : t("logs.sourceWeb")}
+                      {entry.sources?.length
+                        ? `${t("logs.sourceWeb")} → ${t("logs.sourceAgent")}`
+                        : entry.unit === "godeb-agent.service"
+                          ? t("logs.sourceAgent")
+                          : t("logs.sourceWeb")}
                     </span>
-                    <span className="min-w-0 font-medium break-words text-white">{entry.message}</span>
                   </div>
+                  <p className="mt-1 font-medium break-words text-white">{entry.message}</p>
                   {entry.fields?.length ? (
-                    <div className="mt-1 flex flex-wrap gap-1">
+                    <div className="mt-1.5 flex flex-wrap gap-1">
                       {entry.fields.map((f, j) => (
                         <span key={j} className="max-w-full rounded-xl bg-white/5 px-2 py-0.5 font-mono text-[11px] break-all text-white/70">
                           <span className="text-white/40">{f.key}=</span>
