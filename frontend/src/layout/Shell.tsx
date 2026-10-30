@@ -112,7 +112,7 @@ export function Shell({ plugins, pluginsError, route, username, onLogout, childr
           <div className="ms-auto flex items-center gap-2">
             {status ? (
               <a
-                href="#/monitor"
+                href="#/"
                 title={t(`monitor.status.${status}`)}
                 className="flex min-h-9 items-center gap-2 rounded-full border border-sidebar-fg/20 px-3 text-xs text-sidebar-fg/85 transition-all duration-200 ease-in-out hover:bg-sidebar-fg/10"
               >

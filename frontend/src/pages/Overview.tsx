@@ -5,7 +5,7 @@ import { Help } from "@/components/Help.tsx";
 import { PluginIcon } from "@/components/Icons.tsx";
 import * as ui from "@/components/ui.ts";
 import { useGet } from "@/lib/useAsync.ts";
-import type { SystemInfo } from "@/lib/types.ts";
+import type { PluginMeta, SystemInfo } from "@/lib/types.ts";
 
 type Level = "ok" | "info" | "warning" | "critical";
 type Health = {
@@ -14,7 +14,7 @@ type Health = {
   series: { name: string; value: number }[] | null;
 };
 type DoctorReport = {
-  findings: { area: string; level: string; text: string }[];
+  findings: { area: string; level: string; text: string; page?: string }[];
   fails: number;
   warns: number;
 };
@@ -57,6 +57,9 @@ export function Overview() {
   const peers = useGet<Peers>("/api/plugins/wireguard/peers");
   const certs = useGet<Certs>("/api/plugins/certbot/certificates");
   const games = useGet<Games>("/api/plugins/steam/games");
+  // Findings only link to pages of plugins that are switched on.
+  const enabled = new Set((useGet<{ plugins: PluginMeta[] }>("/api/plugins").data?.plugins ?? []).map((p) => p.id));
+  const pageLink = (page?: string) => (page && enabled.has(page) ? `#/${page}` : undefined);
 
   const reloadSystem = system.reload;
   const reloadHealth = health.reload;
@@ -144,7 +147,13 @@ export function Overview() {
               <Issue key={f.id} level={f.status === "critical" ? "critical" : "warning"} area={t("monitor.tile")} text={f.title} href="#/monitor" />
             ))}
             {doctorIssues.slice(0, 10).map((f, i) => (
-              <Issue key={`${f.area}-${i}`} level={f.level === "FAIL" ? "critical" : "warning"} area={f.area} text={f.text} />
+              <Issue
+                key={`${f.area}-${i}`}
+                level={f.level === "FAIL" ? "critical" : "warning"}
+                area={f.area}
+                text={f.text}
+                href={pageLink(f.page)}
+              />
             ))}
           </ul>
         ) : null}
@@ -371,16 +380,21 @@ function Issue({ level, area, text, href }: { level: Level; area: string; text: 
       <span className={`h-2 w-2 shrink-0 rounded-full ${dot[level]}`} aria-hidden />
       <span className="w-16 shrink-0 truncate text-xs text-white/55 sm:w-24">{area}</span>
       <span className="min-w-0 flex-1">{text}</span>
+      {href ? (
+        <span aria-hidden className="text-white/40 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-brand-cyan">
+          →
+        </span>
+      ) : null}
     </>
   );
   return (
     <li>
       {href ? (
-        <a href={href} className="flex items-center gap-3 py-2 transition-all duration-200 hover:text-brand-cyan">
+        <a href={href} className="group -mx-2 flex min-h-11 items-center gap-3 rounded-lg px-2 py-2 transition-all duration-200 hover:bg-white/5">
           {body}
         </a>
       ) : (
-        <div className="flex items-center gap-3 py-2">{body}</div>
+        <div className="flex min-h-11 items-center gap-3 py-2">{body}</div>
       )}
     </li>
   );

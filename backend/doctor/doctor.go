@@ -126,6 +126,23 @@ type ReportFinding struct {
 	Level   string   `json:"level"` // OK, INFO, WARN, FAIL
 	Text    string   `json:"text"`
 	Details []string `json:"details,omitempty"`
+	// Page is the plugin page where the finding is fixed, so the overview
+	// can link to it. Empty when no page fits (hardening, databases).
+	Page string `json:"page,omitempty"`
+}
+
+// pages maps an area to the plugin whose page deals with it.
+var pages = map[string]string{
+	"GoDeb":                             "apt",
+	"Updates":                           "apt",
+	"Dienste":                           "systemd",
+	"Offene Ports":                      "ufw",
+	"Firewall":                          "ufw",
+	"WireGuard":                         "wireguard",
+	"Zertifikate":                       "certbot",
+	"DNS":                               "domains",
+	"Journal (Fehler seit Systemstart)": "logs",
+	"Speicher":                          "monitor",
 }
 
 // NewReport turns Check results into the API payload.
@@ -138,7 +155,7 @@ func NewReport(findings []Finding, at time.Time) Report {
 // Add appends findings and updates the counters.
 func (r *Report) Add(findings []Finding) {
 	for _, f := range findings {
-		r.Findings = append(r.Findings, ReportFinding{Area: f.Area, Level: f.Level.String(), Text: f.Text, Details: f.Details})
+		r.Findings = append(r.Findings, ReportFinding{Area: f.Area, Level: f.Level.String(), Text: f.Text, Details: f.Details, Page: pages[f.Area]})
 		switch f.Level {
 		case Fail:
 			r.Fails++

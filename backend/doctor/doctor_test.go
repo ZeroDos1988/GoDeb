@@ -189,6 +189,18 @@ func TestNewReport(t *testing.T) {
 	}
 }
 
+// The overview links each finding to the page where it is fixed.
+func TestReportPages(t *testing.T) {
+	r := NewReport([]Finding{
+		{Area: "Updates", Level: Warn, Text: "3 Updates"},
+		{Area: "Firewall", Level: Fail, Text: "ufw inaktiv"},
+		{Area: "Härtung", Level: Warn, Text: "SSH mit Passwort"},
+	}, time.Now())
+	if r.Findings[0].Page != "apt" || r.Findings[1].Page != "ufw" || r.Findings[2].Page != "" {
+		t.Fatalf("pages = %+v", r.Findings)
+	}
+}
+
 func TestCheckDatabases(t *testing.T) {
 	env := Env{
 		Databases: []DBFile{{"Agent", "/etc/godeb/godeb.db"}, {"Messwerte", "/x/metrics.db"}, {"Fehlt", "/none"}},
