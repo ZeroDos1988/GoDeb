@@ -158,10 +158,14 @@ func getRRSet(ctx context.Context, token string, zone hzZone, name, typ string) 
 }
 
 func createRRSet(ctx context.Context, token string, zone hzZone, name, typ, value string) error {
+	return createRRSetTTL(ctx, token, zone, name, typ, value, 3600)
+}
+
+func createRRSetTTL(ctx context.Context, token string, zone hzZone, name, typ, value string, ttl int) error {
 	body := map[string]any{
 		"name":    name,
 		"type":    typ,
-		"ttl":     3600,
+		"ttl":     ttl,
 		"labels":  map[string]string{godebLabel: godebLabelOK},
 		"records": []hzRecord{{Value: value, Comment: "GoDeb"}},
 	}

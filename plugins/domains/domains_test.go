@@ -105,6 +105,10 @@ func (f *fakeHetzner) do(req *http.Request) (*http.Response, error) {
 		switch {
 		case req.Method == http.MethodGet && action == "":
 			return reply(200, map[string]any{"rrset": cur})
+		case req.Method == http.MethodDelete && action == "":
+			delete(f.rrsets, rest)
+			f.writes = append(f.writes, "delete "+rest)
+			return reply(201, map[string]any{})
 		case req.Method == http.MethodPost && action == "set_records":
 			checkTXT(cur.Type, payload.Records)
 			cur.Records = payload.Records
