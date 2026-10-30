@@ -28,6 +28,9 @@ const usage = `Aufruf:
   godeb site sync                Auf dem Hub: Weiterleitungen und Trusted Endpoints der Standorte abgleichen
   godeb trust enable [--address IP] [--port 8787] | disable | show
                                  Trusted Endpoint im Heimnetz (Auto-Disconnect der App)
+  godeb access open [--for 2h] | close | status
+                                 Fernzugang auf Zeit: HTTPS auf der öffentlichen IP (Port 8443),
+                                 schließt sich nach Ablauf von selbst (höchstens 24h)
   godeb apt-run check|security|upgrade
                                  Paketlisten prüfen, Sicherheitsupdates oder alle Updates installieren
                                  (läuft sonst automatisch als godeb-apt.service)
@@ -55,6 +58,8 @@ func runCLI(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return runTrust(args[1:], stdout, stderr)
 	case len(args) >= 1 && args[0] == "site":
 		return runSite(args[1:], stdout, stderr)
+	case len(args) >= 1 && args[0] == "access":
+		return runAccess(args[1:], stdout, stderr)
 	case len(args) >= 1 && args[0] == "apt-run":
 		return runAptRun(args[1:], stdout, stderr)
 	case len(args) == 3 && args[0] == "2fa" && args[1] == "reset":

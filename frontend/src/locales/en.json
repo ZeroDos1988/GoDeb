@@ -589,7 +589,21 @@
     "to": "To",
     "action": "Action",
     "from": "From",
-    "remove": "Remove"
+    "remove": "Remove",
+    "remote": {
+      "title": "Temporary remote access",
+      "hint": "For the setup while the tunnel is not ready yet: the interface is then reachable by HTTPS at {{ip}}:{{port}} from anywhere.",
+      "openUntil": "Reachable from outside until {{until}}. Afterwards the access closes on its own.",
+      "duration": "Duration",
+      "minutes_one": "{{count}} minute",
+      "minutes_other": "{{count}} minutes",
+      "hours_one": "{{count}} hour",
+      "hours_other": "{{count}} hours",
+      "open": "Open",
+      "extend": "Set again",
+      "close": "Close now",
+      "safety": "HTTPS only with a self-signed certificate (browser warning). Sign-in with password and 2FA, fail2ban bans after failed attempts. With the Hetzner Cloud Firewall, allow port 8443/tcp there as well."
+    }
   },
   "wg": {
     "title": "WireGuard",
@@ -1339,5 +1353,15 @@
     "detailRenew": "The agent renews the certificate 30 days before it expires and reports errors in monitoring.",
     "detailSite": "On a site (home VM) the hub currently forwards only port 8080 between peers, so the name is not yet reachable from the phone there.",
     "lastRun": "Last attempt: {{date}}"
+  },
+  "fix": {
+    "generic": "Fix",
+    "working": "Please wait …",
+    "failed": "Fix failed",
+    "restart": "Restart",
+    "securityUpdates": "Install security updates",
+    "dnsApply": "Publish records",
+    "renewCert": "Get certificate again",
+    "closeRemote": "Close now"
   }
 }

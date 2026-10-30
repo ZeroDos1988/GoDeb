@@ -22,6 +22,7 @@ import (
 	"godeb/backend/firstrun"
 	"godeb/backend/logging"
 	"godeb/backend/pluginmgr"
+	"godeb/plugins/ufw"
 	"godeb/plugins/wireguard"
 )
 
@@ -72,6 +73,7 @@ func runAgent(args []string, stderr io.Writer) int {
 		_ = srv.Shutdown(shutdown)
 	}()
 	core.Default.StartServices(ctx)
+	go ufw.WatchRemote(ctx)
 	slog.Info("GoDeb-Agent lauscht", "version", version, "socket", *sock, "web_benutzer", webUser, "log_level", os.Getenv("GODEB_LOG_LEVEL"))
 	if err := srv.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		fmt.Fprintf(stderr, "agent: %v\n", err)

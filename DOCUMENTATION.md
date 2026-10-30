@@ -2,7 +2,7 @@
 
 GoDeb ist eine lokale Verwaltungsoberfläche für Debian 13 (Trixie). Ein statisch gebautes Go-Programm spricht mit dem Betriebssystem, eine React-Oberfläche zeigt den Zustand, und eingebettete SQLite-Dateien halten nur Metadaten. Laufende Dienste bleiben in ihren eigenen Dateien unter `/etc`. Dasselbe Programm läuft als zwei Dienste: die Weboberfläche als unprivilegierter Benutzer `godeb` und ein kleiner root-Agent ohne Netzwerkzugang, der alle Änderungen am System ausführt.
 
-Die Oberfläche hört auf `127.0.0.1:8080` und auf der Adresse von `wg0` (üblich `10.8.0.1:8080`). Auf Wunsch kommt HTTPS auf der LAN-Adresse dazu (`<lan-ip>:8443`, nur für das LAN-Subnetz). Öffentlich erreichbar ist sie nur während der Ersteinrichtung per HTTPS mit Einmal-Token, nie als dauerhaftes Portal und nie per Klartext-HTTP. Sie ist ab 360 px Breite bedienbar, also auch vom Handy über den Tunnel. Über „Zum Startbildschirm hinzufügen“ bekommt sie ein eigenes Symbol (`manifest.webmanifest`). Als echte App (eigenes Fenster) lässt sie sich nur über HTTPS installieren; dafür gibt es den App-Zugang (`https://godeb.<domain>:8443` im Tunnel, siehe „App-Zugang“).
+Die Oberfläche hört auf `127.0.0.1:8080` und auf der Adresse von `wg0` (üblich `10.8.0.1:8080`). Auf Wunsch kommt HTTPS auf der LAN-Adresse dazu (`<lan-ip>:8443`, nur für das LAN-Subnetz). Öffentlich erreichbar ist sie nur während der Ersteinrichtung per HTTPS mit Einmal-Token und, wenn der Admin es einschaltet, als Fernzugang auf Zeit (HTTPS, höchstens 24 Stunden, siehe „Fernzugang auf Zeit“), nie als dauerhaftes Portal und nie per Klartext-HTTP. Sie ist ab 360 px Breite bedienbar, also auch vom Handy über den Tunnel. Über „Zum Startbildschirm hinzufügen“ bekommt sie ein eigenes Symbol (`manifest.webmanifest`). Als echte App (eigenes Fenster) lässt sie sich nur über HTTPS installieren; dafür gibt es den App-Zugang (`https://godeb.<domain>:8443` im Tunnel, siehe „App-Zugang“).
 
 ## Architektur
 
@@ -299,6 +299,32 @@ Eine Sitzung allein reicht für keine Änderung am Host. Jede `POST`/`PUT`/`DELE
 
 Jede Antwort trägt eine Content-Security-Policy (nur eigene Origin, Skripte ohne `unsafe-inline`), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer` und eine restriktive `Permissions-Policy` (`backend/headers.go`).
 
+### Fernzugang auf Zeit
+
+Für die Einrichtung, solange der Tunnel noch nicht steht, lässt sich die Oberfläche für eine begrenzte Zeit von außen öffnen: Firewall-Seite → „Fernzugang auf Zeit“ oder `sudo godeb access open [--for 2h]`. Beide nutzen dieselben Funktionen (`plugins/ufw/remote.go`).
+
+- **Nur HTTPS** auf der öffentlichen IPv4 (Quelladresse der Default-Route), Port `8443`, mit dem selbstsignierten Zertifikat der Ersteinrichtung. Den Fingerabdruck zeigt `sudo godeb access open`. Anmeldung mit Passwort und 2FA, fail2ban wie gewohnt; zugelassen sind alle Quell-IPs (dynamische Adressen zu Hause).
+- **Dauer** 15 Minuten bis 24 Stunden, Standard 2 Stunden. Erneutes Öffnen setzt eine neue Frist.
+- **Agent:** setzt `ufw allow proto tcp to <ip> port 8443` (Kommentar „GoDeb Fernzugang“), merkt sich die Frist in der Agent-Datenbank (`ufw_remote`) und schreibt `remote.json` über `state.WriteFile` für die Weboberfläche. Nach Ablauf entfernt er Regel und Datei, auch nach einem Neustart. Diese Überwachung läuft im Agenten unabhängig vom Plugin-Manager.
+- **Weboberfläche:** öffnet den Port nur, solange die Frist in `remote.json` nicht abgelaufen ist, schließt also auch ohne Agent pünktlich.
+- **Übersicht:** Solange offen, steht dort eine Warnung mit Frist, Adresse und Knopf „Jetzt schließen“. Öffnen verlangt einen frischen 2FA-Code; Schließen geht ohne Code, weil es nur Zugang wegnimmt.
+- Ohne ufw oder ohne öffentliche IPv4 öffnet GoDeb nichts. Mit der Hetzner Cloud Firewall dort Port `8443/tcp` ebenfalls freigeben (und danach wieder schließen).
+- Schließen: Knopf, `sudo godeb access close`; Zustand: `sudo godeb access status`.
+
+### „Beheben“-Knöpfe in der Übersicht
+
+Ein Befund aus `/api/doctor` oder der Überwachung kann eine Aktion tragen (`fix`: `action`, `path`, optional `body`). Die Übersicht zeigt dann einen Knopf, der genau diesen vorhandenen Endpunkt per POST aufruft. Weiterleitung an den Agenten und 2FA gelten wie auf der Plugin-Seite; es gibt keinen eigenen Sonderweg. Heute:
+
+| Befund | Knopf | Endpunkt |
+|---|---|---|
+| Fernzugang offen | Jetzt schließen | `POST /api/plugins/ufw/remote/close` |
+| fehlgeschlagener Dienst (`*.service`, nicht GoDeb selbst) | Neu starten | `POST /api/plugins/systemd/action` |
+| Sicherheitsupdates ausstehend | Sicherheitsupdates einspielen | `POST /api/plugins/apt/security` |
+| DNS-Eintrag fehlt oder falsch, Domain im Hetzner-Modus | Einträge setzen | `POST /api/plugins/domains/domains/{domain}/apply` |
+| App-Zugang ohne Zertifikat oder kurz vor Ablauf | Zertifikat neu holen | `POST /api/plugins/apphttps/renew` |
+
+Was sich nicht sicher automatisch lösen lässt (Platte voll, Journal-Fehler, Härtung, Zertifikate von Certbot, Neustart nötig), führt weiter mit dem Pfeil zur passenden Seite. Plugins melden eigene Befunde mit `doctor.Register`.
+
 ### Notfall-Reset
 
 Wenn das Authenticator-Gerät fehlt:
@@ -526,6 +552,9 @@ Alle außer `status` antworten nach dem Abschluss mit `410`.
 | POST | `/api/plugins/apt/settings` (`autoCheck`, `interval` 5–1440 Minuten, `autoSecurity`) |
 | GET | `/api/plugins/ufw/status` |
 | POST | `/api/plugins/ufw/rules` |
+| GET | `/api/plugins/ufw/remote` (Fernzugang: offen?, Frist, URL, öffentliche IP) |
+| POST | `/api/plugins/ufw/remote` (`minutes`, 15 bis 1440, Standard 120; frischer 2FA-Code) |
+| POST | `/api/plugins/ufw/remote/close` (ohne 2FA, nimmt nur Zugang weg) |
 | GET | `/api/plugins/systemd/overview` (Eckdaten des Servers, ausgewählte Dienste mit Status, Laufzeit, CPU, RAM) |
 | GET | `/api/plugins/systemd/services` |
 | POST | `/api/plugins/systemd/action` (`unit`, `action`: `start`, `stop`, `restart`; nicht für GoDebs eigene Units) |
@@ -624,6 +653,8 @@ sudo godeb site add heim-vm                      # Hub: Standort anlegen, zeigt 
 sudo godeb site sync                             # Hub: Standort-Weiterleitungen und Trusted Endpoints abgleichen
 sudo godeb trust enable                          # Heim: Trusted Endpoint für Auto-Disconnect
 sudo godeb trust show
+sudo godeb access open --for 2h                  # Fernzugang auf Zeit (HTTPS auf der öffentlichen IP)
+sudo godeb access close
 sudo nft list table ip godeb_portforward         # Hub: aktive Portweiterleitungen
 ```
 

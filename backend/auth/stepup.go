@@ -62,12 +62,16 @@ var criticalExact = map[string]bool{
 	"/api/plugins/wireguard/volltunnel": true, // NAT: client internet egress through the hub
 	"/api/plugins/apt/upgrade":          true, // installs every pending update, GoDeb included
 	"/api/plugins/domains/token":        true, // Cloud-API token that can change every DNS zone
+	"/api/plugins/apphttps/enable":      true, // public DNS record and a firewall port on wg0
 }
 
 // noStepUp lists state-changing routes that skip the second factor.
 var noStepUp = map[string]bool{
 	"/api/user/settings":       true, // theme and language of the own account only
 	"/api/plugin-manager/scan": true, // re-reads plugin.json files, changes nothing
+	// Closing the temporary remote access only takes access away; it must
+	// work in one click from the overview, also when no code is at hand.
+	"/api/plugins/ufw/remote/close": true,
 }
 
 // stepUpFor decides how fresh the second factor must be. Every state-changing

@@ -589,7 +589,21 @@
     "to": "Ziel",
     "action": "Aktion",
     "from": "Quelle",
-    "remove": "Entfernen"
+    "remove": "Entfernen",
+    "remote": {
+      "title": "Fernzugang auf Zeit",
+      "hint": "Für die Einrichtung, solange der Tunnel noch nicht steht: Die Oberfläche ist dann per HTTPS unter {{ip}}:{{port}} von überall erreichbar.",
+      "openUntil": "Von außen erreichbar bis {{until}}. Danach schließt sich der Zugang von selbst.",
+      "duration": "Dauer",
+      "minutes_one": "{{count}} Minute",
+      "minutes_other": "{{count}} Minuten",
+      "hours_one": "{{count}} Stunde",
+      "hours_other": "{{count}} Stunden",
+      "open": "Öffnen",
+      "extend": "Neu setzen",
+      "close": "Jetzt schließen",
+      "safety": "Nur HTTPS mit selbstsigniertem Zertifikat (Browser-Warnung, Fingerabdruck zeigt sudo godeb access open). Anmeldung mit Passwort und 2FA, fail2ban sperrt nach Fehlversuchen. Mit Hetzner Cloud Firewall dort Port 8443/tcp ebenfalls freigeben."
+    }
   },
   "wg": {
     "title": "WireGuard",
@@ -1339,5 +1353,15 @@
     "detailRenew": "Der Agent erneuert das Zertifikat 30 Tage vor Ablauf von selbst und meldet Fehler in der Überwachung.",
     "detailSite": "Auf einem Standort (Heim-VM) leitet der Hub bisher nur Port 8080 zwischen Peers weiter; dort ist der Name daher noch nicht vom Handy erreichbar.",
     "lastRun": "Letzter Versuch: {{date}}"
+  },
+  "fix": {
+    "generic": "Beheben",
+    "working": "Bitte warten …",
+    "failed": "Beheben fehlgeschlagen",
+    "restart": "Neu starten",
+    "securityUpdates": "Sicherheitsupdates einspielen",
+    "dnsApply": "Einträge setzen",
+    "renewCert": "Zertifikat neu holen",
+    "closeRemote": "Jetzt schließen"
   }
 }

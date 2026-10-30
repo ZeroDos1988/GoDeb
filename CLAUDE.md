@@ -30,7 +30,7 @@ GoDeb läuft als zwei Prozesse desselben Programms: die Weboberfläche (`godeb.s
 - Schreibt root nach `/var/lib/godeb`, dann nur über `state.WriteFile` (os.Root, kein Symlink-Ausbruch, Übergabe an `godeb`).
 - Interne Agent-Routen (`/internal/…`) nur für Abfragen, die die Weboberfläche nicht selbst lesen darf. Nie eine Route, die 2FA zurücksetzt oder ohne Code etwas ändert.
 
-- Standardmäßig nur auf Loopback und das WireGuard-Interface binden, nie Klartext-HTTP auf LAN/WAN. Ausnahmen nur per HTTPS: die Ersteinrichtung (`backend/firstrun`, Einmal-Token, schließt sich nach Abschluss) und der vom Admin gewählte LAN-Zugang (`access.json`, nur LAN-Subnetz).
+- Standardmäßig nur auf Loopback und das WireGuard-Interface binden, nie Klartext-HTTP auf LAN/WAN. Ausnahmen nur per HTTPS: die Ersteinrichtung (`backend/firstrun`, Einmal-Token, schließt sich nach Abschluss) der vom Admin gewählte LAN-Zugang (`access.json`, nur LAN-Subnetz) und der Fernzugang auf Zeit (`plugins/ufw/remote.go`, höchstens 24 h, Frist im Agenten und in der Weboberfläche geprüft).
 - Neue `/api`-Routen sind automatisch geschützt (`auth.RequireSession`). Ausnahmen nur in `auth.protected()` und nur mit Begründung im Kommentar.
 - Externe Befehle nur über `core.Run*`/`core.RunAdmin*`: kein `sh -c`, Argumente als Liste, Secrets über stdin.
 - Jede Eingabe, die in einem Befehl, Pfad oder einer Konfigdatei landet, gegen eine enge Regex/Allowlist prüfen. Vorhandene Muster (`unitPattern`, `clientName`, …) wiederverwenden. Wer eine neue Konfigdatei schreibt, legt einen Fuzz-Test an (Vorbild: `plugins/websites/fuzz_test.go`).
