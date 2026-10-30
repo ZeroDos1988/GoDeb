@@ -1,12 +1,19 @@
 package main
 
 import (
+	"mime"
 	"net/http"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 )
+
+// Go's built-in MIME table lacks the web app manifest; with nosniff the
+// browser relies on the declared type.
+func init() {
+	_ = mime.AddExtensionType(".webmanifest", "application/manifest+json")
+}
 
 func spaHandler(dist string) http.Handler {
 	dist = filepath.Clean(dist)

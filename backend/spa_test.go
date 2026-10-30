@@ -1,6 +1,9 @@
 package main
 
 import (
+	"net/http"
+	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"testing"
 )
@@ -31,5 +34,17 @@ func TestResolveDistFile(t *testing.T) {
 	rel, err := filepath.Rel(dist, escaped)
 	if err != nil || len(rel) >= 2 && rel[:2] == ".." {
 		t.Fatalf("rel = %s err=%v", rel, err)
+	}
+}
+
+func TestSPAServesManifestType(t *testing.T) {
+	dist := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dist, "manifest.webmanifest"), []byte("{}"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	rec := httptest.NewRecorder()
+	spaHandler(dist).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/manifest.webmanifest", nil))
+	if got := rec.Header().Get("Content-Type"); got != "application/manifest+json" {
+		t.Fatalf("Content-Type = %q", got)
 	}
 }

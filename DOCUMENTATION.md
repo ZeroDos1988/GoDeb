@@ -2,7 +2,7 @@
 
 GoDeb ist eine lokale Verwaltungsoberfläche für Debian 13 (Trixie). Ein statisch gebautes Go-Programm spricht mit dem Betriebssystem, eine React-Oberfläche zeigt den Zustand, und eingebettete SQLite-Dateien halten nur Metadaten. Laufende Dienste bleiben in ihren eigenen Dateien unter `/etc`. Dasselbe Programm läuft als zwei Dienste: die Weboberfläche als unprivilegierter Benutzer `godeb` und ein kleiner root-Agent ohne Netzwerkzugang, der alle Änderungen am System ausführt.
 
-Die Oberfläche hört auf `127.0.0.1:8080` und auf der Adresse von `wg0` (üblich `10.8.0.1:8080`). Auf Wunsch kommt HTTPS auf der LAN-Adresse dazu (`<lan-ip>:8443`, nur für das LAN-Subnetz). Öffentlich erreichbar ist sie nur während der Ersteinrichtung per HTTPS mit Einmal-Token, nie als dauerhaftes Portal und nie per Klartext-HTTP. Sie ist ab 360 px Breite bedienbar, also auch vom Handy über den Tunnel.
+Die Oberfläche hört auf `127.0.0.1:8080` und auf der Adresse von `wg0` (üblich `10.8.0.1:8080`). Auf Wunsch kommt HTTPS auf der LAN-Adresse dazu (`<lan-ip>:8443`, nur für das LAN-Subnetz). Öffentlich erreichbar ist sie nur während der Ersteinrichtung per HTTPS mit Einmal-Token, nie als dauerhaftes Portal und nie per Klartext-HTTP. Sie ist ab 360 px Breite bedienbar, also auch vom Handy über den Tunnel. Über „Zum Startbildschirm hinzufügen“ bekommt sie ein eigenes Symbol (`manifest.webmanifest`); ohne HTTPS öffnet der Browser sie damit wie ein Lesezeichen, nicht als eigenes Fenster.
 
 ## Architektur
 
