@@ -3,6 +3,6 @@
   "name": "Domains",
   "description": "Domains und DNS: Einträge prüfen oder über die Hetzner-Cloud-API setzen",
   "icon": "globe",
-  "group": "network",
+  "group": "apps",
   "order": 33
 }

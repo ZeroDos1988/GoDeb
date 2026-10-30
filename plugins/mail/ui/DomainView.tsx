@@ -43,11 +43,14 @@ export function DomainView({
   status,
   onBack,
   onChanged,
+  embedded = false,
 }: {
   name: string;
   status: Status;
   onBack: () => void;
   onChanged: () => void;
+  /** Shown inside the domain page of the domains plugin: no own heading. */
+  embedded?: boolean;
 }) {
   const { t } = useTranslation();
   const query = useGet<DomainData>(
@@ -62,23 +65,30 @@ export function DomainView({
 
   return (
     <section>
-      <button
-        type="button"
-        onClick={onBack}
-        className="mb-2 text-sm text-muted hover:text-debian"
-      >
-        ← {t("mail.title")}
-      </button>
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <h1 className="font-mono text-2xl font-semibold tracking-tight">
-          {name}
-        </h1>
-        {data?.domain.suspended ? (
-          <Badge tone="warn">{t("mail.suspended")}</Badge>
-        ) : null}
-      </div>
+      {embedded ? null : (
+        <>
+          <button
+            type="button"
+            onClick={onBack}
+            className="mb-2 text-sm text-muted hover:text-debian"
+          >
+            ← {t("mail.title")}
+          </button>
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            <h1 className="font-mono text-2xl font-semibold tracking-tight">
+              {name}
+            </h1>
+            {data?.domain.suspended ? (
+              <Badge tone="warn">{t("mail.suspended")}</Badge>
+            ) : null}
+          </div>
+        </>
+      )}
       <div className="mb-4 inline-flex max-w-full overflow-x-auto rounded-2xl border border-white/10 bg-slate-900/60 p-1 text-sm text-white backdrop-blur-xl">
-        {(["accounts", "dns", "settings", "client"] as const).map((id) => (
+        {(embedded
+          ? (["accounts", "settings", "client"] as const)
+          : (["accounts", "dns", "settings", "client"] as const)
+        ).map((id) => (
           <button
             key={id}
             type="button"

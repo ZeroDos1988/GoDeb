@@ -426,6 +426,8 @@ Domains werden einmal in GoDeb eingetragen. Andere Plugins (zuerst Mail) melden 
 
 Kein eigener Port 53 auf dem VPS. Die alte DNS-API unter `dns.hetzner.com` wird nicht genutzt.
 
+Die Domain-Seite ist die Zentrale wie bei HestiaCP: Die Liste zeigt je Domain DNS-Betrieb, Postfächer, Webseiten und Zertifikat. Eine Domain hat die Reiter Übersicht, DNS (Einträge als Tabelle mit Status), E-Mail (die Postfach-Verwaltung des Mail-Plugins, eingebettet) und Webseiten. Reiter erscheinen nur, wenn das Plugin dahinter aktiv ist (`plugins/domains/ui/related.ts`).
+
 ### Mailserver (Plugin E-Mail)
 
 Ein vollständiger Mailserver nach dem Vorbild von HestiaCP: Maildomains, Postfächer mit Quota, Aliase, Weiterleitungen (mit oder ohne eigene Kopie), reine Weiterleitungsadressen, Catch-all, Sperren von Postfach oder Domain, DKIM, SPF/DMARC-Vorgaben und Spamfilter. Bedienung: Domainliste, je Domain die Reiter Postfächer, DNS, Einstellungen und Mailprogramm. Gedacht ist er zuerst für den VPS; später soll der VPS nur weiterleiten und die Postfächer auf der Heim-VM liegen (siehe `ROADMAP.md`). Mailserver und Mail-Gateway schließen sich aus, weil beide Postfix konfigurieren.

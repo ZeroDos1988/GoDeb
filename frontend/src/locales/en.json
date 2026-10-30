@@ -809,7 +809,31 @@
       "wrong": "wrong",
       "unknown": "unknown",
       "conflict": "conflict"
-    }
+    },
+    "cert": "Certificate",
+    "state": "State",
+    "tabs": {
+      "overview": "Overview",
+      "dns": "DNS",
+      "mail": "Mail",
+      "web": "Websites"
+    },
+    "mailboxes_one": "{{count}} mailbox",
+    "mailboxes_other": "{{count}} mailboxes",
+    "sites_one": "{{count}} website",
+    "sites_other": "{{count}} websites",
+    "recordsOk": "{{ok}} of {{total}} records correct",
+    "noMail": "No mailboxes",
+    "noSites": "No website",
+    "noMailDomain": "There is no mail domain for this domain yet.",
+    "mailNotInstalled": "The mail server is not set up yet.",
+    "toMail": "Go to mail server",
+    "toWebsites": "Go to websites",
+    "siteName": "Name",
+    "siteHost": "Address",
+    "siteMode": "Type",
+    "certExpired": "expired",
+    "certUntil": "valid until {{date}}"
   },
   "mail": {
     "title": "E-mail",

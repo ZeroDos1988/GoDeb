@@ -809,7 +809,31 @@
       "wrong": "abweichend",
       "unknown": "unbekannt",
       "conflict": "Konflikt"
-    }
+    },
+    "cert": "Zertifikat",
+    "state": "Status",
+    "tabs": {
+      "overview": "Übersicht",
+      "dns": "DNS",
+      "mail": "E-Mail",
+      "web": "Webseiten"
+    },
+    "mailboxes_one": "{{count}} Postfach",
+    "mailboxes_other": "{{count}} Postfächer",
+    "sites_one": "{{count}} Webseite",
+    "sites_other": "{{count}} Webseiten",
+    "recordsOk": "{{ok}} von {{total}} Einträgen stimmen",
+    "noMail": "Keine Postfächer",
+    "noSites": "Keine Webseite",
+    "noMailDomain": "Für diese Domain gibt es noch keine Maildomain.",
+    "mailNotInstalled": "Der Mailserver ist noch nicht eingerichtet.",
+    "toMail": "Zum Mailserver",
+    "toWebsites": "Zu den Webseiten",
+    "siteName": "Name",
+    "siteHost": "Adresse",
+    "siteMode": "Art",
+    "certExpired": "abgelaufen",
+    "certUntil": "gültig bis {{date}}"
   },
   "mail": {
     "title": "E-Mail",
