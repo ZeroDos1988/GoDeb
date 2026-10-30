@@ -154,3 +154,35 @@ test("tabs lead to the plugins of a group", async ({ page }) => {
   await sub.getByText("Firewall").click();
   await expect(page).toHaveURL(/#\/ufw/);
 });
+
+// Regression: the 2FA dialog focused the password field after every render,
+// so each digit typed into the code field pulled the cursor back.
+test("step-up dialog keeps the cursor in the code field", async ({ page }) => {
+  await mockApi(page);
+  await page.route("**/api/plugin-manager", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        plugins: plugins.map((p) => ({ ...p, enabled: true, installed: true, supported: true, dependenciesReady: true, services: [], aptDependencies: [], architectures: [] })),
+      }),
+    }),
+  );
+  await page.route("**/api/plugin-manager/ufw/disable", (route) =>
+    route.fulfill({
+      status: 403,
+      contentType: "application/json",
+      body: JSON.stringify({ error: "2FA nötig", step_up_required: true, critical: true }),
+    }),
+  );
+  await page.goto("/#/plugin-manager");
+  await page.getByRole("switch", { name: "Firewall" }).click();
+  const password = page.locator("#stepup-password");
+  const code = page.locator("#stepup-code");
+  await expect(password).toBeFocused();
+  await password.fill("geheim");
+  await code.click();
+  await code.pressSequentially("123456");
+  await expect(code).toBeFocused();
+  await expect(code).toHaveValue("123456");
+  await expect(password).toHaveValue("geheim");
+});

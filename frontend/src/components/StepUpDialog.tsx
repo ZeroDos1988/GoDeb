@@ -29,6 +29,9 @@ export function StepUpDialog() {
     [],
   );
 
+  // Focus the first field once when the dialog opens. Without the
+  // dependency this ran after every keystroke and pulled the cursor from
+  // the code field back to the password field.
   useEffect(() => {
     if (!pending) {
       return;
@@ -41,7 +44,9 @@ export function StepUpDialog() {
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  });
+    // cancel only depends on pending.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pending]);
 
   if (!pending) {
     return null;
