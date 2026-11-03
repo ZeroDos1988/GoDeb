@@ -43,6 +43,8 @@ func MountPrivileged(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/setup/hub", onlyDuringSetup(handleHub))
 	mux.HandleFunc("POST /api/setup/client", onlyDuringSetup(handleClient))
 	mux.HandleFunc("POST /api/setup/join", onlyDuringSetup(handleJoin))
+	mux.HandleFunc("POST /api/setup/services", onlyDuringSetup(handleServices))
+	mux.HandleFunc("POST /api/setup/domains", onlyDuringSetup(handleDomains))
 	mux.HandleFunc("POST /api/setup/finish", onlyDuringSetup(handleFinish))
 	// The overview stays available after the setup (login required).
 	mux.HandleFunc("GET /api/setup/summary", handleSummary)
@@ -113,6 +115,7 @@ type infoResponse struct {
 	UFW         string             `json:"ufw"` // missing, inactive, active
 	SetupPort   int                `json:"setupPort"`
 	Fingerprint string             `json:"fingerprint"`
+	Services    ServicesInfo       `json:"services"`
 }
 
 func handleInfo(w http.ResponseWriter, r *http.Request) {
@@ -121,6 +124,7 @@ func handleInfo(w http.ResponseWriter, r *http.Request) {
 	resp := infoResponse{
 		Hostname: host, PublicIP: core.DefaultRoute(r.Context()).Src, LAN: core.LANAddresses(),
 		SSHPorts: core.SSHPorts(r.Context()), Role: role, SetupPort: SetupPort(),
+		Services: CurrentServices(r.Context()),
 	}
 	if resp.SSHPorts == nil {
 		resp.SSHPorts = []int{}

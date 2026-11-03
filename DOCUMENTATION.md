@@ -153,7 +153,7 @@ Nach `sudo apt install` steht der Link zur Einrichtung in einem Kasten am Ende d
 
 **Übersicht:** Der letzte Schritt des Assistenten zeigt, wie der Server eingerichtet ist: Adressen der Weboberfläche (Tunnel mit IP, Heimnetz, SSH-Notzugang), Rolle, Tunnel-Adresse und -Netz, Endpoint, Standorte und Clients, Trusted Endpoint, SSH-Port und Firewall-Regeln. „Drucken / als PDF speichern“ (oder Strg+P) druckt nur diese Übersicht als schlichten Bogen, schwarz auf weiß. Später: Startseite → „Einrichtungsübersicht“ (`GET /api/setup/summary`, mit Login) oder `sudo godeb summary`. Sie enthält keine Passwörter, Tokens oder privaten Schlüssel.
 
-Ein frisch installiertes GoDeb richtet nichts von selbst ein. Alle Plugins sind dabei; was davon genutzt wird, entscheidet die Einrichtung (und später der Plugin-Manager). Es entsteht insbesondere kein WireGuard-Server, solange man ihn nicht wählt.
+Ein frisch installiertes GoDeb richtet nichts von selbst ein. Alle Plugins sind dabei; was davon genutzt wird, entscheidet die Einrichtung (und später der Plugin-Manager). Es entsteht insbesondere kein WireGuard-Server, solange man ihn nicht wählt. Der Assistent schlägt aber vor, was ein VPS meist braucht (WireGuard-Server, Mail-Gateway, Domains mit DNS), und richtet es mit einem Klick ein.
 
 ### Im Browser (Standard)
 
@@ -178,7 +178,10 @@ Bis die Einrichtung abgeschlossen ist, lauscht GoDeb zusätzlich auf `0.0.0.0:84
    - **WireGuard-Server** (VPS): `wg0.conf` mit `10.8.0.1/24` und `51820/udp`, dazu ein erster Client als QR-Code. Mit „+ Weiteres Gerät oder GoDeb-Server“ kommen beliebig viele weitere dazu: Handys und Laptops mit QR-Code und Datei, GoDeb-Server zu Hause (Standorte) mit Beitrittscode (`POST /api/setup/client`, `firstrun.AddClient`).
    - **Mit Hub verbinden** (Heim-VM): Beitrittscode oder Client-Datei des VPS einfügen (siehe „Zielbild“).
    - **Ohne WireGuard.**
-4. **Erreichbarkeit und Firewall:**
+4. **Mail und Domains** (optional, „Überspringen“ geht immer):
+   - **Mail-Relay** (nur auf dem WireGuard-Server): „Mail-Gateway installieren“ installiert Postfix und OpenDKIM über den Plugin-Manager und schaltet das Plugin ein (`POST /api/setup/services`). Ist der Mailserver (Plugin E-Mail) auf diesem Server eingerichtet, gibt es den Punkt nicht.
+   - **Domains und DNS:** „Hetzner DNS verbinden“ (API-Token, versiegelt im Agenten) oder „Von Hand eintragen“, dann alle Domains in ein Feld. Jede Domain landet im Plugin Domains, auf Wunsch mit Standardeinträgen (Web, www, mail, webmail, MX, SPF, DMARC). Mit Mail-Gateway nimmt der VPS für jede Domain Post an (DKIM-Schlüssel, Relay an `10.8.0.2`, ufw `25/tcp`). Mit Hetzner legt GoDeb die Einträge sofort an, sonst zeigt der Schritt sie zum Kopieren (`POST /api/setup/domains`). Fehler einer Domain (z. B. Zone nicht im Hetzner-Projekt) halten die anderen nicht auf.
+5. **Erreichbarkeit und Firewall:**
    - **Nur über WireGuard:** Loopback und `wg0:8080`. Empfohlen für einen VPS.
    - **Heimnetz und Tunnel:** zusätzlich HTTPS auf der LAN-Adresse (`<lan-ip>:8443`), in ufw nur für das LAN-Subnetz freigegeben.
    - **Nur lokal:** nur Loopback, Zugriff per `ssh -L 8080:127.0.0.1:8080`.
@@ -199,7 +202,7 @@ sudo godeb setup --join - --access lan          # Beitrittscode einfügen
 sudo godeb setup --role none --access lan
 ```
 
-Der Hub bekommt einen ersten Client als QR-Code im Terminal (`firstrun.AddClient`, standardmäßig nur das Tunnelnetz als `AllowedIPs`). Optional **Volltunnel** (`--full-tunnel` bzw. Checkbox im Assistenten): IP-Forwarding und MASQUERADE in der nftables-Tabelle `godeb_volltunnel` plus `ufw route allow` von `wg0` zur öffentlichen Schnittstelle; Geräte-Clients erhalten dann `0.0.0.0/0`. Standorte bleiben ohne Volltunnel. Später unter WireGuard umschaltbar. Danach fragt `godeb setup` nach weiteren Geräten oder GoDeb-Servern, bis der Name leer bleibt; Standorte bekommen einen Beitrittscode statt des QR-Codes. 2FA richtet der Administrator dann beim ersten Login in der Web-UI ein. Flags: `--role`, `--access`, `--lan-address`, `--address`, `--port`, `--ui-port`, `--client`, `--admin`, `--ssh-port`, `--no-firewall`, `--full-tunnel`, `--join DATEI|-` (Client-Datei oder Beitrittscode, `-` liest von stdin), `--yes` (unbeaufsichtigt, braucht `--role` und einen vorhandenen Admin).
+Der Hub bekommt einen ersten Client als QR-Code im Terminal (`firstrun.AddClient`, standardmäßig nur das Tunnelnetz als `AllowedIPs`). Optional **Volltunnel** (`--full-tunnel` bzw. Checkbox im Assistenten): IP-Forwarding und MASQUERADE in der nftables-Tabelle `godeb_volltunnel` plus `ufw route allow` von `wg0` zur öffentlichen Schnittstelle; Geräte-Clients erhalten dann `0.0.0.0/0`. Standorte bleiben ohne Volltunnel. Später unter WireGuard umschaltbar. Danach fragt `godeb setup` nach weiteren Geräten oder GoDeb-Servern, bis der Name leer bleibt; Standorte bekommen einen Beitrittscode statt des QR-Codes. 2FA richtet der Administrator dann beim ersten Login in der Web-UI ein. Auf dem Hub folgt der Schritt „Mail-Gateway und Domains“ (`--mail-relay`, `--domains a.de,b.de`, `--no-dns-defaults`); den Hetzner-Token liest `godeb setup` aus `GODEB_HETZNER_TOKEN`, nie aus einem Flag, weil Argumente in `ps` sichtbar sind (`sudo GODEB_HETZNER_TOKEN=… godeb setup …`). Flags: `--role`, `--access`, `--lan-address`, `--address`, `--port`, `--ui-port`, `--client`, `--admin`, `--ssh-port`, `--no-firewall`, `--full-tunnel`, `--join DATEI|-` (Client-Datei oder Beitrittscode, `-` liest von stdin), `--yes` (unbeaufsichtigt, braucht `--role` und einen vorhandenen Admin).
 
 ## Installation auf einem Hetzner-VPS
 
@@ -463,6 +466,8 @@ Es ist kein offenes Relay. `mynetworks` bleibt lokal, `smtpd_relay_restrictions`
 
 `postconf -e` ändert einzelne Schlüssel in `/etc/postfix/main.cf`. Die übrige Postfix-Konfiguration bleibt stehen. OpenDKIM signiert auf `127.0.0.1:8891`, bevor Postfix an den Tunnel übergibt. TLS zum Homeserver ist opportunistisch (`smtp_tls_security_level = may`).
 
+Beim Einrichten einer Domain öffnet das Gateway `25/tcp` in ufw (Kommentar „GoDeb Mail-Gateway“), auch wenn ufw noch aus ist, damit die Post nach dem Einschalten weiter ankommt. Die DNS-Einträge (MX auf `mail.<domain>`, dessen A-Eintrag, SPF mit der IP, DKIM, DMARC) meldet es an das Plugin Domains.
+
 ## API
 
 Sitzung nötig, soweit nichts anderes steht. Antworten sind JSON.
@@ -473,10 +478,12 @@ Sitzung nötig, soweit nichts anderes steht. Antworten sind JSON.
 | --- | --- | --- |
 | GET | `/api/setup/status` | ohne Login: `required`, `hasAdmin` |
 | POST | `/api/setup/admin` | ohne Login, mit Header `X-GoDeb-Setup-Token`: erster Administrator |
-| GET | `/api/setup/info` | öffentliche IP, LAN-Adressen, SSH-Ports, ufw, Zertifikat |
+| GET | `/api/setup/info` | öffentliche IP, LAN-Adressen, SSH-Ports, ufw, Zertifikat, `services` (Mail-Gateway installiert, Relay-Domains, Hetzner-Token hinterlegt) |
 | POST | `/api/setup/hub` | WireGuard-Server und erster Client (`first`: Datei, QR als Data-URL) |
 | POST | `/api/setup/client` | weiterer Client auf dem Hub (`name`, `site`, `address`): Datei und QR bzw. Beitrittscode |
 | POST | `/api/setup/join` | Peer eines Hubs |
+| POST | `/api/setup/services` | `mailRelay`: Mail-Gateway installieren und einschalten (nur auf dem Hub) |
+| POST | `/api/setup/domains` | `domains`, `token` (Hetzner), `manual`, `defaults`, `mailRelay`, `relayHost`: Domains anlegen, Gateway einrichten, DNS setzen; Antwort pro Domain mit Einträgen und Fehler |
 | POST | `/api/setup/finish` | Erreichbarkeit, Trusted Endpoint, Firewall, Abschluss |
 
 Alle außer `status` antworten nach dem Abschluss mit `410`.

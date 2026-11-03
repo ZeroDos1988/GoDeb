@@ -51,12 +51,14 @@ func WebUser() string {
 // privilegedSetup are the wizard steps that change the system. Status and
 // admin creation stay in the web process.
 var privilegedSetup = map[string]bool{
-	"/api/setup/info":    true,
-	"/api/setup/hub":     true,
-	"/api/setup/client":  true,
-	"/api/setup/join":    true,
-	"/api/setup/finish":  true,
-	"/api/setup/summary": true,
+	"/api/setup/info":     true,
+	"/api/setup/hub":      true,
+	"/api/setup/client":   true,
+	"/api/setup/join":     true,
+	"/api/setup/services": true,
+	"/api/setup/domains":  true,
+	"/api/setup/finish":   true,
+	"/api/setup/summary":  true,
 }
 
 // Routed reports whether a request path is served by the agent.

@@ -42,7 +42,7 @@ GoDeb läuft als zwei Prozesse desselben Programms: die Weboberfläche (`godeb.s
 ## Architektur
 
 - Backups sind Sache der Plattform (Proxmox zu Hause, Hetzner-Backups/Snapshots), nicht von GoDeb. Keine eigene Backup-Funktion bauen.
-- Ersteinrichtung: Ein frisches GoDeb richtet nichts selbst ein (auch keinen WireGuard-Server). Browser-Assistent und `godeb setup` benutzen dieselben Funktionen in `backend/firstrun`.
+- Ersteinrichtung: Ein frisches GoDeb richtet nichts selbst ein (auch keinen WireGuard-Server); der Assistent schlägt nur vor (WireGuard-Server, Mail-Gateway, Domains mit DNS), der Admin wählt. Browser-Assistent und `godeb setup` benutzen dieselben Funktionen in `backend/firstrun` (`services.go`: `InstallMailRelay`, `SetupDomains`).
 - Das OS ist die Quelle der Wahrheit (`/etc/wireguard/wg0.conf`, `main.cf`, systemd, apt). SQLite (`/var/lib/godeb/godeb.db` für die Weboberfläche, `/etc/godeb/godeb.db` für den Agenten, GORM + `glebarez/sqlite`) hält nur Metadaten, die die UI zum Anzeigen oder Wiederanwenden braucht.
 - Kein CGO: `CGO_ENABLED=0`, `-tags netgo`.
 - Ein Plugin besteht aus `manifest.json` (Navigation: Reiter über `group`), `plugin.json` (APT-Pakete, systemd-Units für den Plugin-Manager), Go-Paket mit `core.Register` in `init()` plus Blank-Import in `backend/modules.go`, und optional `ui/Panel.tsx` (wird per `import.meta.glob` geladen).

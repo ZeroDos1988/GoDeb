@@ -96,8 +96,79 @@ type stateRow struct {
 
 func (stateRow) TableName() string { return "plugin_states" }
 
+var (
+	dirMu      sync.Mutex
+	mountedDir string
+)
+
+// SetDir remembers the plugin directory for InstallAndEnable. Mount sets it;
+// the command line calls it itself.
+func SetDir(pluginsDir string) {
+	dirMu.Lock()
+	mountedDir = pluginsDir
+	dirMu.Unlock()
+}
+
+func currentDir() (string, error) {
+	dirMu.Lock()
+	defer dirMu.Unlock()
+	if mountedDir == "" {
+		return "", errors.New("Plugin-Verzeichnis ist nicht gesetzt")
+	}
+	return mountedDir, nil
+}
+
+// InstallAndEnable installs the APT packages of one plugin, if any are
+// missing, and switches it on. The setup wizard uses it for the services
+// it offers (mail gateway on a hub); it is the same path as the buttons of
+// the plugin manager.
+func InstallAndEnable(ctx context.Context, id string) error {
+	dir, err := currentDir()
+	if err != nil {
+		return err
+	}
+	desc, err := Load(dir, id)
+	if err != nil {
+		return err
+	}
+	ready, err := PackagesReady(ctx, id)
+	if err != nil {
+		return err
+	}
+	if !ready {
+		if err := install(ctx, dir, desc); err != nil {
+			return err
+		}
+	}
+	if err := enable(ctx, dir, desc); err != nil {
+		return err
+	}
+	Reload()
+	return nil
+}
+
+// PackagesReady reports whether every APT package of a plugin is installed.
+func PackagesReady(ctx context.Context, id string) (bool, error) {
+	dir, err := currentDir()
+	if err != nil {
+		return false, err
+	}
+	desc, err := Load(dir, id)
+	if err != nil {
+		return false, err
+	}
+	for _, pkg := range desc.AptDependencies {
+		ok, err := packageInstalled(ctx, pkg)
+		if err != nil || !ok {
+			return false, err
+		}
+	}
+	return true, nil
+}
+
 // Mount registers scan, install, enable and disable.
 func Mount(mux *http.ServeMux, pluginsDir string) {
+	SetDir(pluginsDir)
 	mux.HandleFunc("GET /api/plugin-manager", func(w http.ResponseWriter, r *http.Request) {
 		writeScan(w, r, pluginsDir)
 	})

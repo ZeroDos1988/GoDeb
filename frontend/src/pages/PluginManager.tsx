@@ -70,18 +70,20 @@ export function PluginManager({ onChanged }: { onChanged?: () => void }) {
           const working = busy.startsWith(`${plugin.id}:`);
           return (
             <tr key={plugin.id}>
-              <td className="px-3 py-3 align-top">
-                <span className="block font-medium">{plugin.name}</span>
-                {plugin.description ? <span className="mt-0.5 block text-xs text-white/55">{plugin.description}</span> : null}
-                {!plugin.supported ? (
-                  <span className="mt-1 block text-xs text-amber-200">{t("pluginManager.unsupported", { archs: plugin.architectures.join(", ") })}</span>
-                ) : plugin.aptDependencies.length > 0 && !plugin.dependenciesReady ? (
-                  <span className="mt-1 block text-xs text-white/55">
-                    {t("pluginManager.deps")}: {plugin.aptDependencies.join(", ")}
-                  </span>
-                ) : null}
+              <td className="px-3 py-3 align-top sm:w-1/2">
+                <div className="min-w-0">
+                  <span className="block font-medium">{plugin.name}</span>
+                  {plugin.description ? <span className="mt-0.5 block text-xs text-white/55">{plugin.description}</span> : null}
+                  {!plugin.supported ? (
+                    <span className="mt-1 block text-xs text-amber-200">{t("pluginManager.unsupported", { archs: plugin.architectures.join(", ") })}</span>
+                  ) : plugin.aptDependencies.length > 0 && !plugin.dependenciesReady ? (
+                    <span className="mt-1 block text-xs text-white/55">
+                      {t("pluginManager.deps")}: {plugin.aptDependencies.join(", ")}
+                    </span>
+                  ) : null}
+                </div>
               </td>
-              <td className="px-3 py-3 align-top">
+              <td className="px-3 py-3 align-top sm:w-1/6">
                 <div className="flex flex-wrap gap-1.5">
                   <Badge tone={plugin.enabled ? "ok" : "idle"}>{plugin.enabled ? t("pluginManager.enabled") : t("pluginManager.disabled")}</Badge>
                   {!plugin.installed ? <Badge tone="bad">{t("pluginManager.missing")}</Badge> : null}

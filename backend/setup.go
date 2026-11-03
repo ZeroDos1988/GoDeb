@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/netip"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -17,6 +18,7 @@ import (
 	"godeb/backend/auth"
 	"godeb/backend/core"
 	"godeb/backend/firstrun"
+	"godeb/backend/pluginmgr"
 	"godeb/plugins/wireguard"
 )
 
@@ -36,6 +38,9 @@ type setupOptions struct {
 	Access     string
 	LAN        string
 	FullTunnel bool
+	MailRelay  bool
+	Domains    string
+	NoDefaults bool
 	Yes        bool
 }
 
@@ -59,6 +64,9 @@ func runSetup(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	fs.StringVar(&opt.LAN, "lan-address", "", "LAN-Adresse für --access lan (Standard: Adresse der Default-Route)")
 	fs.BoolVar(&opt.NoUFW, "no-firewall", false, "ufw nicht aktivieren, nur Regeln anlegen")
 	fs.BoolVar(&opt.FullTunnel, "full-tunnel", false, "Hub: Internetverkehr der Clients über diesen Server (NAT, Bandbreite und Traffic beachten)")
+	fs.BoolVar(&opt.MailRelay, "mail-relay", false, "Hub: Mail-Gateway installieren (Postfix-Relay an 10.8.0.2 im Tunnel)")
+	fs.StringVar(&opt.Domains, "domains", "", "Domains, durch Komma getrennt; mit GODEB_HETZNER_TOKEN legt GoDeb die DNS-Einträge bei Hetzner an")
+	fs.BoolVar(&opt.NoDefaults, "no-dns-defaults", false, "keine Standardeinträge (Web, www, mail, webmail, MX, SPF, DMARC) für --domains")
 	fs.BoolVar(&opt.Yes, "yes", false, "keine Rückfragen, Standardwerte nehmen")
 	if err := fs.Parse(args); err != nil {
 		return 2
@@ -68,7 +76,8 @@ func runSetup(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return 1
 	}
 	in := bufio.NewReader(stdin)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	// Installing the mail gateway packages can take a while on a fresh VPS.
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 	s := setup{opt: opt, in: in, out: stdout, stdin: stdin, stderr: stderr}
 	if err := s.run(ctx); err != nil {
@@ -125,8 +134,8 @@ func (s *setup) run(ctx context.Context) error {
 	default:
 		return fmt.Errorf("unbekannte Rolle %q", s.opt.Role)
 	}
-	s.steps = 5
-	fmt.Fprintln(s.out, "GoDeb Ersteinrichtung als WireGuard-Server: Administrator, Tunnel, Volltunnel, Firewall, erster Client.")
+	s.steps = 6
+	fmt.Fprintln(s.out, "GoDeb Ersteinrichtung als WireGuard-Server: Administrator, Tunnel, Volltunnel, Mail und Domains, Firewall, erster Client.")
 
 	s.step(1, "Administrator")
 	if err := s.admin(); err != nil {
@@ -144,13 +153,73 @@ func (s *setup) run(ctx context.Context) error {
 		return err
 	}
 
-	s.step(4, "Firewall und Erreichbarkeit")
+	s.step(4, "Mail-Gateway und Domains (optional)")
+	if err := s.services(ctx); err != nil {
+		return err
+	}
+
+	s.step(5, "Firewall und Erreichbarkeit")
 	if err := s.firewall(ctx, firstrun.AccessTunnel); err != nil {
 		return err
 	}
 
-	s.step(5, "Erster Client")
+	s.step(6, "Erster Client")
 	return s.client(ctx, prefix)
+}
+
+// services installs the mail gateway and enters domains through
+// firstrun.InstallMailRelay and firstrun.SetupDomains, the same functions
+// as the wizard step "Mail und Domains". The Hetzner token comes from the
+// environment, never from the command line (it would show up in ps).
+func (s *setup) services(ctx context.Context) error {
+	root, err := core.RepoRoot()
+	if err != nil {
+		return err
+	}
+	pluginmgr.SetDir(filepath.Join(root, "plugins"))
+	relay := s.opt.MailRelay
+	if !relay && !s.opt.Yes {
+		fmt.Fprintln(s.out, "  Das Mail-Gateway nimmt Post für deine Domains an und gibt sie durch den Tunnel")
+		fmt.Fprintln(s.out, "  an den Mailserver zu Hause (10.8.0.2) weiter. Installiert Postfix und OpenDKIM.")
+		answer := strings.ToLower(s.ask("Mail-Gateway einrichten? (j/N)", "n"))
+		relay = strings.HasPrefix(answer, "j") || strings.HasPrefix(answer, "y")
+	}
+	if relay {
+		fmt.Fprintln(s.out, "  Installiere Postfix und OpenDKIM …")
+		if err := firstrun.InstallMailRelay(ctx); err != nil {
+			return err
+		}
+		fmt.Fprintln(s.out, "  Mail-Gateway installiert.")
+	}
+	list := s.opt.Domains
+	if list == "" && !s.opt.Yes {
+		list = s.ask("Domains, durch Komma getrennt (leer = überspringen)", "")
+	}
+	if strings.TrimSpace(list) == "" {
+		fmt.Fprintln(s.out, "  Keine Domains. Später unter Domains oder mit --domains.")
+		return nil
+	}
+	token := strings.TrimSpace(os.Getenv("GODEB_HETZNER_TOKEN"))
+	results, err := firstrun.SetupDomains(ctx, firstrun.DomainsSpec{
+		Token: token, Domains: strings.Split(list, ","), Defaults: !s.opt.NoDefaults, MailRelay: relay,
+	})
+	if err != nil {
+		return err
+	}
+	for _, d := range results {
+		mode := "von Hand eintragen"
+		if d.Mode == "hetzner" {
+			mode = "bei Hetzner angelegt"
+		}
+		fmt.Fprintf(s.out, "  %s (%s)\n", d.Name, mode)
+		for _, r := range d.Records {
+			fmt.Fprintf(s.out, "    %-8s %s\n", r.Status, r.ZoneLine)
+		}
+		if d.Error != "" {
+			fmt.Fprintf(s.out, "    Fehler: %s\n", d.Error)
+		}
+	}
+	return nil
 }
 
 // runNone sets up GoDeb without WireGuard: admin, firewall and access from

@@ -125,7 +125,7 @@ func Configure(ctx context.Context, req Request) (Result, error) {
 	}
 	// The mail server plugin owns Postfix once it is set up; both writing
 	// main.cf would undo each other.
-	if _, err := os.Stat(etcPath("postfix", "godeb", "domains")); err == nil {
+	if MailServerPresent() {
 		return Result{}, &SetupError{Status: http.StatusConflict, Msg: "Auf diesem Server läuft der Mailserver (Plugin E-Mail). Das Mail-Gateway ist für einen VPS gedacht, der nur weiterleitet."}
 	}
 	relay, err := normalizeRelay(req.RelayHost)
@@ -197,6 +197,10 @@ func Configure(ctx context.Context, req Request) (Result, error) {
 	}
 	reload := runCommand(ctx, "systemctl", "reload", "postfix")
 	opendkim := runCommand(ctx, "systemctl", "reload", "opendkim")
+	// Port 25 must be reachable from the internet, or the gateway never
+	// receives anything. The rule is added even while ufw is still off so
+	// that switching it on later keeps the gateway working.
+	smtp := runCommand(ctx, "ufw", "allow", "25/tcp", "comment", "GoDeb Mail-Gateway")
 	return Result{
 		Domain:     domain,
 		RelayHost:  relay,
@@ -204,7 +208,7 @@ func Configure(ctx context.Context, req Request) (Result, error) {
 		DKIMPublic: publicB64,
 		DKIMRecord: dkimTXT(selector, domain, publicB64),
 		Command:    applied.Command,
-		Detail:     strings.TrimSpace(reload.Detail() + " " + opendkim.Detail()),
+		Detail:     strings.TrimSpace(reload.Detail() + " " + opendkim.Detail() + " " + smtp.Detail()),
 	}, nil
 }
 
@@ -389,4 +393,28 @@ func publicIPv4(ctx context.Context) string {
 		}
 	}
 	return ""
+}
+
+// MailServerPresent reports whether the mail server plugin owns Postfix on
+// this host; gateway and mail server exclude each other.
+func MailServerPresent() bool {
+	_, err := os.Stat(etcPath("postfix", "godeb", "domains"))
+	return err == nil
+}
+
+// Domains lists the relay domains that are set up.
+func Domains() ([]string, error) {
+	conn, err := openStore()
+	if err != nil {
+		return nil, err
+	}
+	list, err := listDomains(conn)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]string, 0, len(list))
+	for _, d := range list {
+		out = append(out, d.Domain)
+	}
+	return out, nil
 }

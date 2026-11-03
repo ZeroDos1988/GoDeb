@@ -22,7 +22,13 @@ type SetupInfo = {
   ufw: "missing" | "inactive" | "active";
   setupPort: number;
   fingerprint: string;
+  services: ServicesInfo;
 };
+
+type ServicesInfo = { mailRelayReady: boolean; mailServer: boolean; relayDomains: string[]; tokenSet: boolean };
+
+type DnsRecord = { name: string; type: string; value: string; zoneLine: string; status: string; found?: string; source: string };
+type DomainResult = { name: string; mode: "manual" | "hetzner"; mailRelay: boolean; records: DnsRecord[]; error?: string };
 
 type HubResult = { publicKey?: string; endpoint: string; first?: ClientResult };
 type JoinResult = { address: string; hub: string; notes: string[]; handshake?: boolean; detail?: string };
@@ -94,7 +100,7 @@ export function SetupAdmin({ onCreated }: { onCreated: (username: string) => voi
   }
 
   return (
-    <SetupFrame step={1} total={4}>
+    <SetupFrame step={1} total={5}>
       <h1 className="text-base font-semibold">{t("setup.adminTitle")}</h1>
       <p className="mt-1 text-sm text-white/60">{t("setup.adminText")}</p>
       <form onSubmit={(e) => void submit(e)} className="mt-4 space-y-4">
@@ -126,7 +132,7 @@ type Role = "hub" | "peer" | "none";
 export function SetupWizard({ onDone }: { onDone: () => void }) {
   const { t } = useTranslation();
   const info = useGet<SetupInfo>("/api/setup/info");
-  const [stage, setStage] = useState<"role" | "access" | "done">("role");
+  const [stage, setStage] = useState<"role" | "services" | "access" | "done">("role");
   const [role, setRole] = useState<Role>("hub");
   const [result, setResult] = useState<FinishResult | null>(null);
 
@@ -139,23 +145,26 @@ export function SetupWizard({ onDone }: { onDone: () => void }) {
 
   if (info.error) {
     return (
-      <SetupFrame step={3} total={4}>
+      <SetupFrame step={3} total={5}>
         <p className="text-sm text-debian">{info.error}</p>
       </SetupFrame>
     );
   }
   if (!info.data) {
     return (
-      <SetupFrame step={3} total={4}>
+      <SetupFrame step={3} total={5}>
         <p className="text-sm text-white/60">{t("common.loading")}</p>
       </SetupFrame>
     );
   }
   if (stage === "role") {
-    return <RoleStep info={info.data} role={role} setRole={setRole} onNext={() => { info.reload(); setStage("access"); }} />;
+    return <RoleStep info={info.data} role={role} setRole={setRole} onNext={() => { info.reload(); setStage("services"); }} />;
+  }
+  if (stage === "services") {
+    return <ServicesStep info={info.data} role={role} onBack={() => setStage("role")} onNext={() => { info.reload(); setStage("access"); }} />;
   }
   if (stage === "access") {
-    return <AccessStep info={info.data} role={role} onBack={() => setStage("role")} onFinished={(r) => { setResult(r); setStage("done"); }} />;
+    return <AccessStep info={info.data} role={role} onBack={() => setStage("services")} onFinished={(r) => { setResult(r); setStage("done"); }} />;
   }
   return <DoneStep result={result} info={info.data} onDone={onDone} />;
 }
@@ -203,7 +212,7 @@ function RoleStep({ info, role, setRole, onNext }: { info: SetupInfo; role: Role
   ];
 
   return (
-    <SetupFrame step={3} total={4} wide>
+    <SetupFrame step={3} total={5} wide>
       <h1 className="text-base font-semibold">{t("setup.roleTitle")}</h1>
       <p className="mt-1 text-sm text-white/60">{t("setup.roleText")}</p>
       {configured ? (
@@ -300,6 +309,178 @@ function RoleStep({ info, role, setRole, onNext }: { info: SetupInfo; role: Role
   );
 }
 
+// ServicesStep offers what a fresh server usually needs next: on a hub the
+// mail gateway, everywhere the domains with their DNS records. Both are
+// optional; "Weiter" skips them. The backend uses the same functions as
+// the plugin pages and `godeb setup --mail-relay --domains`.
+function ServicesStep({ info, role, onBack, onNext }: { info: SetupInfo; role: Role; onBack: () => void; onNext: () => void }) {
+  const { t } = useTranslation();
+  const hub = role === "hub" || info.role.role === "hub";
+  const [services, setServices] = useState<ServicesInfo>(info.services);
+  const relayPossible = hub && !services.mailServer;
+  const [relay, setRelay] = useState(relayPossible);
+  const [relayHost, setRelayHost] = useState("10.8.0.2");
+  const [dnsMode, setDnsMode] = useState<"hetzner" | "manual">("hetzner");
+  const [token, setToken] = useState("");
+  const [domainText, setDomainText] = useState("");
+  const [defaults, setDefaults] = useState(true);
+  const [busy, setBusy] = useState("");
+  const [error, setError] = useState("");
+  const [results, setResults] = useState<DomainResult[] | null>(null);
+
+  async function installRelay() {
+    setBusy("relay");
+    setError("");
+    try {
+      setServices(await api<ServicesInfo>("/api/setup/services", { method: "POST", body: JSON.stringify({ mailRelay: true }) }));
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : t("setup.failed"));
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function setupDomains() {
+    setBusy("domains");
+    setError("");
+    try {
+      const res = await api<{ domains: DomainResult[]; services: ServicesInfo }>("/api/setup/domains", {
+        method: "POST",
+        body: JSON.stringify({
+          token: dnsMode === "hetzner" ? token.trim() : "",
+          manual: dnsMode === "manual",
+          domains: domainText.split(/[\s,;]+/).filter(Boolean),
+          defaults,
+          mailRelay: relay && services.mailRelayReady,
+          relayHost,
+        }),
+      });
+      setResults(res.domains);
+      setServices(res.services);
+      setToken("");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : t("setup.failed"));
+    } finally {
+      setBusy("");
+    }
+  }
+
+  const needToken = dnsMode === "hetzner" && !services.tokenSet && token.trim() === "";
+  const noDomains = domainText.trim() === "";
+
+  return (
+    <SetupFrame step={4} total={5} wide>
+      <h1 className="text-base font-semibold">{t("setup.servicesTitle")}</h1>
+      <p className="mt-1 text-sm text-white/60">{t("setup.servicesText")}</p>
+
+      {hub ? (
+        <section className="mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+          <h2 className="text-sm font-semibold">{t("setup.relayTitle")}</h2>
+          <p className="mt-1 text-xs text-white/60">{t("setup.relayText")}</p>
+          {services.mailServer ? (
+            <p className="mt-3 text-sm text-amber-200">{t("setup.relayMailServer")}</p>
+          ) : services.mailRelayReady ? (
+            <div className="mt-3 space-y-3">
+              <p className="text-sm text-emerald-300">{t("setup.relayReady")}</p>
+              <Check checked={relay} onChange={setRelay} label={t("setup.relayUse")} />
+              {relay ? (
+                <Field label={t("setup.relayHost")} hint={t("setup.relayHostHint")}>
+                  <input value={relayHost} onChange={(e) => setRelayHost(e.target.value)} className={`${input} font-mono`} />
+                </Field>
+              ) : null}
+            </div>
+          ) : (
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <button type="button" className={primary} disabled={busy !== ""} onClick={() => void installRelay()}>
+                {busy === "relay" ? t("setup.relayInstalling") : t("setup.relayInstall")}
+              </button>
+              <span className="text-xs text-white/50">{t("setup.relayInstallHint")}</span>
+            </div>
+          )}
+        </section>
+      ) : null}
+
+      <section className="mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+        <h2 className="text-sm font-semibold">{t("setup.domainsTitle")}</h2>
+        <p className="mt-1 text-xs text-white/60">{t("setup.domainsText")}</p>
+        <div className="mt-3 grid gap-3 md:grid-cols-2">
+          {(["hetzner", "manual"] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              aria-pressed={dnsMode === m}
+              onClick={() => setDnsMode(m)}
+              className={`rounded-2xl border px-3 py-3 text-left text-sm transition-all duration-200 ease-in-out ${dnsMode === m ? "border-white/40 bg-white/15" : "border-white/10 bg-white/5 hover:bg-white/10"}`}
+            >
+              <span className="block font-medium">{t(`setup.dns_${m}`)}</span>
+              <span className="mt-1 block text-xs text-white/60">{t(`setup.dns_${m}Text`)}</span>
+            </button>
+          ))}
+        </div>
+        <div className="mt-3 space-y-3">
+          {dnsMode === "hetzner" ? (
+            services.tokenSet ? (
+              <p className="text-sm text-emerald-300">{t("setup.tokenStored")}</p>
+            ) : (
+              <Field label={t("setup.hetznerToken")} hint={t("setup.hetznerTokenHint")}>
+                <input type="password" value={token} onChange={(e) => setToken(e.target.value)} autoComplete="off" className={`${input} font-mono`} />
+              </Field>
+            )
+          ) : null}
+          <Field label={t("setup.domainList")} hint={t("setup.domainListHint")}>
+            <textarea value={domainText} onChange={(e) => setDomainText(e.target.value)} rows={4} spellCheck={false} placeholder={"example.com\nexample.org"} className={`${input} font-mono`} />
+          </Field>
+          <Check checked={defaults} onChange={setDefaults} label={t("domains.defaults")} hint={t("setup.defaultsHint")} />
+          <button type="button" className={primary} disabled={busy !== "" || noDomains || needToken} onClick={() => void setupDomains()}>
+            {busy === "domains" ? t("setup.working") : t("setup.domainsApply")}
+          </button>
+        </div>
+        {results ? <DomainResults results={results} /> : null}
+      </section>
+
+      {error ? <p className="mt-3 text-sm text-debian">{error}</p> : null}
+      <div className="mt-5 flex flex-wrap gap-2">
+        <button type="button" className={secondary} onClick={onBack} disabled={busy !== ""}>{t("setup.back")}</button>
+        <button type="button" className={primary} onClick={onNext} disabled={busy !== ""}>
+          {results || services.relayDomains.length > 0 ? t("setup.next") : t("setup.skip")}
+        </button>
+      </div>
+    </SetupFrame>
+  );
+}
+
+function DomainResults({ results }: { results: DomainResult[] }) {
+  const { t } = useTranslation();
+  return (
+    <div className="mt-4 space-y-4">
+      {results.map((d) => (
+        <div key={d.name} className="min-w-0">
+          <p className="text-sm font-medium">
+            {d.name}{" "}
+            <span className="text-xs font-normal text-white/60">
+              {d.mode === "hetzner" ? t("setup.domainHetzner") : t("setup.domainManual")}
+              {d.mailRelay ? ` · ${t("setup.domainRelay")}` : ""}
+            </span>
+          </p>
+          {d.error ? <p className="mt-1 text-xs text-amber-200">{d.error}</p> : null}
+          {d.records.length > 0 ? (
+            <ul className="mt-2 space-y-1 rounded-2xl bg-slate-950/50 p-3 font-mono text-[11px]">
+              {d.records.map((r) => (
+                <li key={`${r.name}|${r.type}`} className="flex gap-2">
+                  <span className={`shrink-0 ${r.status === "ok" ? "text-emerald-300" : r.status === "conflict" || r.status === "wrong" ? "text-amber-200" : "text-white/50"}`}>
+                    {t(`setup.recordStatus_${r.status}`, { defaultValue: r.status })}
+                  </span>
+                  <span className="min-w-0 break-all text-white/80">{r.zoneLine}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function AccessStep({ info, role, onBack, onFinished }: { info: SetupInfo; role: Role; onBack: () => void; onFinished: (r: FinishResult) => void }) {
   const { t } = useTranslation();
   const tunnel = role !== "none";
@@ -335,7 +516,7 @@ function AccessStep({ info, role, onBack, onFinished }: { info: SetupInfo; role:
   ];
 
   return (
-    <SetupFrame step={4} total={4} wide>
+    <SetupFrame step={5} total={5} wide>
       <h1 className="text-base font-semibold">{t("setup.accessTitle")}</h1>
       <p className="mt-1 text-sm text-white/60">{t("setup.accessText")}</p>
       <div className="mt-4 grid gap-3 md:grid-cols-3">
@@ -411,7 +592,7 @@ function DoneStep({ result, info, onDone }: { result: FinishResult | null; info:
     next = t("setup.nextLocal");
   }
   return (
-    <SetupFrame step={4} total={4} wide>
+    <SetupFrame step={5} total={5} wide>
       <h1 className="text-base font-semibold">{t("setup.doneTitle")}</h1>
       <p className="mt-1 text-sm text-white/70">{t("setup.doneText")}</p>
       <p className="mt-3 rounded-2xl border border-white/10 bg-black/20 px-3 py-2 font-mono text-sm break-all">{next}</p>
