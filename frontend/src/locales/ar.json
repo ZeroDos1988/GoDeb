@@ -101,9 +101,6 @@
     "certsOk_one": "{{count}} صالحة",
     "certsOk_other": "{{count}} صالحة",
     "certNext": "التالية: {{name}} حتى {{date}}",
-    "games": "خوادم الألعاب",
-    "running": "يعمل",
-    "stopped": "متوقف",
     "uptimeDays": "{{days}} يوم {{hours}} ساعة",
     "uptimeHours": "{{hours}} ساعة",
     "certsExpired_one": "{{count}} منتهية",
@@ -308,9 +305,6 @@
   },
   "logs": {
     "description": "تسجيلات الدخول والإجراءات والأخطاء في GoDeb."
-  },
-  "steam": {
-    "description": "تثبيت خوادم الألعاب وتحديثها وضبطها."
   },
   "websites": {
     "description": "مواقعك الخاصة ووكلاء إلى خدمات داخلية، مع شهادة Let’s Encrypt.",

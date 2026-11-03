@@ -29,7 +29,6 @@ type Services = {
 };
 type Peers = { peers?: { live?: boolean }[]; interface?: { up?: boolean } };
 type Certs = { certificates?: { name: string; notAfter: string }[] };
-type Games = { games?: { id: string; name: string; installed: boolean; service: string }[] };
 
 // The overview refreshes itself; doctor and the plugin cards only when the
 // page opens or on demand.
@@ -59,7 +58,6 @@ export function Overview() {
   const services = useGet<Services>("/api/plugins/systemd/overview");
   const peers = useGet<Peers>("/api/plugins/wireguard/peers");
   const certs = useGet<Certs>("/api/plugins/certbot/certificates");
-  const games = useGet<Games>("/api/plugins/steam/games");
   // Findings only link to pages of plugins that are switched on.
   const enabled = new Set((useGet<{ plugins: PluginMeta[] }>("/api/plugins").data?.plugins ?? []).map((p) => p.id));
   const pageLink = (page?: string) => (page && enabled.has(page) ? `#/${page}` : undefined);
@@ -102,7 +100,6 @@ export function Overview() {
     .sort((a, b) => a.days - b.days);
   const expiring = certList.filter((c) => c.days < CERT_WARN_DAYS);
   const expired = certList.filter((c) => c.days < 0);
-  const gameList = (games.data?.games ?? []).filter((g) => g.installed);
 
   return (
     <section>
@@ -298,21 +295,6 @@ export function Overview() {
           </Tile>
         ) : null}
 
-        {gameList.length > 0 ? (
-          <Tile icon="game" title={t("overview.games")} href="#/steam">
-            <ul className="space-y-1 text-sm">
-              {gameList.map((g) => (
-                <li key={g.id} className="flex items-center justify-between gap-3">
-                  <span>{g.name}</span>
-                  <span className={`flex items-center gap-2 ${g.service === "active" ? "text-emerald-300" : "text-white/60"}`}>
-                    <span className={`h-2 w-2 rounded-full ${g.service === "active" ? dot.ok : "bg-white/30"}`} aria-hidden />
-                    {g.service === "active" ? t("overview.running") : t("overview.stopped")}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </Tile>
-        ) : null}
       </div>
 
       {info?.mocked ? (

@@ -19,7 +19,7 @@ Browser --wg0 10.8.0.1:8080 / 127.0.0.1:8080-->  godeb.service  (Benutzer godeb,
                                  |-- Plugin-Routen, Plugin-Manager, Setup-Schritte
                                  |-- 2FA-Geheimnisse und eigene 2FA-Prüfung
                                  |-- SQLite  /etc/godeb/godeb.db  (WireGuard-IPAM, Mail, Plugin-Status, 2FA)
-                                 '-- systemd, apt, ufw, wg, nft, certbot, fail2ban, postfix, SteamCMD
+                                 '-- systemd, apt, ufw, wg, nft, certbot, fail2ban, postfix
 ```
 
 | Teil | Ort | Rolle |
@@ -53,7 +53,6 @@ Der Build erzwingt `CGO_ENABLED=0` und `-tags netgo`. Das Paket legt das Program
 | Variable | Standard | Bedeutung |
 | --- | --- | --- |
 | `GODEB_ADDR` | `127.0.0.1:8080` | Kommagetrennte Lauschadressen. Ein Interface-Name (`wg0:8080`) steht für dessen IPv4-Adresse und wird gebunden, sobald das Interface steht. Der Dienst setzt `127.0.0.1:8080,wg0:8080`. |
-| `GODEB_STEAM_ROOT` | `/var/lib/godeb-steam` | Basisverzeichnis der Spielserver, ein Unterordner pro Spiel (für Entwicklung ohne root umbiegen) |
 | `GODEB_ROOT` | Verzeichnis mit `go.mod` | Wurzel für `frontend/dist` und `plugins/` |
 | `GODEB_DB` | `/var/lib/godeb/godeb.db` | Datenbank der Weboberfläche, Modus `0600` |
 | `GODEB_AGENT_DB` | `/etc/godeb/godeb.db` | Datenbank des Agenten; ohne die Variable, aber mit `GODEB_DB` dieselbe Datei (Entwicklung) |
@@ -91,15 +90,15 @@ Zwei Installationen mit **demselben GoDeb-Paket**. Sie unterscheiden sich nur in
    +----------------------------+        Handy, Laptop: Peers 10.8.0.10+
    | Heim-VM (mehr Leistung)    |        erreichen 10.8.0.1:8080 (VPS-UI)
    | GoDeb, wg0 = Peer 10.8.0.2 |        und 10.8.0.2:8080 (Heim-UI)
-   | Enshrouded-Server          |
+   | Spielserver (eigenes Panel)|
    +----------------------------+
 ```
 
 | | Hetzner-VPS | Heim-VM |
 | --- | --- | --- |
-| Rolle | Öffentlicher Eingang und WireGuard-Hub | Rechenleistung, Spielserver |
+| Rolle | Öffentlicher Eingang und WireGuard-Hub | Rechenleistung; Spielserver laufen im eigenen Spielserver-Panel (getrenntes Projekt) |
 | `wg0` | Server `10.8.0.1/24`, `ListenPort 51820` | Client des VPS, feste Adresse `10.8.0.2`, `AllowedIPs 10.8.0.0/24` |
-| Plugins | wireguard, ufw, fail2ban, apt, systemd, certbot, Portweiterleitung (neu), optional Mail-Gateway | ufw, fail2ban, apt, systemd, enshrouded |
+| Plugins | wireguard, ufw, fail2ban, apt, systemd, certbot, domains, Portweiterleitung, Mail-Gateway | ufw, fail2ban, apt, systemd |
 | Web-UI | `10.8.0.1:8080` | `10.8.0.2:8080` (über den Hub) |
 | Von außen offen | `22/tcp`, `51820/udp`, `15636–15637/udp` (weitergeleitet) | nichts; der Tunnel geht von innen nach außen |
 
@@ -107,10 +106,10 @@ Zwei Installationen mit **demselben GoDeb-Paket**. Sie unterscheiden sich nur in
 
 - **Ein Tunnelnetz, der VPS ist der Hub.** Die Heim-VM hat keinen eigenen WireGuard-Server. Ihr `wg0` ist ein Client des VPS, deshalb bindet GoDeb dort von selbst `wg0:8080`. Ein Handy-Profil reicht für beide Oberflächen.
 - **Die Verbindung baut die Heim-VM auf** (`PersistentKeepalive = 25`). Zu Hause braucht es dann keine Portweiterleitung am Router und keine DynDNS-Adresse, und es funktioniert auch hinter DS-Lite oder CGNAT.
-- **Die Heim-VM schickt nur das Tunnelnetz durch den Tunnel** (`AllowedIPs 10.8.0.0/24`, kein Volltunnel). Ihr normaler Internetverkehr, etwa Steam-Updates, bleibt am Heimanschluss.
+- **Die Heim-VM schickt nur das Tunnelnetz durch den Tunnel** (`AllowedIPs 10.8.0.0/24`, kein Volltunnel). Ihr normaler Internetverkehr, etwa Spiel-Updates, bleibt am Heimanschluss.
 - **Weiterleitung auf dem VPS mit DNAT und SNAT:** Pakete an `<vps-ip>:15636–15637/udp` gehen nach `10.8.0.2`. Mit SNAT auf `10.8.0.1` laufen die Antworten zurück durch den Tunnel statt über den Heimrouter. Der Preis: Enshrouded sieht alle Spieler mit der Adresse `10.8.0.1`. Spieler lassen sich deshalb nicht per IP sperren, nur über die Gruppen-Passwörter. Echte Spieler-IPs bräuchten Policy-Routing auf der Heim-VM. Das ist eine spätere Option.
 - **Technik auf dem VPS:** `net.ipv4.ip_forward=1` (`/etc/sysctl.d/90-godeb-forward.conf`). DNAT und SNAT stehen in einer eigenen nftables-Tabelle `godeb_portforward` (`/etc/godeb/portforward.nft`, beim Booten geladen von `godeb-portforward.service`). Das ist bewusst nicht `/etc/ufw/before.rules`: ufw leert dort beim Reload die NAT-Regeln nicht, und sie würden sich verdoppeln. Die FORWARD-Kette bleibt bei ufw (`DEFAULT_FORWARD_POLICY=DROP`). Durch kommt nur, was eine `ufw route allow`-Regel genau für diese Ports zu `10.8.0.2` erlaubt. Zwischen Peers (Handy → Heim-UI) erlaubt der Hub nur `10.8.0.2:8080/tcp`.
-- **Firewall der Heim-VM:** `godeb setup --join` erlaubt auf `wg0` nur `8080/tcp` (plus SSH), das Spielserver-Plugin öffnet die Spielports dort ebenfalls nur auf `wg0`. Wird der VPS übernommen, erreicht der Angreifer zu Hause nur diese Ports, und die UI verlangt weiterhin Passwort und 2FA.
+- **Firewall der Heim-VM:** `godeb setup --join` erlaubt auf `wg0` nur `8080/tcp` (plus SSH), Spielports gehören dort ebenfalls nur auf `wg0`. Wird der VPS übernommen, erreicht der Angreifer zu Hause nur diese Ports, und die UI verlangt weiterhin Passwort und 2FA.
 - **Mail-Gateway** (optional): dasselbe Muster. Der VPS nimmt Post an und gibt sie an `10.8.0.2:25` weiter (siehe „Mail-Gateway“).
 
 ### Einrichtung Schritt für Schritt
@@ -132,8 +131,16 @@ Zwei Installationen mit **demselben GoDeb-Paket**. Sie unterscheiden sich nur in
    ```
 
    Beides schreibt `wg0.conf` als Peer, startet den Tunnel, wartet auf den Handshake und richtet ufw ein: SSH, `8080/tcp` auf `wg0`, HTTPS `8443/tcp` nur aus dem LAN, kein offener WireGuard-Port. `--join` nimmt auch eine Datei (Client-Datei oder Code).
-4. **Enshrouded auf der Heim-VM:** In der Web-UI (`http://10.8.0.2:8080`, vom Handy über den Hub) „Spielserver“ → Enshrouded → „Server installieren“. Die Ports öffnen sich nur auf `wg0`, und die Ansicht zeigt die Adresse, unter der Spieler sich verbinden.
-5. **Portweiterleitung auf dem VPS:** Plugin „Portweiterleitung“, Vorlage Enshrouded, Ziel `heim-vm` (`10.8.0.2`), „Weiterleiten“. Danach im Spiel `<vps-ip>:15637`.
+4. **Spielserver:** GoDeb bringt seit v0.2.19 keine Spielserver mehr mit. Sie laufen künftig im eigenen Spielserver-Panel (getrenntes Projekt, siehe `ROADMAP.md` „Spielserver-Panel“), das sich wie ein Standort per Beitrittscode mit dem Hub verbindet.
+
+   Wer das alte Plugin genutzt hat: Das Update lässt `godeb-steam-<spiel>.service`, das Konto `steam-<spiel>`, `/var/lib/godeb-steam` und die ufw-Regeln der Spielports unangetastet; der Server läuft weiter, GoDeb zeigt ihn nur nicht mehr an. Aufräumen, wenn er nicht mehr gebraucht wird (Spielstände vorher sichern):
+
+   ```sh
+   sudo systemctl disable --now godeb-steam-enshrouded.service
+   sudo rm /etc/systemd/system/godeb-steam-enshrouded.service && sudo systemctl daemon-reload
+   sudo ufw status numbered   # Regeln für 15636:15637/udp mit sudo ufw delete <nr> entfernen
+   ```
+5. **Portweiterleitung auf dem VPS:** Plugin „Portweiterleitung“, Vorlage Enshrouded, Ziel ist der Standort, auf dem der Spielserver läuft, „Weiterleiten“. Danach im Spiel `<vps-ip>:15637`.
 6. **Handy für Auto-Disconnect:** Das Handy-Profil vom Setup des VPS ist älter als der Trusted Endpoint der Heim-VM. Auf dem VPS `sudo godeb site sync` ausführen (oder WireGuard → Trusted Endpoint → „Client-Dateien aktualisieren“) und den QR-Code in der GoDeb-Tunnel-App neu scannen. Neue Clients bekommen Endpoint und Schlüssel automatisch.
 
 Die beim Beitritt eingefügte Datei wird streng geprüft: genau ein `[Interface]` und ein `[Peer]`, nur die Schlüssel `PrivateKey`, `Address` (eine /32), `MTU`, `PublicKey`, `PresharedKey`, `Endpoint`, `AllowedIPs` und `PersistentKeepalive`. `AllowedIPs` darf nur das Tunnelnetz enthalten. `PreUp`/`PostUp`/`PreDown`/`PostDown`, `Table` und `SaveConfig` werden abgelehnt, weil `wg-quick` sie als root ausführt bzw. das Routing umstellt. `DNS` wird weggelassen. GoDeb schreibt die Datei aus den geprüften Werten neu, nie die eingefügten Zeilen.
@@ -200,7 +207,7 @@ Für einen Testserver. Was vor dem produktiven Einsatz noch fehlt, steht unter �
 
 **Server anlegen** (Hetzner Cloud Console):
 
-- x86 (CX/CPX) oder ARM (CAX): Das Paket gibt es für `amd64` und `arm64`. Spielserver (Plugin Steam) laufen nur auf x86, weil SteamCMD und die Windows-Server unter Wine nur dafür existieren. Für GoDeb allein reicht ein kleiner Typ mit 2 GB RAM. Im Zielbild läuft Enshrouded nicht auf dem VPS, sondern auf der Heim-VM (siehe „Zielbild: VPS und Heim-VM“). Soll es doch auf dem VPS laufen, braucht er mindestens 8 GB RAM, und die Serverdateien belegen knapp 8 GB auf der Platte.
+- x86 (CX/CPX) oder ARM (CAX): Das Paket gibt es für `amd64` und `arm64`. Für GoDeb reicht ein kleiner Typ mit 2 GB RAM, auch mit Mail-Gateway.
 - Image **Debian 13**, eigenen SSH-Schlüssel hinterlegen.
 - Eine Hetzner-Cloud-Firewall ist für den Test optional, für den Produktivbetrieb empfohlen (Ports siehe „Produktivbetrieb (Checkliste)“). Mindestens eingehend `22/tcp` und `51820/udp`; Port `8080` bleibt dort zu.
 
@@ -232,19 +239,6 @@ systemctl status godeb fail2ban
 ```
 
 Von außen (ohne Tunnel) müssen `curl -m 5 http://<server-ip>:8080` und `curl -mk 5 https://<server-ip>:8443` scheitern.
-
-**Enshrouded** (optional): In der Web-UI „Spielserver“ → Enshrouded → „Server installieren“. Der Job installiert Wine, legt das Konto `steam-enshrouded` an, lädt SteamCMD und die Serverdateien und öffnet `15636–15637/udp` in ufw. Danach im Spiel mit `<server-ip>:15637` verbinden; die Passwörter der Gruppen stehen in der Konfiguration. Liegen unter `/var/lib/godeb-steam/enshrouded/server` schon Serverdateien, lädt die Installation sie nicht neu. Sie übergibt sie dem Konto `steam-enshrouded`, und SteamCMD prüft sie nur (`validate`) und lädt Fehlendes nach. So lässt sich ein vorhandener Download einspielen, vor dem Klick auf „Server installieren“ und inklusive `steamapps/` (dort steht die Build-Nummer):
-
-```sh
-tar -C ~/godeb-cache/enshrouded -cf - server | ssh <benutzer>@<server-ip> 'cat > enshrouded-server.tar'
-ssh -t <benutzer>@<server-ip> 'sudo mkdir -p /var/lib/godeb-steam/enshrouded && sudo tar -C /var/lib/godeb-steam/enshrouded -xf enshrouded-server.tar && rm enshrouded-server.tar'
-```
-
-Der Umweg über eine Datei im Home ist nötig, weil `sudo` nach dem Passwort fragt und dafür ein Terminal braucht; dort müssen dafür kurz rund 8 GB frei sein.
-
-Das lohnt sich vor allem bei wiederholten Tests im Heimnetz. Ein Hetzner-Server lädt von Steam meist schneller, als ein Heimanschluss 8 GB hochlädt.
-
-Lokal getestet sind Download und Konfiguration, noch nicht der Start unter Wine ohne X-Server. Startet der Dienst nicht: `sudo journalctl -u godeb-steam-enshrouded -e`.
 
 **SSH und Updates**: `sudo sshd -T | grep -E 'passwordauthentication|permitrootlogin'` muss `passwordauthentication no` und `permitrootlogin without-password` zeigen. Steht dort `yes`, in `/etc/ssh/sshd_config.d/10-godeb.conf` `PasswordAuthentication no` eintragen und `sudo systemctl reload ssh` ausführen, aber erst, nachdem die Anmeldung per Schlüssel funktioniert hat. Sicherheitsupdates spielt GoDeb selbst ein (Plugin APT, siehe „Updates“); `unattended-upgrades` ist dafür nicht nötig.
 
@@ -291,7 +285,7 @@ sudo godeb sessions revoke admin
 Eine Sitzung allein reicht für keine Änderung am Host. Jede `POST`/`PUT`/`DELETE`-Anfrage auf `/api` verlangt einen TOTP- oder Backup-Code im Header `X-GoDeb-TOTP`. Für die Routen des Agenten prüft der Agent den Code selbst (siehe „Aufteilung Weboberfläche und Agent“), für die übrigen die Weboberfläche über den Agenten. Fehlt er, antwortet der Daemon mit `403` und `step_up_required`. Die Oberfläche zeigt dann den Bestätigungsdialog und schickt die Aktion danach erneut ab. Neue Plugin-Routen sind ohne eigenes Zutun geschützt. Ausnahmen stehen mit Begründung in `noStepUp` (`backend/auth/stepup.go`), derzeit nur Theme/Sprache und das Neueinlesen der Plugin-Liste.
 
 - **Fenster:** Ein bestätigter Code gilt fünf Minuten für normale Aktionen, gespeichert serverseitig an der Sitzung.
-- **Immer neu (kritisch):** Plugin-Manager, OIDC-Anbieter, UFW, systemd, neue WireGuard-Peers, der Beitritt zu einem Hub, die Portweiterleitung, das Mail-Gateway-Setup, Domains-Token bzw. Apply, der Volltunnel, geplante Aufgaben (Plugin Cron, laufen als root), Webseiten (nginx, PHP, Ports 80/443) und die Enshrouded-Installation bzw. das Update verlangen bei jeder Anfrage Passwort und Code. Das Passwort kommt im Header `X-GoDeb-Password`; die Weboberfläche prüft es gegen die Konten in `/var/lib/godeb` **bevor** der Code geprüft wird, damit ein falsches Passwort keinen Code verbraucht. Anschließend entfernt sie den Header; der Agent sieht ihn nie. Fehlt das Passwort, antwortet GoDeb mit `403`, `critical: true` und `password_required: true`.
+- **Immer neu (kritisch):** Plugin-Manager, OIDC-Anbieter, UFW, systemd, neue WireGuard-Peers, der Beitritt zu einem Hub, die Portweiterleitung, das Mail-Gateway-Setup, Domains-Token bzw. Apply, der Volltunnel, geplante Aufgaben (Plugin Cron, laufen als root), Webseiten (nginx, PHP, Ports 80/443) verlangen bei jeder Anfrage Passwort und Code. Das Passwort kommt im Header `X-GoDeb-Password`; die Weboberfläche prüft es gegen die Konten in `/var/lib/godeb` **bevor** der Code geprüft wird, damit ein falsches Passwort keinen Code verbraucht. Anschließend entfernt sie den Header; der Agent sieht ihn nie. Fehlt das Passwort, antwortet GoDeb mit `403`, `critical: true` und `password_required: true`.
 - **Downloads mit privaten Schlüsseln** (`GET …/peers/{id}/config`, `/qr`) brauchen das Fenster, obwohl es Lesezugriffe sind; kein Passwort.
 - Fehlversuche (falscher Code oder falsches Passwort) zählen in dasselbe Limit und dasselbe fail2ban-Log wie beim Login. Die Regel lässt sich in der Oberfläche nicht abschalten.
 
@@ -365,7 +359,6 @@ Jedes Plugin hat ein `manifest.json` (`id`, `name`, `description`, `icon`, `grou
 | Fail2ban | `fail2ban-client` | keine |
 | WireGuard | `/etc/wireguard/wg0.conf`, `wg` | IPAM in `wireguard_peers` |
 | Mail-Gateway | Postfix, OpenDKIM, DNS | Domains, öffentlicher DKIM-Teil, Queue-Historie |
-| Spielserver (Steam) | SteamCMD, Wine, `godeb-steam-<spiel>.service` | keine; Konfiguration bleibt in der Datei des Spiels, z. B. `enshrouded_server.json` |
 | Protokoll | `journalctl -u godeb -u godeb-agent` (nur diese beiden Units) | keine |
 | Überwachung | `/proc`, `statfs`, `systemctl --failed`, `apt list --upgradable`, `timedatectl`, Quellen und Checks der anderen Plugins | Verlauf in `metrics.db` |
 
@@ -400,9 +393,8 @@ Das Plugin `monitor` sammelt im Agenten alle 10 Sekunden Messwerte und prüft je
 - **Messwerte**: CPU, I/O-Wartezeit, RAM, Swap, Last, Belegung jeder Platte, Netz pro Interface, Lesen/Schreiben pro Platte; dazu die Quellen der Plugins (WireGuard: Traffic pro Peer und verbundene Peers). Zähler (Bytes) werden als Rate pro Sekunde gespeichert.
 - **Verlauf**: SQLite `metrics.db` in drei Stufen: Rohwerte 26 Stunden, 5-Minuten-Mittel 31 Tage, Stundenmittel 400 Tage (jeweils mit Maximum). Wenige MB.
 - **Ampel**: Checks liefern Befunde (`warning`, `critical`, `info`): Platte ab 85/95 %, RAM unter 10/5 % frei, Last über 15 Minuten über 2 × Kerne, ausgefallene systemd-Units, Neustart nötig (`/run/reboot-required`), Uhr nicht synchron, **Sicherheitsupdates offen nur wenn die Automatik aus ist** (sonst nur Info, bis `godeb-apt` sie einspielt), fehlgeschlagener automatischer APT-Lauf (`/var/lib/godeb-agent/apt/status.json`), WireGuard-Tunnel aus bzw. kein Handshake zum Hub (Peer), Zertifikate 14/3 Tage vor Ablauf. Warnungen und Störungen gehen bei eingeschalteten Alarmen als Mail bzw. ntfy raus.
-- **Ereignisse**: Neue und behobene Befunde und Meldungen der Plugins (z. B. Spiel-Update) landen als Ereignis im Verlauf und als Markierung in den Diagrammen.
-- **Spielserver**: Für jedes eingerichtete Spiel `game:<id>:up`, und solange es läuft, Spieler und Plätze per Steam-Query (A2S_INFO an `127.0.0.1:<queryPort>`, mit Challenge, ohne Abhängigkeit). Installation, Update, Start, Stopp und Neustart werden mit Benutzer und Dauer als Ereignis markiert. Ein aktivierter, aber nicht laufender Server ergibt eine Warnung.
-- **Traffic pro Dienst**: Der Agent legt die nftables-Tabelle `inet godeb_acct` an: benannte Zähler und Ketten mit `policy accept` ohne jedes Urteil (Priorität 10, also nach dem Filter, verworfene Pakete zählen nicht). Sie kann nichts blockieren und nichts öffnen. Gezählt werden SSH (Ports aus `sshd -T`), GoDeb (8080, 8443), HTTP/HTTPS, Mail, die UDP-Ports jedes Spiels und auf dem Hub jede Portweiterleitung (in der `forward`-Kette). Die Tabelle wird bei jeder Änderung der Dienste und nach einem Neustart neu angelegt; `apt remove` löscht sie. Ansehen: `nft list table inet godeb_acct`.
+- **Ereignisse**: Neue und behobene Befunde und Meldungen der Plugins (z. B. ein Paket-Update) landen als Ereignis im Verlauf und als Markierung in den Diagrammen.
+- **Traffic pro Dienst**: Der Agent legt die nftables-Tabelle `inet godeb_acct` an: benannte Zähler und Ketten mit `policy accept` ohne jedes Urteil (Priorität 10, also nach dem Filter, verworfene Pakete zählen nicht). Sie kann nichts blockieren und nichts öffnen. Gezählt werden SSH (Ports aus `sshd -T`), GoDeb (8080, 8443), HTTP/HTTPS, Mail und auf dem Hub jede Portweiterleitung (in der `forward`-Kette). Die Tabelle wird bei jeder Änderung der Dienste und nach einem Neustart neu angelegt; `apt remove` löscht sie. Ansehen: `nft list table inet godeb_acct`.
 - **Verbindungen**: live aus `/proc/net/nf_conntrack`, nach Gegenstelle gruppiert, mit Richtung (ein- und ausgehend, weitergeleitet) und Dienst. Tunnel-Adressen tragen den Peer-Namen. Bytes pro Verbindung gibt es nur mit `net.netfilter.nf_conntrack_acct=1` (GoDeb setzt das nicht).
 - **Zugriffe**: auf Abruf aus dem Journal (bis 7 Tage): SSH-Anmeldungen und Fehlversuche (`sshd`/`sshd-session`), GoDeb-Anmeldungen und Änderungen (eigenes Log), fail2ban-Sperren (`/var/log/fail2ban.log` oder Journal), ufw-Blocks aus dem Kernel-Log, mit den häufigsten Absendern.
 - **Normalverhalten**: Für CPU, Interfaces und Dienste lernt GoDeb den üblichen Wert pro Wochenstunde (Median der Stundenmittel der letzten vier Wochen; solange weniger Verlauf da ist, dieselbe Tagesstunde der letzten Woche, ab drei Tagen). Liegt der Mittelwert der letzten 15 Minuten deutlich darüber, gibt es einen Hinweis (Traffic ab dem Dreifachen und 100 KB/s mehr, CPU 30 Punkte und doppelt), ab dem Zehnfachen (und 1 MB/s mehr) bzw. 50 Punkten eine Warnung. Weniger als üblich meldet GoDeb nie. Die Diagramme zeigen das Übliche gestrichelt.
@@ -426,34 +418,6 @@ Damit sich die Oberfläche auf dem Handy als App installieren lässt, braucht si
 - **Erneuerung:** Der Agent prüft alle sechs Stunden und holt 30 Tage vor Ablauf ein neues Zertifikat. Die Überwachung warnt 14 Tage vor Ablauf, kritisch 3 Tage vorher. `GODEB_ACME_DIRECTORY` (nur `https://`) zeigt zum Testen auf einen anderen ACME-Server, etwa die Staging-Umgebung von Let's Encrypt.
 - **Service Worker:** `/sw.js` wird nur über HTTPS registriert. Er speichert nichts und hat keinen Fetch-Handler, `/api` geht immer ans Netz.
 - **Grenze:** Der A-Eintrag ist öffentlich, zeigt aber auf eine private Tunnel-Adresse; ohne Tunnel ist darüber nichts erreichbar. Auf einem Standort (Heim-VM) erlaubt der Hub zwischen Peers bisher nur Port 8080, dort ist der Name vom Handy also noch nicht erreichbar.
-
-### Spielserver (Steam)
-
-Ein Plugin für alle Spiele, deren dedizierter Server über SteamCMD kommt. Die Oberfläche zeigt pro Spiel einen Reiter. Das Plugin übernimmt alles, was für jedes Spiel gleich ist. Ein Spiel beschreibt sich in Go (`plugins/steam/game.go`, Typ `Game`): App-ID, Plattform (Linux oder Windows unter Wine), Startdatei und Argumente, zusätzliche APT-Pakete, Stoppsignal, Ports und optional eine Konfigurationsdatei mit Standardinhalt und Prüfung. Enshrouded steht in `plugins/steam/enshrouded.go`. Ein Formular für die Konfiguration ist optional (`plugins/steam/ui/games/`); ohne Formular gibt es den Datei-Editor.
-
-Jedes Spiel bekommt ein eigenes Systemkonto `steam-<spiel>`, ein eigenes Verzeichnis `/var/lib/godeb-steam/<spiel>/` (`steamcmd/`, `server/`, bei Windows-Servern `wine/`) und eine eigene Unit `godeb-steam-<spiel>.service`. Ein übernommener Spielserver kommt so nicht an die Dateien eines anderen Spiels. Es läuft immer nur ein Install- oder Update-Job zugleich.
-
-Ein Klick auf „Server installieren“ startet einen Hintergrundjob, dessen Log die Oberfläche live zeigt:
-
-1. APT-Pakete aus `plugins/steam/plugin.json` (`lib32gcc-s1`, `ca-certificates`) und die des Spiels (Enshrouded: `wine`) nachinstallieren, falls sie fehlen.
-2. Systemkonto `steam-<spiel>` und Verzeichnisse anlegen.
-3. SteamCMD von Valve laden und entpacken, dann die App installieren (Windows-Server mit `+@sSteamCmdForcePlatformType windows`). SteamCMD läuft als das Spielkonto, nicht als root. Ein frisches SteamCMD scheitert beim ersten Lauf oft mit „Missing configuration“, deshalb sind drei Versuche erlaubt. Vorhandene Serverdateien werden nur geprüft.
-4. Bei Windows-Servern das Wine-Prefix anlegen. Gibt es eine Konfigurationsdatei, die Standardkonfiguration schreiben (Enshrouded: zufällige Gruppenpasswörter, `0640`, Eigentümer ist das Spielkonto).
-5. `/etc/systemd/system/godeb-steam-<spiel>.service` schreiben: eigenes Konto, `ProtectSystem=strict`, Schreibrecht nur auf das Spielverzeichnis, keine Capabilities.
-6. UFW: die Ports des Spiels öffnen (Enshrouded: `15636–15637/udp`), hinter einem Hub nur auf `wg0`. Dann den Dienst aktivieren und starten.
-
-„Aktualisieren“ stoppt den Server, zieht den neuesten Build und startet ihn wieder, wenn er lief. Installation und Update verlangen bei jeder Anfrage einen frischen 2FA-Code.
-
-**Enshrouded:** Die Konfiguration hat zwei Ansichten mit einem Umschalter:
-
-- **Einfach**: Servername, Spielerplätze, Schwierigkeit (Preset), Ports, Sprach-/Textchat und Benutzergruppen mit Passwort und Rechten.
-- **Datei**: Editor für `enshrouded_server.json` mit Live-JSON-Prüfung.
-
-Beide Ansichten bearbeiten dasselbe Objekt. Schlüssel, die das Formular nicht kennt (etwa einzelne `gameSettings` oder neue Felder späterer Serverversionen), bleiben erhalten. Der Server prüft vor dem Schreiben Typen und Wertebereiche (Ports 1024–65535, 1–16 Plätze, relative Verzeichnisse, keine Steuerzeichen in Namen/Passwörtern). Änderungen gelten nach einem Neustart; „Speichern und neu starten“ erledigt beides.
-
-Hinweis: Enshrouded hat keinen nativen Linux-Server. Der Windows-Server läuft unter Wine; das ist der übliche Weg, aber Wine-Versionen können sich unterschiedlich verhalten. Der Server braucht etwa 6–8 GB RAM.
-
-**Weiteres Spiel hinzufügen:** In `plugins/steam/` eine Datei mit `register(&Game{…})` in `init()` anlegen und in einem Test prüfen, dass Standardkonfiguration und Prüfung zusammenpassen. Optional ein Formular unter `ui/games/` in `forms` eintragen.
 
 ### Domains und DNS (Plugin Domains)
 
@@ -612,14 +576,6 @@ Alle außer `status` antworten nach dem Abschluss mit `410`.
 | GET | `/api/plugins/mailgateway/queue` |
 | POST | `/api/plugins/mailgateway/queue/flush` |
 | GET | `/api/plugins/mailgateway/dns-check?domain=` |
-| GET | `/api/plugins/steam/games` |
-| GET | `/api/plugins/steam/games/{game}/status` |
-| GET | `/api/plugins/steam/games/{game}/job` |
-| POST | `/api/plugins/steam/games/{game}/install` |
-| POST | `/api/plugins/steam/games/{game}/update` |
-| POST | `/api/plugins/steam/games/{game}/action` (`start`, `stop`, `restart`) |
-| GET, PUT | `/api/plugins/steam/games/{game}/config` |
-| GET | `/api/plugins/steam/games/{game}/logs` |
 | GET | `/api/plugins/monitor/summary` (Ampel, Befunde, aktuelle Werte) |
 | GET | `/api/plugins/monitor/series?names=cpu,net:*&range=1h\|6h\|24h\|7d\|30d\|1y` |
 | GET | `/api/plugins/monitor/events?range=` |
@@ -701,7 +657,7 @@ sudo systemctl restart godeb-agent godeb
 
 **VPS ist weg (gelöscht, kompromittiert):** neuen VPS aus dem Hetzner-Backup erstellen; die IP ändert sich dabei meist. Danach: Endpoint in den Client-Dateien anpassen (WireGuard → Clients neu herunterladen bzw. QR neu scannen), Heim-VM neu verbinden (am Hub Standort neu anlegen; auf der Heim-VM `/etc/wireguard/wg0.conf` beiseitelegen, denn `godeb setup --join -` ersetzt eine abweichende Datei nicht, dann den neuen Beitrittscode einfügen), DNS-Einträge (Domains → Anwenden) und Reverse-DNS auf die neue IP. Ohne Backup: frisch installieren, Ersteinrichtung als Hub, Standort neu anlegen, Postfächer neu anlegen (Mails sind dann verloren). Bei Verdacht auf Einbruch nie das alte System weiterverwenden, sondern neu aufsetzen und alle Passwörter, das Hetzner-API-Token und die WireGuard-Schlüssel erneuern.
 
-**Heim-VM ist weg:** Proxmox-Backup zurückspielen. Ohne Backup: Debian 13 neu, GoDeb installieren, am Hub den Standort löschen und neu anlegen, mit dem neuen Beitrittscode verbinden, Enshrouded neu installieren (Spielstände aus dem Backup nach `/var/lib/godeb-steam/enshrouded/`).
+**Heim-VM ist weg:** Proxmox-Backup zurückspielen. Ohne Backup: Debian 13 neu, GoDeb installieren, am Hub den Standort löschen und neu anlegen, mit dem neuen Beitrittscode verbinden, Spielserver im Spielserver-Panel wiederherstellen.
 
 ### Logs
 
@@ -712,7 +668,7 @@ level=INFO msg=Aktion komponente=agent methode=POST pfad=/api/plugins/wireguard/
 ```
 
 - **Aktionen**: Jede ändernde Anfrage loggt der Agent selbst mit Benutzer, Pfad, Status, Dauer und 2FA-Ergebnis (`verlangt`, `bestätigt`, `falsch`, `gesperrt`). Abgelehnte Anfragen kommen als Warnung, Serverfehler als Fehler, beide mit dem Grund (`fehler=…`, dieselbe Meldung wie in der Oberfläche, gekürzt auf 300 Zeichen).
-- **Hintergrundjobs** (Spielserver installieren/aktualisieren, Mailserver installieren): Start, Ende und Dauer; bei einem Fehler zusätzlich der Grund und die letzten acht Zeilen des Job-Logs (`letzte_zeilen`), denn das Job-Log in der Oberfläche überlebt keinen Neustart. Eine übernommene Weboberfläche kann die IP falsch angeben, aber nicht verbergen, dass eine Änderung lief.
+- **Hintergrundjobs** (Mailserver installieren): Start, Ende und Dauer; bei einem Fehler zusätzlich der Grund und die letzten acht Zeilen des Job-Logs (`letzte_zeilen`), denn das Job-Log in der Oberfläche überlebt keinen Neustart. Eine übernommene Weboberfläche kann die IP falsch angeben, aber nicht verbergen, dass eine Änderung lief.
 - **Befehle**: Fehlgeschlagene Befehle als Warnung mit Exit-Code und gekürztem stderr, erfolgreiche nur bei `debug`. stdin (Secrets) wird nie geloggt. Fehlende Werkzeuge bei reinen Abfragen und Zustandsabfragen, deren Exit-Code die Antwort ist (`dpkg-query` für nicht installierte Pakete, `systemctl is-enabled`, `nft list table` einer noch nicht angelegten Tabelle), bleiben auf `debug` (`core.RunAdminQuiet`), damit Warnungen im Journal echte Probleme sind.
 - **Anmeldungen**: Erfolg, Abmeldung und Fehlversuch mit Benutzer und IP. Fehlversuche stehen weiterhin auch in `/var/log/godeb/auth.log` (für fail2ban).
 - In der Oberfläche zeigt **Protokoll** dieselben Einträge mit Filtern.
@@ -769,7 +725,7 @@ Das Repo liegt auf GitHub Pages unter `https://zerodos1988.github.io/GoDeb` (Kom
 
 ### Plugins abschalten
 
-Alle Plugins werden mitgeliefert. Im Plugin-Manager lässt sich jedes abschalten: Es verschwindet aus der Navigation, seine Routen unter `/api/plugins/<id>/` antworten mit 404, und GoDeb erledigt dafür nichts mehr im Hintergrund (automatische Updates, Überwachung). Die Systemdienste dahinter bleiben unberührt: Abschalten von WireGuard oder UFW stoppt weder den Tunnel noch die Firewall, und ein nicht installierter Dienst (Postfix beim Mail-Gateway) verhindert das Abschalten nicht mehr. Der Plugin-Manager selbst bleibt erreichbar, um es wieder einzuschalten. Der Zustand steht in der Tabelle `plugin_states` (`disabled`) der Agent-Datenbank. Auf dem VPS etwa „Spielserver“ abschalten, auf der Heim-VM „Portweiterleitung“.
+Alle Plugins werden mitgeliefert. Im Plugin-Manager lässt sich jedes abschalten: Es verschwindet aus der Navigation, seine Routen unter `/api/plugins/<id>/` antworten mit 404, und GoDeb erledigt dafür nichts mehr im Hintergrund (automatische Updates, Überwachung). Die Systemdienste dahinter bleiben unberührt: Abschalten von WireGuard oder UFW stoppt weder den Tunnel noch die Firewall, und ein nicht installierter Dienst (Postfix beim Mail-Gateway) verhindert das Abschalten nicht mehr. Der Plugin-Manager selbst bleibt erreichbar, um es wieder einzuschalten. Der Zustand steht in der Tabelle `plugin_states` (`disabled`) der Agent-Datenbank. Auf der Heim-VM etwa „Portweiterleitung“ und „Mail-Gateway“ abschalten.
 
 Postfix und OpenDKIM richtet nicht das Paket-Skript ein, sondern die Mail-Gateway-Ansicht, nachdem die Relay-Domain eingetragen ist. Fehlt eines der Pakete, installiert GoDeb sie nicht selbst. Auf dem Host:
 

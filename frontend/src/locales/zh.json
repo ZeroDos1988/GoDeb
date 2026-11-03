@@ -101,9 +101,6 @@
     "certsOk_one": "{{count}} 个有效",
     "certsOk_other": "{{count}} 个有效",
     "certNext": "下一个：{{name}} 至 {{date}}",
-    "games": "游戏服务器",
-    "running": "运行中",
-    "stopped": "已停止",
     "uptimeDays": "{{days}} 天 {{hours}} 小时",
     "uptimeHours": "{{hours}} 小时",
     "certsExpired_one": "{{count}} 个已过期",
@@ -308,9 +305,6 @@
   },
   "logs": {
     "description": "GoDeb 的登录、操作和错误。"
-  },
-  "steam": {
-    "description": "安装、更新和配置游戏服务器。"
   },
   "websites": {
     "description": "自己的网站和到内部服务的反向代理，带 Let’s Encrypt 证书。",

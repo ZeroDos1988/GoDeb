@@ -101,9 +101,6 @@
     "certsOk_one": "{{count}} válido",
     "certsOk_other": "{{count}} válidos",
     "certNext": "Próximo: {{name}} até {{date}}",
-    "games": "Servidores de jogo",
-    "running": "em execução",
-    "stopped": "parado",
     "uptimeDays": "{{days}} d {{hours}} h",
     "uptimeHours": "{{hours}} h",
     "certsExpired_one": "{{count}} expirado",
@@ -308,9 +305,6 @@
   },
   "logs": {
     "description": "Entradas, ações e erros do GoDeb."
-  },
-  "steam": {
-    "description": "Instalar, atualizar e configurar servidores de jogos."
   },
   "websites": {
     "description": "Sites próprios e proxies para serviços internos, com certificado Let’s Encrypt.",

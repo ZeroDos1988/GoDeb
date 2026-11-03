@@ -119,8 +119,8 @@ if grep -rnE '"sh", "-c"|"bash", "-c"|"/bin/sh", "-c"' backend plugins --include
 else
 	ok "kein sh -c"
 fi
-grep -rlnE 'exec\.Command(Context)?\(' backend plugins --include=*.go | grep -v _test | grep -vE 'backend/core/exec.go|plugins/steam/job.go' >"$TMP/exec" || true
-[ -s "$TMP/exec" ] && { warn "exec.Command außerhalb von core (prüfen)"; detail <"$TMP/exec"; } || ok "externe Befehle über core.Run* (Ausnahme: SteamCMD-Log)"
+grep -rlnE 'exec\.Command(Context)?\(' backend plugins --include=*.go | grep -v _test | grep -vE 'backend/core/exec.go' >"$TMP/exec" || true
+[ -s "$TMP/exec" ] && { warn "exec.Command außerhalb von core (prüfen)"; detail <"$TMP/exec"; } || ok "externe Befehle über core.Run*"
 # The OIDC start is a GET by protocol (browser redirect to the provider).
 grep -rnE 'HandleFunc\("GET [^"]*/(delete|create|install|start|stop|restart|set|enable|disable|flush|upgrade|revoke)("|/)' backend plugins --include=*.go --exclude=*_test.go | grep -v '/api/auth/oidc/{id}/start' >"$TMP/getmut" || true
 [ -s "$TMP/getmut" ] && { fail "GET-Route mit Änderungs-Namen"; detail <"$TMP/getmut"; } || ok "keine ändernden GET-Routen (nach Namen)"

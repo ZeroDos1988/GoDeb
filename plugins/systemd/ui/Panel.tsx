@@ -212,9 +212,7 @@ function ServiceRow({
   const oneshot = running && s.sub === "exited";
   const failed = s.active === "failed";
   const dot = running ? "bg-emerald-400" : failed ? "bg-rose-400" : s.critical ? "bg-amber-400" : "bg-white/30";
-  const name = t(`services.${s.key}.name`, {
-    defaultValue: s.key === "game" ? s.unit.replace(/^godeb-steam-|\.service$/g, "") : s.unit,
-  });
+  const name = t(`services.${s.key}.name`, { defaultValue: s.unit });
   const desc = t(`services.${s.key}.description`, { defaultValue: s.name });
   const working = busy.startsWith(`${s.unit}:`);
   const state = oneshot

@@ -15,7 +15,6 @@ import (
 
 // catalog is the curated list of server services shown first, like the
 // services page of HestiaCP. Only units that exist on the host appear.
-// Spielserver (godeb-steam-*) are added from the unit list.
 var catalog = []catalogEntry{
 	{"godeb.service", "godeb", "panel"},
 	{"godeb-agent.service", "godebAgent", "panel"},
@@ -90,15 +89,6 @@ func handleOverview(w http.ResponseWriter, r *http.Request) {
 	for _, c := range catalog {
 		units = append(units, c.Unit)
 		keys[c.Unit] = c
-	}
-	// Game servers run as godeb-steam-<game>.service.
-	if res := core.RunQuiet(r.Context(), "systemctl", "list-units", "--type=service", "--all", "--no-pager", "--plain", "--no-legend", "godeb-steam-*"); res.Err == nil {
-		for _, s := range ParseUnits(res.Stdout) {
-			if unitPattern.MatchString(s.Unit) {
-				units = append(units, s.Unit)
-				keys[s.Unit] = catalogEntry{s.Unit, "game", "games"}
-			}
-		}
 	}
 	args := append([]string{"show", "--timestamp=unix", "--property=" + strings.Join(showProps, ",")}, units...)
 	out, env := core.ReadCommand(r.Context(), sampleShow, "systemctl", args...)

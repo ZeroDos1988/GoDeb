@@ -3,7 +3,7 @@
 # GoDeb
 
 **Schlanke, modulare Admin-Oberfläche für Debian 13 (Trixie).**
-Ein einziges statisches Go-Programm, eine React-Oberfläche und Plugins für die Dinge, die ein kleiner Server wirklich braucht: Updates, Firewall, Dienste, Zertifikate, WireGuard, Portweiterleitung, Spielserver und ein Mail-Relay.
+Ein einziges statisches Go-Programm, eine React-Oberfläche und Plugins für die Dinge, die ein kleiner Server wirklich braucht: Updates, Firewall, Dienste, Zertifikate, WireGuard, Portweiterleitung, Domains/DNS und ein Mail-Relay.
 
 [![CI](https://github.com/ZeroDos1988/GoDeb/actions/workflows/ci.yml/badge.svg)](https://github.com/ZeroDos1988/GoDeb/actions/workflows/ci.yml)
 
@@ -34,7 +34,7 @@ GoDeb wurde für dieses Szenario gebaut: ein kleiner VPS mit öffentlicher IP un
         +---------------+---------------+
         | Heim-VM (z. B. Proxmox)       |
         | GoDeb als Peer  10.8.0.2      |
-        | Spielserver (Enshrouded)      |
+        | Dienste zu Hause, z. B. Spiele |
         +-------------------------------+
 
   Handy / Laptop  --WireGuard-->  Hub  -->  beide Oberflächen im Tunnel
@@ -55,15 +55,14 @@ Jedes Plugin lässt sich im Plugin-Manager abschalten. Es verschwindet dann aus 
 | **Certbot** | Let's-Encrypt-Zertifikate unter `/etc/letsencrypt` |
 | **WireGuard** | Hub oder Peer, Clients mit QR-Code, Standorte per Beitrittscode, Trusted Endpoint |
 | **Portweiterleitung** | Öffentliche Ports des Hubs an Standorte im Tunnel weiterleiten (eigene nftables-Tabelle) |
-| **Spielserver** | Dedizierte Server über SteamCMD, ein Konto und eine systemd-Unit pro Spiel. Als erstes Spiel: Enshrouded |
 | **E-Mail** | Mailserver wie bei HestiaCP: Domains, Postfächer mit Quota, Aliase, Weiterleitungen, Catch-all, DKIM/SPF/DMARC, Spamfilter (Postfix, Dovecot, Rspamd, optional ClamAV) |
 | **Mail-Gateway** | Postfix-Relay über WireGuard mit OpenDKIM, Queue und Statistik |
 
-Ein neues Spiel ist eine `Game`-Beschreibung in `plugins/steam/`, kein eigenes Plugin.
+Spielserver sind kein Teil von GoDeb mehr; dafür entsteht ein eigenes Spielserver-Panel, das sich per WireGuard an den GoDeb-Hub hängt.
 
 ## Installation
 
-Voraussetzung: Debian 13 (amd64 oder arm64; Spielserver über SteamCMD nur amd64), ein Konto mit `sudo`, eine Netzwerkverbindung. GoDeb kommt aus einem eigenen, signierten APT-Repo auf GitHub Pages:
+Voraussetzung: Debian 13 (amd64 oder arm64), ein Konto mit `sudo`, eine Netzwerkverbindung. GoDeb kommt aus einem eigenen, signierten APT-Repo auf GitHub Pages:
 
 ```bash
 sudo wget -O /usr/share/keyrings/godeb-archive-keyring.asc https://zerodos1988.github.io/GoDeb/godeb-archive-keyring.asc
@@ -104,7 +103,7 @@ sudo godeb site add heim-vm                            # auf dem Hub: Standort a
 sudo godeb setup --join - --access lan                 # auf der Heim-VM: Beitrittscode einfügen
 ```
 
-Die vollständige Anleitung für VPS und Heim-VM, inklusive Portweiterleitung und Spielserver, steht in [DOCUMENTATION.md](DOCUMENTATION.md#zielbild-vps-und-heim-vm).
+Die vollständige Anleitung für VPS und Heim-VM, inklusive Portweiterleitung, steht in [DOCUMENTATION.md](DOCUMENTATION.md#zielbild-vps-und-heim-vm).
 
 ### Updates und Backups
 
@@ -118,7 +117,7 @@ Backups macht GoDeb bewusst nicht selbst. Dafür sind die Snapshots der Plattfor
 | --- | --- |
 | Netz | Nur Loopback und `wg0`. Öffentlich nur der Einrichtungsassistent per HTTPS mit Token, LAN nur per HTTPS und nur aus dem eigenen Subnetz |
 | Anmeldung | Passwort plus TOTP, Versuchslimit, serverseitige Sitzungen, optional Microsoft 365 oder Google per OIDC |
-| Kritische Aktionen | Frischer TOTP-Code (Step-up) vor Änderungen an Firewall, Diensten, Peers, Plugins und Spielserver-Installationen |
+| Kritische Aktionen | Frischer TOTP-Code (Step-up) vor Änderungen an Firewall, Diensten, Peers, Plugins, DNS und Mail |
 | Befehle | Kein `sh -c`, Argumente als Liste, jede Eingabe gegen enge Muster geprüft, Secrets über stdin |
 | Dateien | Pfad-Allowlist, Secrets mit `0600`, sensible DB-Felder mit AES-256-GCM verschlüsselt |
 | Browser | CSP, Origin-Prüfung, `SameSite`-Cookies |

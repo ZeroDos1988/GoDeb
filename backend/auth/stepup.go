@@ -50,10 +50,6 @@ var criticalPrefixes = []string{
 	"/api/plugins/websites/",        // nginx and PHP, opens ports 80/443
 }
 
-// criticalGameActions always need a fresh code below /api/plugins/steam/games/
-// {game}/: they install packages, create accounts and open firewall ports.
-var criticalGameActions = map[string]bool{"install": true, "update": true}
-
 // criticalExact always needs a fresh code.
 var criticalExact = map[string]bool{
 	"/api/plugins/wireguard/peers":      true, // a new peer is a new way into the network
@@ -96,11 +92,6 @@ func stepUpFor(method, raw string) stepUpLevel {
 	}
 	if criticalExact[p] {
 		return stepUpFresh
-	}
-	if rest, ok := strings.CutPrefix(p, "/api/plugins/steam/games/"); ok {
-		if _, action, ok := strings.Cut(rest, "/"); ok && criticalGameActions[action] {
-			return stepUpFresh
-		}
 	}
 	// Dropping a database or role cannot be undone.
 	if strings.HasPrefix(p, "/api/plugins/postgres/") && strings.HasSuffix(p, "/delete") {

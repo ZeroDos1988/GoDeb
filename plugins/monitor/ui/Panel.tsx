@@ -3,14 +3,13 @@ import { useTranslation } from "react-i18next";
 import { PanelFrame } from "@/components/PanelFrame.tsx";
 import { useGet } from "@/lib/useAsync.ts";
 import { AccessTab } from "./AccessTab.tsx";
-import { GamesTab } from "./GamesTab.tsx";
 import { AlertsTab } from "./AlertsTab.tsx";
 import { NetworkTab } from "./NetworkTab.tsx";
 import { SitesTab, useSites } from "./SitesTab.tsx";
 import { SystemTab } from "./SystemTab.tsx";
 import { usePolling, type RangeName, type Summary, RangePicker } from "./shared.tsx";
 
-const TABS = ["system", "network", "access", "games", "sites", "alerts"] as const;
+const TABS = ["system", "network", "access", "sites", "alerts"] as const;
 type Tab = (typeof TABS)[number];
 
 export default function Panel() {
@@ -54,7 +53,6 @@ export default function Panel() {
         {tab === "system" ? <SystemTab summary={summary.data} range={range} /> : null}
         {tab === "network" ? <NetworkTab summary={summary.data} range={range} /> : null}
         {tab === "access" ? <AccessTab range={range} /> : null}
-        {tab === "games" ? <GamesTab summary={summary.data} range={range} /> : null}
         {tab === "sites" ? <SitesTab data={sites.data} range={range} /> : null}
         {tab === "alerts" ? <AlertsTab /> : null}
       </div>

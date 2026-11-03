@@ -46,8 +46,8 @@ type Descriptor struct {
 	Name            string   `json:"name"`
 	AptDependencies []string `json:"apt_dependencies"`
 	SystemdServices []string `json:"systemd_services"`
-	// Architectures limits the plugin to these dpkg architectures (e.g.
-	// SteamCMD only exists for amd64). Empty means every architecture.
+	// Architectures limits the plugin to these dpkg architectures (for
+	// software that only exists for amd64). Empty means every architecture.
 	Architectures []string `json:"architectures"`
 	// Description comes from manifest.json next to plugin.json.
 	Description string `json:"-"`
