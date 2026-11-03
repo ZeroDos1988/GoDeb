@@ -49,6 +49,8 @@ type Descriptor struct {
 	// Architectures limits the plugin to these dpkg architectures (e.g.
 	// SteamCMD only exists for amd64). Empty means every architecture.
 	Architectures []string `json:"architectures"`
+	// Description comes from manifest.json next to plugin.json.
+	Description string `json:"-"`
 }
 
 // hostArch is the dpkg architecture of this build. Tests replace it.
@@ -70,6 +72,7 @@ type ServiceStatus struct {
 type Plugin struct {
 	ID                string          `json:"id"`
 	Name              string          `json:"name"`
+	Description       string          `json:"description"`
 	AptDependencies   []string        `json:"aptDependencies"`
 	SystemdServices   []string        `json:"systemdServices"`
 	Supported         bool            `json:"supported"`
@@ -230,6 +233,7 @@ func Load(pluginsDir, id string) (Descriptor, error) {
 			return Descriptor{}, fmt.Errorf("Architektur %q ist ungültig", arch)
 		}
 	}
+	desc.Description = manifestDescription(pluginsDir, id)
 	if desc.AptDependencies == nil {
 		desc.AptDependencies = []string{}
 	}
@@ -240,6 +244,22 @@ func Load(pluginsDir, id string) (Descriptor, error) {
 		desc.SystemdServices = []string{}
 	}
 	return desc, nil
+}
+
+// manifestDescription reads the one-line description from manifest.json.
+// It is only shown in the plugin list, so a missing or broken file is fine.
+func manifestDescription(pluginsDir, id string) string {
+	raw, err := os.ReadFile(filepath.Join(pluginsDir, id, "manifest.json"))
+	if err != nil {
+		return ""
+	}
+	var m struct {
+		Description string `json:"description"`
+	}
+	if json.Unmarshal(raw, &m) != nil {
+		return ""
+	}
+	return strings.TrimSpace(m.Description)
 }
 
 func describe(ctx context.Context, desc Descriptor, remembered stateRow) (Plugin, error) {
@@ -271,6 +291,7 @@ func describe(ctx context.Context, desc Descriptor, remembered stateRow) (Plugin
 	return Plugin{
 		ID:                desc.ID,
 		Name:              desc.Name,
+		Description:       desc.Description,
 		AptDependencies:   desc.AptDependencies,
 		SystemdServices:   desc.SystemdServices,
 		Supported:         desc.Supported(),

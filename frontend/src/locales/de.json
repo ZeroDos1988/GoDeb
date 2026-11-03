@@ -31,7 +31,17 @@
     "working": "Arbeite …",
     "deps": "Pakete",
     "units": "Units",
-    "unsupported": "Läuft auf diesem Server nicht (nur {{archs}})."
+    "unsupported": "Läuft auf diesem Server nicht (nur {{archs}}).",
+    "colPlugin": "Plugin",
+    "colState": "Status",
+    "colServices": "Dienste",
+    "statActive": "Aktiv",
+    "statInactive": "Aus",
+    "statMissing": "Pakete fehlen",
+    "statTotal": "Gesamt",
+    "sectionActive": "Aktiv ({{count}})",
+    "sectionInactive": "Ausgeschaltet ({{count}})",
+    "sectionInactiveHint": "Oben stehen die, die sich sofort einschalten lassen, darunter die, für die erst Pakete installiert werden müssen."
   },
   "common": {
     "refresh": "Aktualisieren",

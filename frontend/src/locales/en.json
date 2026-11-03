@@ -31,7 +31,17 @@
     "working": "Working …",
     "deps": "Packages",
     "units": "Units",
-    "unsupported": "Not available on this server (only {{archs}})."
+    "unsupported": "Not available on this server (only {{archs}}).",
+    "colPlugin": "Plugin",
+    "colState": "State",
+    "colServices": "Services",
+    "statActive": "Active",
+    "statInactive": "Off",
+    "statMissing": "Packages missing",
+    "statTotal": "Total",
+    "sectionActive": "Active ({{count}})",
+    "sectionInactive": "Switched off ({{count}})",
+    "sectionInactiveHint": "Plugins that can be switched on right away come first, then those that need packages installed."
   },
   "common": {
     "refresh": "Refresh",
