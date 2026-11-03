@@ -1,8 +1,10 @@
 # Fahrplan
 
-Stand: 28.10.2026. Reihenfolge = Priorität. `[x]` erledigt, `[ ]` offen. Neue Ideen kommen hierher (passende Phase oder Phase 7), getroffene Entscheidungen unten unter „Entscheidungen“.
+Stand: 03.11.2026. Reihenfolge = Priorität. `[x]` erledigt, `[ ]` offen. Neue Ideen kommen hierher (passende Phase oder Phase 7), getroffene Entscheidungen unten unter „Entscheidungen“.
 
-## Aktueller Stand (30.10., nach v0.2.18)
+## Aktueller Stand (03.11., nach v0.2.18)
+
+- **Neu seit v0.2.18 (03.11., noch ohne Release):** Plugin-Seite als Liste (aktive oben, ausgeschaltete darunter, sortiert nach „sofort einschaltbar“ → „Pakete fehlen“ → „läuft hier nicht“). Plugin `steam` entfernt, Spielserver bekommen ein eigenes Projekt (unten „Spielserver-Panel“). Assistent mit neuem Schritt „Mail und Domains“: Mail-Gateway per Klick, alle Domains auf einmal, Hetzner-DNS verbinden, Standardeinträge (Web, www, mail, webmail, MX, SPF, DMARC, mit Gateway DKIM) werden sofort gesetzt; dasselbe per `godeb setup --mail-relay --domains …`.
 
 Für einen neuen Chat: zuerst `/diagnose` (Skill in `.claude/skills/diagnose`, Skript `scripts/diagnose.sh`), dann hier weiterlesen.
 
@@ -18,7 +20,7 @@ Funktional ist alles da, was für den Betrieb gewünscht ist; ab jetzt keine neu
 
 ### P0 – vor dem Produktivbetrieb (Pflicht)
 
-- [ ] **Echter Durchlauf auf beiden Servern** (sammelt die offenen Tests aus Phase 2, 3, 3b und 4b): Update von der alten 0.2.x auf dem VPS (Umzug nach `/var/lib/godeb`), Assistent, Agent, Plugins ab-/anschalten, automatische Sicherheitsupdates und ein Selbst-Update von GoDeb über „Alle aktualisieren“; Heim-VM per Beitrittscode, Enshrouded (Wine ohne X-Server, Ports), Portweiterleitung, Handy und Spiel-Client von außen; **beide Seiten neu starten** und prüfen, dass Tunnel, nftables-Tabellen, ufw-Regeln und Dienste von selbst wiederkommen. Jeden Fehler als Fix-Release `0.2.x`.
+- [ ] **Echter Durchlauf auf beiden Servern** (sammelt die offenen Tests aus Phase 2, 3, 3b und 4b): Update von der alten 0.2.x auf dem VPS (Umzug nach `/var/lib/godeb`), Assistent, Agent, Plugins ab-/anschalten, automatische Sicherheitsupdates und ein Selbst-Update von GoDeb über „Alle aktualisieren“; Assistent mit Mail-Gateway und Domains (Hetzner-Token, Standardeinträge, Port 25 offen, Testmail von außen bis zur Heim-VM); Heim-VM per Beitrittscode, Portweiterleitung, Handy von außen; **beide Seiten neu starten** und prüfen, dass Tunnel, nftables-Tabellen, ufw-Regeln und Dienste von selbst wiederkommen. Jeden Fehler als Fix-Release `0.2.x`.
 - [ ] **Hetzner-Grundschutz** (Nutzer, Anleitung in `DOCUMENTATION.md` „Produktivbetrieb (Checkliste)“): Backups für den VPS einschalten (täglich, 7 Stände) und vor jedem Update ein Snapshot; Hetzner Cloud Firewall als zweite Schicht vor ufw; SSH nur mit Schlüssel. Für Mail vorab: Reverse-DNS, Freigabe von Port 25/465, Ergebnis bei mail-tester.com mindestens 9/10.
 - [ ] **Wiederherstellung einmal üben, nicht nur aufschreiben** (Nutzer): Handy weg (`godeb 2fa reset`), VPS aus einem Snapshot zurückholen, Heim-VM neu aufsetzen und wieder beitreten. Das Runbook steht seit 28.10. in `DOCUMENTATION.md` unter „Notfall“; beim Üben Lücken dort nachtragen.
 - [x] **Überwachung von außen** (28.10.): Die Heim-VM fragt jede Minute `/api/health` des Hubs über den Tunnel und meldet nach 3 Minuten „Hub nicht erreichbar“ (Alarme per ntfy). Offen beim Nutzer: ntfy auf beiden Servern einschalten, öffentliche Dienste (Mail, Webseiten) mit einem externen Uptime-Dienst prüfen.
@@ -37,7 +39,7 @@ Funktional ist alles da, was für den Betrieb gewünscht ist; ab jetzt keine neu
 
 ### P2 – danach (nice to have)
 
-Alles aus Phase 4 (Savegame-Backup, weitere Spiele), Phase 7 (Webmail, eigener DNS), Phase 8 (Heim-VM als Gateway, gekoppelte Verwaltung, Netzwerk-Scanner), Push direkt in die App, IPv6-Weiterleitung, echte Spieler-IPs. Neue Wünsche kommen weiter in die passende Phase.
+Das Spielserver-Panel (eigenes Projekt, siehe unten), Phase 7 (Webmail, eigener DNS), Phase 8 (Heim-VM als Gateway, gekoppelte Verwaltung, Netzwerk-Scanner), Push direkt in die App, IPv6-Weiterleitung, echte Spieler-IPs. Neue Wünsche kommen weiter in die passende Phase.
 
 ## Leitplanken für alle Phasen
 
@@ -69,8 +71,8 @@ Offene Punkte, die beim Test auffallen können:
 
 - [x] SteamCMD und Serverdownload lokal ohne root getestet (20.10.): Die Download-URL war falsch, und `app_update` scheitert beim ersten Lauf mit „Missing configuration“. Beides ist behoben (drei Versuche).
 - [x] API-Ablauf mit Dev-Instanz getestet: Login, 2FA-Einrichtung, Fenster und kritische Aktionen, Replay-Schutz, fremder Origin, Logout.
-- [ ] Wine unter Debian 13: Läuft `enshrouded_server.exe` ohne X-Server? Falls nicht, `xvfb-run` als Option im Unit-Template.
-- [ ] Enshrouded-Ports: Neuere Serverversionen kennen nur `queryPort`. GoDeb öffnet zusätzlich `queryPort-1`; nach dem Test ggf. entfernen.
+- [ ] → Spielserver-Panel: Wine unter Debian 13: Läuft `enshrouded_server.exe` ohne X-Server? Falls nicht, `xvfb-run` als Option im Unit-Template.
+- [ ] → Spielserver-Panel: Enshrouded-Ports: Neuere Serverversionen kennen nur `queryPort`. GoDeb öffnet zusätzlich `queryPort-1`; nach dem Test ggf. entfernen.
 
 ## Phase 3 – VPS-Reife (Pflicht vor dem produktiven Einsatz auf Hetzner)
 
@@ -90,7 +92,7 @@ Eine Testinstallation auf einem Hetzner-VPS ist ab 20.10. möglich. Die Anleitun
 - [x] **Einrichtungsübersicht** (23.10., Wunsch nach dem ersten echten Setup): Link zur Einrichtung nach `apt install` als Kasten; am Ende des Assistenten eine Übersicht aller Einstellungen (Adressen mit Tunnel-IP, Tunnel, Firewall), druckbar bzw. als PDF; später unter Startseite → Einrichtungsübersicht und `godeb summary`.
 - [x] **Passwort und 2FA bei kritischen Aktionen („sudo mit 2FA“)** (Wunsch und Umsetzung 27.10.): Für `stepUpFresh` verlangt die Weboberfläche den Header `X-GoDeb-Password` (Prüfung gegen die Web-DB, bevor der Code geprüft wird) und entfernt ihn vor der Weiterleitung an den Agenten; der Agent prüft weiter nur den TOTP. Gewöhnliche Änderungen bleiben beim 5-Minuten-Fenster, Lesen bleibt frei.
 - [x] **Logging** (23.10.): `slog` ins Journal mit Prioritäten, `GODEB_LOG_LEVEL`. Der Agent protokolliert jede Aktion mit Benutzer, Status und 2FA-Ergebnis, fehlgeschlagene Befehle kommen mit Exit-Code. Ansicht „Protokoll“ (Plugin `logs`).
-- [ ] **Agent auf den echten Servern testen**: Update von der Version davor (Umzug nach `/var/lib/godeb`), Assistent, Trusted Endpoint, Steam-Installation.
+- [ ] **Agent auf den echten Servern testen**: Update von der Version davor (Umzug nach `/var/lib/godeb`), Assistent, Trusted Endpoint.
 - [x] **Client-Schlüssel** (27.10.): Option „Schlüssel auf dem Gerät erzeugen“ (Public Key einfügen); Client-Dateien nach dem Download optional löschen. Mailversand nur mit Warnhinweis (weiterhin).
 - [x] ~~**Master-Key** getrennt von der Datenbank~~ (entschieden 21.10.): entfällt. Gesichert wird die ganze VM (Proxmox bzw. Hetzner), ein VM-Backup enthält Schlüssel und Datenbank ohnehin zusammen; ein systemd-Credential läge auf derselben Platte.
 - [x] **Volltunnel** (28.10.): bewusste Option im Setup und unter WireGuard (`--full-tunnel` / Checkbox). IP-Forwarding und MASQUERADE in eigener nftables-Tabelle `godeb_volltunnel` (wie Portweiterleitung, nicht `before.rules`), dazu `ufw route allow` wg0→öffentlich; Boot-Unit `godeb-volltunnel.service`. Standard aus; Geräte-Clients im Setup bekommen bei Aktivierung `AllowedIPs 0.0.0.0/0`, Standorte nie.
@@ -116,13 +118,41 @@ Ziel ist das Zielbild aus `DOCUMENTATION.md` („Zielbild: VPS und Heim-VM“): 
 
 Die Portweiterleitung schreibt `/etc/sysctl.d/90-godeb-forward.conf`, `/etc/godeb/portforward.*` und ruft `nft`, `sysctl` und `ufw route` auf; das erledigt der root-Agent.
 
-## Phase 4 – Spielserver und Enshrouded ausbauen
+## Phase 4 – Spielserver und Enshrouded ausbauen (beendet 03.11.)
+
+Das Plugin `steam` ist mit dem Commit „refactor!: Spielserver-Plugin (Steam) entfernt“ aus GoDeb raus. Der Code (SteamCMD-Gerüst, Enshrouded, A2S-Abfrage, Formular) liegt in der Git-Historie (`git show 346cc85:plugins/steam/…`) und ist der Startpunkt für das Spielserver-Panel. Offene Punkte von hier wandern dorthin.
+
 
 - [x] Formular für `gameSettings` beim Preset „Custom“ (wichtigste Faktoren mit Schiebereglern) – 28.10.
-- [ ] Savegame-Backup vor jedem Update und auf Knopfdruck, Wiederherstellen aus der UI.
+- [ ] → Spielserver-Panel: Savegame-Backup vor jedem Update und auf Knopfdruck, Wiederherstellen aus der UI.
 - [x] Zeitgesteuerte Updates/Neustarts mit Warnfenster – 28.10. (Warnfenster in der UI, Zeitplan über das Plugin „Geplante Aufgaben“).
 - [x] Spielerzahl/Status per Steam-Query anzeigen (Überwachung M3, 23.10.).
 - [x] Gemeinsames Gerüst „SteamCMD-Spiel“ (20.10.): Plugin `steam` mit Spielen als `Game`-Beschreibung, Enshrouded ist das erste. Weitere Spiele brauchen nur App-ID, Startbefehl, Ports und optional Konfiguration und Formular.
+
+## Spielserver-Panel (eigenes Projekt, Konzept 03.11.)
+
+Wunsch 03.11.: Spielserver gehören nicht in GoDeb. Stattdessen ein eigenes, kleines Panel nur für Spielserver, gedacht für einen Container oder eine VM auf dem Heimserver (Proxmox). Es fühlt sich an wie GoDeb (Einrichtung, Login, Optik), kennt aber nur Spiele. Arbeitstitel offen, Repo noch nicht angelegt (`ZeroDos1988/<name>`, öffentlich, GPL-3.0 wie GoDeb – Entscheidung beim Nutzer).
+
+**Zielbild:**
+
+```text
+Spieler --> VPS (GoDeb-Hub, öffentliche IP) --DNAT/SNAT--> WireGuard --> Spiel-Container 10.8.0.3
+                                                                          Spielserver-Panel + Enshrouded
+```
+
+- Das Panel bringt **WireGuard selbst mit** und hängt sich wie die Heim-VM als Standort an den GoDeb-Hub: Auf dem Hub „+ GoDeb-Server zu Hause“ bzw. `godeb site add spiele`, den Beitrittscode (`godeb-join:…`) im Einrichtungsassistenten des Panels einfügen. Gleiches Format und gleiche strenge Prüfung der Client-Datei wie `wireguard.JoinHub` in GoDeb. Damit hat der Spielserver die statische öffentliche IP des VPS, ohne Portfreigabe am Heimrouter, auch hinter CGNAT/DS-Lite.
+- **Ersteinrichtung wie GoDeb:** Einmal-Token im Link, erster Admin, TOTP-2FA mit Backup-Codes, danach nur über Tunnel und Heimnetz (HTTPS) erreichbar. Weboberfläche ohne root, privilegierte Schritte (SteamCMD-Konten, systemd-Units, Firewall) in einem kleinen root-Agenten mit eigener 2FA-Prüfung, wie in GoDeb.
+- **Spiele als Beschreibung** wie im alten Plugin: App-ID, Plattform (Linux oder Windows unter Wine), Startdatei, Ports, Konfigurationsdatei mit Standardinhalt und Prüfung, optional Formular. Enshrouded zuerst. Ein Konto und eine Unit pro Spiel, `ProtectSystem=strict`.
+- **Portweiterleitung am Hub:** zuerst von Hand im Plugin „Portweiterleitung“ (Vorlage Enshrouded, Ziel = Adresse des Panels). Später automatisch über die „gekoppelte Verwaltung“ aus Phase 8: das Panel schlägt die nötigen Ports vor, der Hub legt sie nach Bestätigung mit 2FA an, nur für die eigene Tunnel-Adresse.
+- **Überwachung:** Spieler und Status per A2S; der Hub zeigt sie in „Standorte“ der Überwachung (Messwerte `game:<id>:up|players|slots` wie bisher, die Anzeige dort bleibt in GoDeb).
+
+**Erste Schritte:**
+
+- [ ] Name festlegen und Repo anlegen (Nutzer).
+- [ ] Gerüst aus GoDeb übernehmen: Go-Daemon + React/Vite, `core.Run*`, `auth` (Login, 2FA, Sitzungen), `firstrun` (Token, Admin, Beitritt), Agent-Trennung. Prüfen, welche Pakete sich als gemeinsames Go-Modul lohnen, statt zu kopieren.
+- [ ] WireGuard-Beitritt mit dem bestehenden Beitrittscode und den Tests aus `plugins/wireguard/join_test.go`.
+- [ ] SteamCMD-Gerüst und Enshrouded aus `346cc85:plugins/steam/` übernehmen; offene Punkte von dort: Wine ohne X-Server, nur `queryPort`, Savegame-Backup.
+- [ ] Paket bzw. Container-Vorlage (Debian 13, LXC unter Proxmox), ein Befehl zum Installieren.
 
 ## Phase 4b – Überwachung (umgesetzt 23.10., Plugin `monitor`)
 
@@ -133,7 +163,7 @@ Ziel: auf einen Blick sehen, ob der Server gesund ist, ob der Traffic normal aus
 - [x] **M3 Spielserver**: Spielerzahl per Steam-Query (A2S, UDP, ohne Abhängigkeit), Traffic pro Spielport. Ereignisse (Update, Neustart, Installation) als Markierung im Diagramm, damit mehr Traffic beim Update erklärt ist.
 - [x] **M4 Normalverhalten und Alarme**: Grundlinie pro Wochenstunde (Median der letzten Wochen), Abweichungen markieren. Benachrichtigung per Mail (Mail-Gateway) bzw. Push an die App. Standortübersicht: Der Hub zeigt den Zustand der Heim-VM über den Tunnel.
 - Entschieden: Verlauf 26 h roh, 31 Tage 5-Minuten-Mittel, 400 Tage Stundenmittel; der Hub zeigt die Heim-VM; Alarme per Mail und ntfy.
-- [ ] Auf den echten Servern prüfen: Zähler-Tabelle `inet godeb_acct` neben ufw und `godeb_portforward`, Steam-Query von Enshrouded, Standort-Abfrage Hub → Heim-VM, Schwellen der Grundlinie nach ein paar Wochen.
+- [ ] Auf den echten Servern prüfen: Zähler-Tabelle `inet godeb_acct` neben ufw und `godeb_portforward`, Standort-Abfrage Hub → Heim-VM, Schwellen der Grundlinie nach ein paar Wochen.
 - [ ] Push direkt in die GoDeb-App statt ntfy (braucht einen Push-Dienst).
 
 ## Phase 5 – GoDeb-Tunnel-Clients (Android, Windows, Arch)
@@ -189,7 +219,7 @@ Ziel: auf einen Blick sehen, ob der Server gesund ist, ob der Traffic normal aus
 
 ## Ganz hinten (niedrige Priorität)
 
-- [x] **arm64 im APT-Repo** (Hetzner CAX, 28.10.): `build-apt-repo.sh` baut `binary-amd64` und `binary-arm64`, `godeb.sources` nennt beide. Plugin Steam ist auf arm64 gesperrt (`architectures` in `plugin.json`), weil es SteamCMD nur für x86 gibt.
+- [x] **arm64 im APT-Repo** (Hetzner CAX, 28.10.): `build-apt-repo.sh` baut `binary-amd64` und `binary-arm64`, `godeb.sources` nennt beide. Plugins können sich mit `architectures` in `plugin.json` auf eine Architektur beschränken.
 
 ## Entscheidungen
 
@@ -200,12 +230,13 @@ Festgehalten, damit sie nicht wieder neu diskutiert werden.
 - **Ein Paket für alle Rollen** (20.10.): VPS und Heim-VM bekommen dasselbe GoDeb, Unterschiede nur über Setup-Rolle und eingeschaltete Plugins. Alle Plugins werden mitgeliefert und sind abschaltbar.
 - **Kein WireGuard-Server ohne Auswahl** (21.10.): Die Ersteinrichtung fragt die Rolle (Hub, Peer, ohne WireGuard) im Browser-Assistenten ab.
 - **Backups macht die Plattform** (21.10.): Proxmox bzw. Hetzner sichern die ganze Maschine, GoDeb hat keine eigene Backup-Funktion.
-- **Spielserver nur über das Plugin `steam`** (20.10.): ein neues Spiel ist eine `Game`-Beschreibung, kein eigenes Plugin.
+- **Spielserver als eigenes Projekt** (03.11., ersetzt „Spielserver nur über das Plugin `steam`“ vom 20.10.): GoDeb bleibt Verwaltung für VPS und Heimserver; Spielserver laufen im eigenen Spielserver-Panel, das sich per WireGuard als Standort an den Hub hängt. Die Portweiterleitung bleibt in GoDeb.
+- **Assistent schlägt die VPS-Grundausstattung vor** (03.11.): WireGuard-Server, Mail-Gateway und Domains mit DNS lassen sich im Assistenten mit einem Klick einrichten. Es bleibt bei „nichts ohne Auswahl“: jeder Punkt ist abwählbar bzw. überspringbar. Der Hetzner-Token kommt auf der Kommandozeile nur über `GODEB_HETZNER_TOKEN`, nie als Flag.
 - **Weboberfläche ohne root, root-Agent mit eigener 2FA** (22.10.) statt sudoers-Allowlist.
 - **Ein Repository** (21.10.): Plugins bleiben in `GoDeb`, keine Aufteilung in einzelne Repos oder eine GitHub-Organisation. Die Apps haben eigene Repos: `godeb-tunnel-android` (Apache-2.0) und `godeb-tunnel-arch` (GPL-3.0), öffentlich seit 23.10.; Windows (`godeb-wireguard-windows`) bleibt privat, bis der Produktname im Installer und in der Oberfläche umgebaut ist. Umbenannt von „GoDeb WireGuard“ wegen der Markenrichtlinie von WireGuard.
 - **Öffentlich unter GPL-3.0** (23.10.): neues Repo `ZeroDos1988/GoDeb` mit frischer Historie ab v0.2.1, nur unter dem Namen ZeroDos1988 (noreply-Adresse). Die Entwicklungsgeschichte bis dahin liegt im privaten Archiv `GoDeb-private`. `main` ist gegen Löschen und Force-Push geschützt, `v*`-Tags darf nur der Admin setzen; Lücken über Private Vulnerability Reporting.
 - **Mailserver zuerst auf dem VPS** (27.10.): Postfächer liegen vorerst auf dem VPS; Ziel bleibt VPS nur als Relay, Postfächer und Virenscanner auf der Heim-VM. Rspamd statt SpamAssassin (leichter, DKIM eingebaut), ClamAV abschaltbar (RAM). Bedienung nach dem Vorbild von HestiaCP, aber moderner. Hetzner sperrt bei Cloud-Servern ausgehend 25 und 465 standardmäßig, unabhängig von der eigenen Domain; Freigabe per Antrag, meist erst nach der ersten bezahlten Rechnung. Ohne Freigabe geht Empfang, Versand nur über einen Relay-Dienst auf Port 587.
 - **Beitrittscode statt Kopplungsdienst** (25.10.): Der Code enthält die Client-Datei selbst. Ein kurzer Code, mit dem die Heim-VM ihre Datei beim Hub abholt, bräuchte einen öffentlich erreichbaren Endpunkt am Hub; das widerspricht „nur über den Tunnel“. Der lange Code wird kopiert, nicht abgetippt.
 - **Zielgruppe und Umfang** (27.10.): Ein Admin, der seine eigenen Server privat betreibt. Vorbild ist HestiaCP (Bedienung) bzw. Plesk (Funktionsumfang), aber mit den aktuellen Paketen aus Debian 13 statt eigener Paketstände und ohne Mandanten: keine Rechte pro Domain, keine Reseller- oder Kundenkonten. Mehrere Admin-Konten gibt es, alle mit denselben Rechten.
-- **arm64 veröffentlichen** (28.10.): zuerst nachrangig, am selben Tag doch umgesetzt (Nutzerwunsch). Spielserver bleiben amd64-only.
+- **arm64 veröffentlichen** (28.10.): zuerst nachrangig, am selben Tag doch umgesetzt (Nutzerwunsch). 
 - **Releases per Git-Tag** (22.10., ergänzt 23.10.): Vorabversionen bis zum Test auf echten Servern. Neue Funktionen erhöhen die mittlere Stelle (`v0.2.0`: Logging und Überwachung), Fixes nach einem Servertest die letzte (`v0.2.x`); apt erkennt jede als Update. Die Installationsanleitung steht im Text des Releases.

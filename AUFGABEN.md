@@ -46,7 +46,7 @@ Reihenfolge wie in `ROADMAP.md` „Produktionsreife“, Anleitung in `DOCUMENTAT
    - Vorher: A-Eintrag `mail.<domain>`, Reverse-DNS, Freigabe für ausgehend 25/465 bei Hetzner beantragen.
    - Dann: Domain und Postfach anlegen, mit Thunderbird und Handy testen, mail-tester.com (mindestens 9/10).
 4. **Domains-Plugin** mit echter Zone und echtem Hetzner-Token prüfen.
-5. **Heim-VM** per Beitrittscode anbinden, Enshrouded installieren, Portweiterleitung am VPS einrichten, im Spiel testen.
+5. **Heim-VM** per Beitrittscode anbinden, Portweiterleitung am VPS einrichten (Spielserver später über das Spielserver-Panel).
 6. **Beide Server neu starten:** Tunnel, nftables, ufw und Dienste müssen von selbst wiederkommen.
 7. **Alarme:** ntfy auf beiden Servern einschalten; einmal den Tunnel trennen und prüfen, dass die Heim-VM „Hub nicht erreichbar“ meldet.
 8. **Notfall üben:** `sudo godeb 2fa reset` an einem Testkonto, einmal einen Snapshot zurückspielen.
