@@ -20,9 +20,14 @@ func (settingsRow) TableName() string { return "domains_settings" }
 func init() { db.RegisterAgentSecret("domains_settings", "id", "token") }
 
 type domainRow struct {
-	Name    string `gorm:"primaryKey"`
-	Mode    string
-	Created string
+	Name     string `gorm:"primaryKey"`
+	Mode     string
+	Created  string
+	Defaults bool
+}
+
+func (r domainRow) domain() Domain {
+	return Domain{Name: r.Name, Mode: r.Mode, Created: r.Created, Defaults: r.Defaults}
 }
 
 func (domainRow) TableName() string { return "domains_zones" }
@@ -98,7 +103,7 @@ func listDomains() ([]Domain, error) {
 	}
 	out := make([]Domain, 0, len(rows))
 	for _, r := range rows {
-		out = append(out, Domain{Name: r.Name, Mode: r.Mode, Created: r.Created})
+		out = append(out, r.domain())
 	}
 	return out, nil
 }
@@ -116,23 +121,23 @@ func getDomain(name string) (Domain, bool, error) {
 	if res.RowsAffected == 0 {
 		return Domain{}, false, nil
 	}
-	return Domain{Name: row.Name, Mode: row.Mode, Created: row.Created}, true, nil
+	return row.domain(), true, nil
 }
 
-func addDomain(name, mode string) error {
+func addDomain(name, mode string, defaults bool) error {
 	gdb, err := store()
 	if err != nil {
 		return err
 	}
-	return gdb.Create(&domainRow{Name: name, Mode: mode, Created: time.Now().UTC().Format(time.RFC3339)}).Error
+	return gdb.Create(&domainRow{Name: name, Mode: mode, Defaults: defaults, Created: time.Now().UTC().Format(time.RFC3339)}).Error
 }
 
-func updateDomain(name, mode string) error {
+func updateDomain(name, mode string, defaults bool) error {
 	gdb, err := store()
 	if err != nil {
 		return err
 	}
-	return gdb.Model(&domainRow{}).Where("name = ?", name).Update("mode", mode).Error
+	return gdb.Model(&domainRow{}).Where("name = ?", name).Updates(map[string]any{"mode": mode, "defaults": defaults}).Error
 }
 
 func deleteDomain(name string) error {

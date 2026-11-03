@@ -19,6 +19,7 @@ type Domain = {
   name: string;
   mode: "manual" | "hetzner";
   created: string;
+  defaults?: boolean;
 };
 
 type Record = {
@@ -82,6 +83,7 @@ export default function Panel() {
         body: JSON.stringify({
           name: String(fd.get("name") ?? ""),
           mode: String(fd.get("mode") ?? "manual"),
+          defaults: fd.get("defaults") === "on",
         }),
       });
       e.currentTarget.reset();
@@ -184,6 +186,13 @@ export default function Panel() {
           <button type="submit" className={primary} disabled={busy}>
             {t("domains.add")}
           </button>
+          <label className="flex items-start gap-2 text-sm md:col-span-3">
+            <input type="checkbox" name="defaults" defaultChecked className="mt-1 h-4 w-4" />
+            <span>
+              {t("domains.defaults")}
+              <span className="block text-xs text-white/55">{t("domains.defaultsHint")}</span>
+            </span>
+          </label>
         </form>
       ) : null}
       {(data?.domains ?? []).length === 0 ? (
@@ -263,13 +272,13 @@ function DomainView({
   const [busy, setBusy] = useState(false);
   const records = query.data?.records ?? [];
 
-  async function setMode(next: string) {
+  async function save(change: { mode?: string; defaults?: boolean }) {
     setBusy(true);
     setError("");
     try {
       await api(`${base}/domains/${encodeURIComponent(name)}`, {
         method: "POST",
-        body: JSON.stringify({ mode: next }),
+        body: JSON.stringify({ mode: change.mode ?? currentMode, defaults: change.defaults }),
       });
       query.reload();
       onChanged();
@@ -391,7 +400,7 @@ function DomainView({
                 className={input + " max-w-xs"}
                 value={currentMode}
                 disabled={busy}
-                onChange={(e) => setMode(e.target.value)}
+                onChange={(e) => void save({ mode: e.target.value })}
               >
                 <option value="manual">{t("domains.modes.manual")}</option>
                 <option value="hetzner">{t("domains.modes.hetzner")}</option>
@@ -403,6 +412,19 @@ function DomainView({
               ) : null}
               <Help>{t("domains.recordsHint")}</Help>
             </div>
+            <label className="mt-3 flex items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="mt-1 h-4 w-4"
+                checked={query.data?.domain.defaults ?? false}
+                disabled={busy || !query.data}
+                onChange={(e) => void save({ defaults: e.target.checked })}
+              />
+              <span>
+                {t("domains.defaults")}
+                <span className="block text-xs text-white/55">{t("domains.defaultsHint")}</span>
+              </span>
+            </label>
             {!tokenSet && currentMode === "hetzner" ? (
               <p className="mt-3 text-sm text-amber-200">{t("domains.needToken")}</p>
             ) : null}

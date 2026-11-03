@@ -847,7 +847,9 @@
     "siteHost": "Address",
     "siteMode": "Type",
     "certExpired": "expired",
-    "certUntil": "valid until {{date}}"
+    "certUntil": "valid until {{date}}",
+    "defaults": "Create default records",
+    "defaultsHint": "Web (domain and www), mail, webmail, MX, SPF and DMARC point to this server. Records of the plugins (mail server, websites) take precedence."
   },
   "mail": {
     "title": "E-mail",

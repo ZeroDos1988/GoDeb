@@ -2,6 +2,7 @@ package mailgateway
 
 import (
 	"context"
+	"errors"
 	"net"
 	"net/http"
 	"os"
@@ -27,12 +28,6 @@ func Mount(mux *http.ServeMux) {
 
 var runCommand = func(ctx context.Context, name string, args ...string) core.CommandResult {
 	return core.RunAdmin(ctx, name, args...)
-}
-
-type setupRequest struct {
-	Domain    string `json:"domain"`
-	RelayHost string `json:"relayHost"`
-	Selector  string `json:"selector"`
 }
 
 type statusResponse struct {
@@ -90,51 +85,72 @@ func handleStatus(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func handleSetup(w http.ResponseWriter, r *http.Request) {
-	var req setupRequest
-	if !core.DecodeJSON(w, r, &req) {
-		return
-	}
+// SetupError carries the HTTP status for a failed Configure.
+type SetupError struct {
+	Status int
+	Msg    string
+}
+
+func (e *SetupError) Error() string { return e.Msg }
+
+func setupErr(status int, err error) error {
+	return &SetupError{Status: status, Msg: err.Error()}
+}
+
+// Request is one domain the gateway accepts mail for.
+type Request struct {
+	Domain    string `json:"domain"`
+	RelayHost string `json:"relayHost"`
+	Selector  string `json:"selector"`
+}
+
+// Result is what Configure set up.
+type Result struct {
+	Domain     string   `json:"domain"`
+	RelayHost  string   `json:"relayHost"`
+	Selector   string   `json:"selector"`
+	DKIMPublic string   `json:"dkimPublic"`
+	DKIMRecord string   `json:"dkimRecord"`
+	Command    []string `json:"command"`
+	Detail     string   `json:"detail"`
+}
+
+// Configure adds or updates one relay domain: DKIM key, OpenDKIM tables and
+// the Postfix relay settings. The plugin view and the setup wizard both
+// call it.
+func Configure(ctx context.Context, req Request) (Result, error) {
 	domain, err := normalizeDomain(req.Domain)
 	if err != nil {
-		core.WriteError(w, http.StatusBadRequest, err.Error())
-		return
+		return Result{}, setupErr(http.StatusBadRequest, err)
 	}
 	// The mail server plugin owns Postfix once it is set up; both writing
 	// main.cf would undo each other.
 	if _, err := os.Stat(etcPath("postfix", "godeb", "domains")); err == nil {
-		core.WriteError(w, http.StatusConflict, "Auf diesem Server läuft der Mailserver (Plugin E-Mail). Das Mail-Gateway ist für einen VPS gedacht, der nur weiterleitet.")
-		return
+		return Result{}, &SetupError{Status: http.StatusConflict, Msg: "Auf diesem Server läuft der Mailserver (Plugin E-Mail). Das Mail-Gateway ist für einen VPS gedacht, der nur weiterleitet."}
 	}
 	relay, err := normalizeRelay(req.RelayHost)
 	if err != nil {
-		core.WriteError(w, http.StatusBadRequest, err.Error())
-		return
+		return Result{}, setupErr(http.StatusBadRequest, err)
 	}
 	selector, err := normalizeSelector(req.Selector)
 	if err != nil {
-		core.WriteError(w, http.StatusBadRequest, err.Error())
-		return
+		return Result{}, setupErr(http.StatusBadRequest, err)
 	}
 	conn, err := openStore()
 	if err != nil {
-		core.WriteError(w, http.StatusInternalServerError, err.Error())
-		return
+		return Result{}, setupErr(http.StatusInternalServerError, err)
 	}
 	existing, _, err := findDomain(conn, domain)
 	if err != nil {
-		core.WriteError(w, http.StatusInternalServerError, err.Error())
-		return
+		return Result{}, setupErr(http.StatusInternalServerError, err)
 	}
 	privatePEM, publicB64, err := loadOrCreateKey(domain, selector, existing)
 	if err != nil {
-		core.WriteError(w, http.StatusInternalServerError, err.Error())
-		return
+		return Result{}, setupErr(http.StatusInternalServerError, err)
 	}
 	domains, err := listDomains(conn)
 	if err != nil {
-		core.WriteError(w, http.StatusInternalServerError, err.Error())
-		return
+		return Result{}, setupErr(http.StatusInternalServerError, err)
 	}
 	files := make([]dkimFiles, 0, len(domains)+1)
 	seen := false
@@ -151,8 +167,7 @@ func handleSetup(w http.ResponseWriter, r *http.Request) {
 			err = nil
 		}
 		if err != nil {
-			core.WriteError(w, http.StatusBadGateway, "DKIM-Schlüssel für "+item.Domain+" fehlt")
-			return
+			return Result{}, &SetupError{Status: http.StatusBadGateway, Msg: "DKIM-Schlüssel für " + item.Domain + " fehlt"}
 		}
 		files = append(files, dkimFiles{
 			domain: item.Domain, selector: item.Selector, privatePEM: string(pemText), publicB64: item.DKIMPublic,
@@ -164,38 +179,59 @@ func handleSetup(w http.ResponseWriter, r *http.Request) {
 		names = append(names, domain)
 	}
 	if err := writeOpenDKIM(files); err != nil {
-		core.WriteError(w, http.StatusBadGateway, err.Error())
-		return
+		return Result{}, setupErr(http.StatusBadGateway, err)
 	}
-	applied := runCommand(r.Context(), "postconf", append([]string{"-e"}, postfixSettings(relay, names)...)...)
+	applied := runCommand(ctx, "postconf", append([]string{"-e"}, postfixSettings(relay, names)...)...)
 	if applied.Err != nil {
-		core.WriteError(w, http.StatusBadGateway, applied.Detail())
-		return
+		return Result{}, &SetupError{Status: http.StatusBadGateway, Msg: applied.Detail()}
 	}
 	created := existing.CreatedAt
 	if created == "" {
 		created = time.Now().UTC().Format(time.RFC3339)
 	}
 	if err := saveDomain(conn, storedDomain{Domain: domain, Selector: selector, DKIMPublic: publicB64, CreatedAt: created}); err != nil {
-		core.WriteError(w, http.StatusInternalServerError, err.Error())
-		return
+		return Result{}, setupErr(http.StatusInternalServerError, err)
 	}
 	if err := saveRelay(conn, relay); err != nil {
-		core.WriteError(w, http.StatusInternalServerError, err.Error())
+		return Result{}, setupErr(http.StatusInternalServerError, err)
+	}
+	reload := runCommand(ctx, "systemctl", "reload", "postfix")
+	opendkim := runCommand(ctx, "systemctl", "reload", "opendkim")
+	return Result{
+		Domain:     domain,
+		RelayHost:  relay,
+		Selector:   selector,
+		DKIMPublic: publicB64,
+		DKIMRecord: dkimTXT(selector, domain, publicB64),
+		Command:    applied.Command,
+		Detail:     strings.TrimSpace(reload.Detail() + " " + opendkim.Detail()),
+	}, nil
+}
+
+func handleSetup(w http.ResponseWriter, r *http.Request) {
+	var req Request
+	if !core.DecodeJSON(w, r, &req) {
 		return
 	}
-	reload := runCommand(r.Context(), "systemctl", "reload", "postfix")
-	opendkim := runCommand(r.Context(), "systemctl", "reload", "opendkim")
-	detail := strings.TrimSpace(reload.Detail() + " " + opendkim.Detail())
+	res, err := Configure(r.Context(), req)
+	if err != nil {
+		status := http.StatusInternalServerError
+		var se *SetupError
+		if errors.As(err, &se) {
+			status = se.Status
+		}
+		core.WriteError(w, status, err.Error())
+		return
+	}
 	core.WriteJSON(w, http.StatusOK, map[string]any{
 		"ok":         true,
-		"domain":     domain,
-		"relayHost":  relay,
-		"selector":   selector,
-		"dkimPublic": publicB64,
-		"dkimRecord": dkimTXT(selector, domain, publicB64),
-		"command":    applied.Command,
-		"detail":     detail,
+		"domain":     res.Domain,
+		"relayHost":  res.RelayHost,
+		"selector":   res.Selector,
+		"dkimPublic": res.DKIMPublic,
+		"dkimRecord": res.DKIMRecord,
+		"command":    res.Command,
+		"detail":     res.Detail,
 	})
 }
 

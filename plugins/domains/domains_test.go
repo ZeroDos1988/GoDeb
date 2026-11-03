@@ -181,6 +181,9 @@ func TestApplyZoneUnknownZone(t *testing.T) {
 }
 
 func TestCollectNeedsFiltersZone(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("GODEB_AGENT_DB", filepath.Join(dir, "agent.db"))
+	t.Setenv("GODEB_MASTER_KEY", filepath.Join(dir, "master.key"))
 	resetNeedsForTest()
 	t.Cleanup(resetNeedsForTest)
 	RegisterNeeds(func() ([]Need, error) {

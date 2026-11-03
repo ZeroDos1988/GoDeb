@@ -847,7 +847,9 @@
     "siteHost": "Adresse",
     "siteMode": "Art",
     "certExpired": "abgelaufen",
-    "certUntil": "gültig bis {{date}}"
+    "certUntil": "gültig bis {{date}}",
+    "defaults": "Standardeinträge anlegen",
+    "defaultsHint": "Web (Domain und www), mail, webmail, MX, SPF und DMARC zeigen auf diesen Server. Einträge der Plugins (Mailserver, Webseiten) gehen vor."
   },
   "mail": {
     "title": "E-Mail",

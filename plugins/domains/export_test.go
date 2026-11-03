@@ -17,10 +17,10 @@ func setupHetzner(t *testing.T) {
 	if err := upsertSettings(&token, nil); err != nil {
 		t.Fatal(err)
 	}
-	if err := addDomain("example.com", ModeHetzner); err != nil {
+	if err := addDomain("example.com", ModeHetzner, false); err != nil {
 		t.Fatal(err)
 	}
-	if err := addDomain("manual.org", ModeManual); err != nil {
+	if err := addDomain("manual.org", ModeManual, false); err != nil {
 		t.Fatal(err)
 	}
 }

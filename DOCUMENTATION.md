@@ -426,6 +426,8 @@ Domains werden einmal in GoDeb eingetragen. Andere Plugins (zuerst Mail) melden 
 - **Manuell:** GoDeb zeigt die Einträge zum Kopieren und prüft sie live (wie der DNS-Reiter im Mail-Plugin).
 - **Hetzner Cloud-API:** Ein API-Token (im Agenten versiegelt, Projekt mit den Zonen) legt fehlende RRSets an und ändert nur Einträge mit Label `godeb=1`. Fremde Einträge bleiben unberührt und erscheinen als Konflikt. Reverse-DNS (PTR) setzt GoDeb über `change_dns_ptr` am Cloud-Server mit derselben öffentlichen IP.
 
+**Standardeinträge** (Schalter pro Domain, im Assistenten an): Domain und `www`, `mail` und `webmail` als A-Eintrag auf die öffentliche IP dieses Servers, dazu `MX 10 mail.<domain>.`, SPF `v=spf1 mx -all` und DMARC. Meldet ein Plugin einen Eintrag mit demselben Namen und Typ (MX des Mailservers, A-Eintrag einer Webseite, SPF des Mail-Gateways), gilt der des Plugins. DKIM kommt immer vom Mail-Plugin bzw. Mail-Gateway, weil dort der Schlüssel liegt. Das Mail-Gateway meldet pro Domain MX, `mail.<domain>`, SPF mit der IP des VPS, DKIM und DMARC.
+
 Kein eigener Port 53 auf dem VPS. Die alte DNS-API unter `dns.hetzner.com` wird nicht genutzt.
 
 Die Domain-Seite ist die Zentrale wie bei HestiaCP: Die Liste zeigt je Domain DNS-Betrieb, Postfächer, Webseiten und Zertifikat. Eine Domain hat die Reiter Übersicht, DNS (Einträge als Tabelle mit Status), E-Mail (die Postfach-Verwaltung des Mail-Plugins, eingebettet) und Webseiten. Reiter erscheinen nur, wenn das Plugin dahinter aktiv ist (`plugins/domains/ui/related.ts`).
@@ -548,8 +550,8 @@ Alle außer `status` antworten nach dem Abschluss mit `410`.
 | POST | `/api/plugins/apphttps/disable` (HTTPS im Tunnel aus, Port zu) |
 | GET | `/api/plugins/domains/status` (Domains, Token hinterlegt?, öffentliche IP) |
 | POST | `/api/plugins/domains/token` (`token` oder `clear`, optional `serverId`; frischer 2FA-Code) |
-| POST | `/api/plugins/domains/domains` (`name`, `mode`: `manual` oder `hetzner`) |
-| GET, POST | `/api/plugins/domains/domains/{domain}` (Ansicht; ändern: `mode`) |
+| POST | `/api/plugins/domains/domains` (`name`, `mode`: `manual` oder `hetzner`, `defaults`: Standardeinträge) |
+| GET, POST | `/api/plugins/domains/domains/{domain}` (Ansicht; ändern: `mode`, `defaults`) |
 | POST | `/api/plugins/domains/domains/{domain}/delete` |
 | GET | `/api/plugins/domains/domains/{domain}/records` (Soll + Live-Prüfung; bei Modus `hetzner` zusätzlich `hetznerError` und `zoneMissing`, wenn die Zone im Projekt fehlt) |
 | POST | `/api/plugins/domains/domains/{domain}/apply` (bei Modus `hetzner`; frischer 2FA-Code) |

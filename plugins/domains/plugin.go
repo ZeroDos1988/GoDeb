@@ -104,8 +104,9 @@ func handleToken(w http.ResponseWriter, r *http.Request) {
 }
 
 type domainRequest struct {
-	Name string `json:"name"`
-	Mode string `json:"mode"`
+	Name     string `json:"name"`
+	Mode     string `json:"mode"`
+	Defaults *bool  `json:"defaults"` // nil keeps the stored value (edit) or off (add)
 }
 
 func handleAddDomain(w http.ResponseWriter, r *http.Request) {
@@ -130,11 +131,12 @@ func handleAddDomain(w http.ResponseWriter, r *http.Request) {
 		core.WriteError(w, http.StatusConflict, "Domain ist schon eingetragen")
 		return
 	}
-	if err := addDomain(name, mode); err != nil {
+	defaults := req.Defaults != nil && *req.Defaults
+	if err := addDomain(name, mode, defaults); err != nil {
 		core.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	core.WriteJSON(w, http.StatusOK, map[string]any{"name": name, "mode": mode})
+	core.WriteJSON(w, http.StatusOK, map[string]any{"name": name, "mode": mode, "defaults": defaults})
 }
 
 func handleEditDomain(w http.ResponseWriter, r *http.Request) {
@@ -152,18 +154,23 @@ func handleEditDomain(w http.ResponseWriter, r *http.Request) {
 		core.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	if _, ok, err := getDomain(name); err != nil {
+	cur, ok, err := getDomain(name)
+	if err != nil {
 		core.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	} else if !ok {
 		core.WriteError(w, http.StatusNotFound, "Domain nicht gefunden")
 		return
 	}
-	if err := updateDomain(name, mode); err != nil {
+	defaults := cur.Defaults
+	if req.Defaults != nil {
+		defaults = *req.Defaults
+	}
+	if err := updateDomain(name, mode, defaults); err != nil {
 		core.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	core.WriteJSON(w, http.StatusOK, map[string]any{"name": name, "mode": mode})
+	core.WriteJSON(w, http.StatusOK, map[string]any{"name": name, "mode": mode, "defaults": defaults})
 }
 
 func handleDeleteDomain(w http.ResponseWriter, r *http.Request) {
@@ -236,40 +243,13 @@ func handleApply(w http.ResponseWriter, r *http.Request) {
 		core.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	d, ok, err := getDomain(name)
+	recs, err := Apply(r.Context(), name)
 	if err != nil {
-		core.WriteError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	if !ok {
-		core.WriteError(w, http.StatusNotFound, "Domain nicht gefunden")
-		return
-	}
-	if d.Mode != ModeHetzner {
-		core.WriteError(w, http.StatusBadRequest, "Domain ist nicht auf Hetzner gestellt")
-		return
-	}
-	s, token, err := loadSettings()
-	if err != nil {
-		core.WriteError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	if token == "" {
-		core.WriteError(w, http.StatusBadRequest, "Kein Hetzner-API-Token hinterlegt")
-		return
-	}
-	needs, err := collectNeeds(name)
-	if err != nil {
-		core.WriteError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	if len(needs) == 0 {
-		core.WriteError(w, http.StatusBadRequest, "Keine Einträge von Plugins für diese Domain")
-		return
-	}
-	recs, err := applyZone(r.Context(), token, name, needs, s.ServerID)
-	if err != nil {
-		core.WriteError(w, http.StatusBadRequest, err.Error())
+		status := http.StatusBadRequest
+		if errors.Is(err, errNotFound) {
+			status = http.StatusNotFound
+		}
+		core.WriteError(w, status, err.Error())
 		return
 	}
 	core.WriteJSON(w, http.StatusOK, map[string]any{"records": recs})

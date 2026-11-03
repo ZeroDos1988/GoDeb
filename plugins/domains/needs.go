@@ -4,6 +4,8 @@ import (
 	"context"
 	"strings"
 	"sync"
+
+	"godeb/backend/core"
 )
 
 // NeedsFunc returns the DNS records a plugin wants published.
@@ -58,7 +60,62 @@ func allNeeds() ([]Need, error) {
 		}
 		out = append(out, list...)
 	}
-	return out, nil
+	list, err := listDomains()
+	if err != nil {
+		return nil, err
+	}
+	return withDefaults(out, list, publicIP()), nil
+}
+
+// publicIP is the source address of the default route. Tests replace it.
+var publicIP = func() string {
+	return strings.TrimSpace(core.DefaultRoute(context.Background()).Src)
+}
+
+// defaultNeeds are the records of a domain whose web and mail run behind
+// this host: the apex and www for websites, mail and webmail, MX, SPF and
+// DMARC. DKIM needs a key and comes from the mail plugins.
+func defaultNeeds(zone, ip string) []Need {
+	n := func(name, typ, value, kind string) Need {
+		return Need{Zone: zone, Name: name, Type: typ, Value: value, Kind: kind, Source: "domains"}
+	}
+	var out []Need
+	if ip != "" {
+		out = append(out,
+			n(zone, "A", ip, "a"),
+			n("www."+zone, "A", ip, "a"),
+			n("mail."+zone, "A", ip, "a"),
+			n("webmail."+zone, "A", ip, "a"),
+		)
+	}
+	return append(out,
+		n(zone, "MX", "10 mail."+zone+".", "mx"),
+		n(zone, "TXT", "v=spf1 mx -all", "spf"),
+		n("_dmarc."+zone, "TXT", "v=DMARC1; p=quarantine; adkim=s; aspf=s", "dmarc"),
+	)
+}
+
+// withDefaults adds the default records of every domain that has them
+// switched on. A record a plugin already asks for (same zone, name and
+// type) wins, so the mail server's MX or a website's A record are kept.
+func withDefaults(needs []Need, list []Domain, ip string) []Need {
+	key := func(n Need) string { return n.Zone + "|" + strings.ToLower(n.Name) + "|" + n.Type }
+	seen := map[string]bool{}
+	for _, n := range needs {
+		seen[key(n)] = true
+	}
+	for _, d := range list {
+		if !d.Defaults {
+			continue
+		}
+		for _, n := range defaultNeeds(d.Name, ip) {
+			if !seen[key(n)] {
+				seen[key(n)] = true
+				needs = append(needs, n)
+			}
+		}
+	}
+	return needs
 }
 
 // CheckAll looks up every record the plugins need in public DNS, over all

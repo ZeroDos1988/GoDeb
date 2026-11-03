@@ -20,6 +20,9 @@ type Domain struct {
 	Name    string `json:"name"`
 	Mode    string `json:"mode"`
 	Created string `json:"created"`
+	// Defaults adds the usual records of a domain hosted here (web, www,
+	// mail, webmail, MX, SPF, DMARC) on top of what the plugins need.
+	Defaults bool `json:"defaults"`
 }
 
 // Settings holds the Hetzner Cloud API token (sealed at rest) and optional
