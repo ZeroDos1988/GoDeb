@@ -192,11 +192,12 @@ func install(ctx context.Context, s Settings) error {
 	return nil
 }
 
-// openPorts allows 25, 465, 587 and 993 in ufw when ufw is active.
+// openPorts allows 25, 465, 587 and 993 in ufw. Rules added while ufw is
+// still off (setup wizard: the firewall is switched on in its last step)
+// take effect when it is enabled.
 func openPorts(ctx context.Context) error {
-	st := core.RunAdmin(ctx, "ufw", "status")
-	if st.Err != nil || !strings.Contains(st.Stdout, "Status: active") {
-		return errors.New("ufw ist nicht aktiv; die Ports 25, 465, 587 und 993/tcp bitte selbst freigeben")
+	if st := core.RunAdmin(ctx, "ufw", "status"); st.Err != nil {
+		return errors.New("ufw fehlt; die Ports 25, 465, 587 und 993/tcp bitte selbst freigeben")
 	}
 	for _, p := range mailPorts {
 		if err := run(ctx, time.Minute, "ufw", "allow", p+"/tcp", "comment", "GoDeb-Mail"); err != nil {

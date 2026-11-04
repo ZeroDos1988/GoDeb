@@ -298,6 +298,8 @@ function Domains({
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
+  // The postmaster password of a new domain is shown once.
+  const [created, setCreated] = useState<{ name: string; postmaster: string; password: string; aliases: string[] } | null>(null);
   const [error, setError] = useState("");
 
   async function add(e: FormEvent) {
@@ -305,14 +307,18 @@ function Domains({
     setBusy(true);
     setError("");
     try {
-      await api(`${base}/domains`, {
+      const res = await api<{ domain: { name: string }; postmaster?: string; password?: string; aliases?: string[] }>(`${base}/domains`, {
         method: "POST",
         body: JSON.stringify({ name }),
       });
       setAdding(false);
       onChanged();
-      onOpen(name.trim().toLowerCase());
       setName("");
+      if (res.postmaster && res.password) {
+        setCreated({ name: res.domain.name, postmaster: res.postmaster, password: res.password, aliases: res.aliases ?? [] });
+      } else {
+        onOpen(res.domain.name);
+      }
     } catch (err) {
       setError(errorText(err, t("mail.failed")));
     } finally {
@@ -369,6 +375,24 @@ function Domains({
             <p className="basis-full text-sm text-rose-300">{error}</p>
           ) : null}
         </form>
+      ) : null}
+      {created ? (
+        <div className={`${card} mb-4 text-sm`}>
+          <p>{t("mail.postmasterCreated", { address: created.postmaster, aliases: created.aliases.join(", ") })}</p>
+          <p className="mt-2 font-mono text-base break-all select-all">{created.password}</p>
+          <p className="mt-1 text-xs text-white/55">{t("mail.postmasterOnce")}</p>
+          <button
+            type="button"
+            className={`${button} mt-3`}
+            onClick={() => {
+              const next = created.name;
+              setCreated(null);
+              onOpen(next);
+            }}
+          >
+            {t("mail.postmasterContinue")}
+          </button>
+        </div>
       ) : null}
       {status.domains.length === 0 ? (
         <p className="text-sm text-muted">{t("mail.noDomains")}</p>

@@ -169,7 +169,7 @@ func TestDNSCheck(t *testing.T) {
 	dnsResolver = fakeResolver{}
 	t.Cleanup(func() { dnsResolver = net.DefaultResolver })
 	s := Settings{Hostname: "mail.example.com"}
-	recs := checkRecords(context.Background(), expectedRecords(s, Domain{Name: "example.com", Selector: "godeb", DKIMPublic: "MYKEY"}, "203.0.113.7"))
+	recs := checkRecords(context.Background(), expectedRecords(s, Domain{Name: "example.com", Selector: "godeb", DKIMPublic: "MYKEY"}, "203.0.113.7", ""))
 	got := map[string]string{}
 	for _, r := range recs {
 		got[r.Kind] = r.Status
@@ -290,7 +290,8 @@ func TestHandlers(t *testing.T) {
 		} `json:"accounts"`
 		Records []Record `json:"records"`
 	}
-	if err := json.Unmarshal(rec.Body.Bytes(), &view); err != nil || len(view.Accounts) != 1 || strings.Contains(rec.Body.String(), "argon2") {
+	// info plus the postmaster mailbox the new domain got automatically.
+	if err := json.Unmarshal(rec.Body.Bytes(), &view); err != nil || len(view.Accounts) != 2 || strings.Contains(rec.Body.String(), "argon2") {
 		t.Fatalf("domain view leaks or is wrong: %s", rec.Body)
 	}
 	if !contains(calls, "systemctl reload-or-restart postfix") || !containsPrefix(calls, "postconf -e myhostname=mail.example.com") {
@@ -323,4 +324,42 @@ func containsPrefix(list []string, p string) bool {
 		}
 	}
 	return false
+}
+
+func TestEnsurePostmasterAndReports(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("GODEB_MAIL_ROOT", dir)
+	t.Setenv("GODEB_AGENT_DB", filepath.Join(dir, "agent.db"))
+	t.Setenv("GODEB_AGENT_MASTER_KEY", filepath.Join(dir, "agent.key"))
+	accounts := []Account{{Domain: "example.com", Local: "info", Aliases: []string{"dmarc"}}}
+	addr, pw, aliases, err := ensurePostmaster("example.com", accounts)
+	if err != nil || addr != "postmaster@example.com" || len(pw) != 20 {
+		t.Fatalf("postmaster = %q %q %v", addr, pw, err)
+	}
+	// dmarc@ was taken by info, so only the free role addresses are added.
+	if strings.Join(aliases, ",") != "abuse@example.com,tls-reports@example.com" {
+		t.Fatalf("aliases = %v", aliases)
+	}
+	if dmarcReports("example.com", accounts) != "dmarc@example.com" || dmarcReports("other.org", accounts) != "" {
+		t.Fatal("dmarcReports")
+	}
+	recs := expectedRecords(Settings{Hostname: "mail.example.com"}, Domain{Name: "example.com"}, "", "dmarc@example.com")
+	found := false
+	for _, r := range recs {
+		if r.Kind == "dmarc" {
+			found = strings.HasSuffix(r.Value, "; rua=mailto:dmarc@example.com")
+		}
+	}
+	if !found {
+		t.Fatalf("DMARC without rua: %+v", recs)
+	}
+	// An existing postmaster keeps its password; missing aliases are added
+	// (info was never saved, so dmarc@ is free now), then nothing more.
+	for _, want := range []string{"dmarc@example.com", ""} {
+		_, stored, _ := loadAll()
+		addr, pw, aliases, err = ensurePostmaster("example.com", stored)
+		if err != nil || addr != "" || pw != "" || strings.Join(aliases, ",") != want {
+			t.Fatalf("rerun = %q %q %v %v, want aliases %q", addr, pw, aliases, err, want)
+		}
+	}
 }

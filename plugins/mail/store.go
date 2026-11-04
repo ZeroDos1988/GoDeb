@@ -56,17 +56,25 @@ func (accountRow) TableName() string { return "mailserver_accounts" }
 func init() { db.RegisterAgentSecret("mailserver_accounts", "address", "hash") }
 
 var (
-	migrateOnce sync.Once
-	migrateErr  error
+	migrateMu sync.Mutex
+	migrated  = map[string]bool{}
 )
 
+// store migrates once per database file; tests switch files via env.
 func store() (*gorm.DB, error) {
 	gdb, err := db.AgentGorm()
 	if err != nil {
 		return nil, err
 	}
-	migrateOnce.Do(func() { migrateErr = gdb.AutoMigrate(&settingsRow{}, &domainRow{}, &accountRow{}) })
-	return gdb, migrateErr
+	migrateMu.Lock()
+	defer migrateMu.Unlock()
+	if path := db.AgentPath(); !migrated[path] {
+		if err := gdb.AutoMigrate(&settingsRow{}, &domainRow{}, &accountRow{}); err != nil {
+			return nil, err
+		}
+		migrated[path] = true
+	}
+	return gdb, nil
 }
 
 // loadSettings returns the settings; ok is false before the installation.

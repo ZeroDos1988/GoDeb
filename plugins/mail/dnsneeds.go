@@ -20,7 +20,7 @@ func dnsNeeds() ([]domains.Need, error) {
 	if err != nil || !ok {
 		return nil, err
 	}
-	list, _, err := loadAll()
+	list, accounts, err := loadAll()
 	if err != nil {
 		return nil, err
 	}
@@ -29,7 +29,7 @@ func dnsNeeds() ([]domains.Need, error) {
 	seen := map[string]bool{}
 	var out []domains.Need
 	for _, d := range list {
-		for _, r := range expectedRecords(s, d, ip) {
+		for _, r := range expectedRecords(s, d, ip, dmarcReports(d.Name, accounts)) {
 			zone := d.Name
 			if r.Kind == "a" || r.Kind == "ptr" {
 				zone = hostZone

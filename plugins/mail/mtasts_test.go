@@ -26,7 +26,7 @@ func TestMTASTSPolicyAndRecords(t *testing.T) {
 	if tlsRPTRecord("example.com") != "v=TLSRPTv1; rua=mailto:tls-reports@example.com" {
 		t.Fatal(tlsRPTRecord("example.com"))
 	}
-	recs := expectedRecords(s, Domain{Name: "example.com", Selector: "godeb", DKIMPublic: "K"}, "203.0.113.7")
+	recs := expectedRecords(s, Domain{Name: "example.com", Selector: "godeb", DKIMPublic: "K"}, "203.0.113.7", "")
 	kinds := map[string]bool{}
 	for _, r := range recs {
 		kinds[r.Kind] = true

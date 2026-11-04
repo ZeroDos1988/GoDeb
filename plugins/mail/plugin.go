@@ -2,6 +2,7 @@ package mail
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -109,26 +110,14 @@ func handleInstall(w http.ResponseWriter, r *http.Request) {
 	if !core.DecodeJSON(w, r, &req) {
 		return
 	}
-	host, err := NormalizeHostname(req.Hostname)
-	if err != nil {
-		core.WriteError(w, http.StatusBadRequest, err.Error())
+	if err := StartInstall(req.Hostname, req.ClamAV); err != nil {
+		status := http.StatusConflict
+		if _, herr := NormalizeHostname(req.Hostname); herr != nil {
+			status = http.StatusBadRequest
+		}
+		core.WriteError(w, status, err.Error())
 		return
 	}
-	if n := gatewayDomains(); n > 0 {
-		core.WriteError(w, http.StatusConflict, "Das Mail-Gateway ist eingerichtet ("+strconv.Itoa(n)+" Relay-Domains). Beide konfigurieren Postfix; erst die Domains im Mail-Gateway entfernen.")
-		return
-	}
-	s, _, err := loadSettings()
-	if err != nil {
-		core.WriteError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	s.Hostname, s.ClamAV = host, req.ClamAV
-	if err := jobs.start("install", func(ctx context.Context) error { return install(ctx, s) }); err != nil {
-		core.WriteError(w, http.StatusConflict, err.Error())
-		return
-	}
-	slog.InfoContext(r.Context(), "Mailserver-Einrichtung gestartet", "hostname", host, "clamav", req.ClamAV)
 	core.WriteJSON(w, http.StatusAccepted, map[string]any{"ok": true})
 }
 
@@ -161,7 +150,7 @@ func handleCertificate(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if err := jobs.start("certificate", func(ctx context.Context) error { return certificate(ctx, email) }); err != nil {
+	if err := StartCertificate(email); err != nil {
 		core.WriteError(w, http.StatusConflict, err.Error())
 		return
 	}
@@ -195,36 +184,21 @@ func handleAddDomain(w http.ResponseWriter, r *http.Request) {
 	if !core.DecodeJSON(w, r, &req) || !requireInstalled(w) {
 		return
 	}
-	name, err := NormalizeDomain(req.Name)
-	if err != nil {
+	res, err := AddDomain(r.Context(), req.Name)
+	switch {
+	case errors.Is(err, ErrDomainExists):
+		core.WriteError(w, http.StatusConflict, res.Domain.Name+" ist bereits eingerichtet")
+		return
+	case err != nil:
 		core.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	domains, _, err := loadAll()
-	if err != nil {
-		core.WriteError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	if _, err := findDomain(domains, name); err == nil {
-		core.WriteError(w, http.StatusConflict, name+" ist bereits eingerichtet")
-		return
-	}
-	priv, pub, err := newDKIMKey()
-	if err != nil {
-		core.WriteError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	d := Domain{Name: name, Selector: "godeb", DKIMPublic: pub, Created: time.Now().UTC().Format(time.RFC3339)}
-	if err := writeDKIM(d.Name, d.Selector, priv); err != nil {
-		core.WriteError(w, http.StatusBadGateway, err.Error())
-		return
-	}
-	if err := saveDomain(d); err != nil {
-		core.WriteError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	slog.InfoContext(r.Context(), "Maildomain angelegt", "domain", name)
-	applyAndRespond(w, r, http.StatusCreated, map[string]any{"domain": d})
+	// The postmaster password is shown once and never stored in clear.
+	w.Header().Set("Cache-Control", "no-store")
+	core.WriteJSON(w, http.StatusCreated, map[string]any{
+		"ok": true, "domain": res.Domain, "notes": res.Notes,
+		"postmaster": res.Postmaster, "password": res.Password, "aliases": res.Aliases,
+	})
 }
 
 // pathDomain reads and validates {domain} and loads the data.
@@ -275,7 +249,7 @@ func handleDomain(w http.ResponseWriter, r *http.Request) {
 	core.WriteJSON(w, http.StatusOK, map[string]any{
 		"domain":     d,
 		"accounts":   list,
-		"records":    expectedRecords(s, d, core.DefaultRoute(r.Context()).Src),
+		"records":    expectedRecords(s, d, core.DefaultRoute(r.Context()).Src, dmarcReports(d.Name, accounts)),
 		"mtaSTS":     mtaSTSPolicy(s),
 		"mtaSTSHost": "mta-sts." + d.Name,
 		"client":     map[string]any{"host": s.Hostname, "imapPort": 993, "smtpPort": 465, "submissionPort": 587},
@@ -283,13 +257,13 @@ func handleDomain(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleDNS(w http.ResponseWriter, r *http.Request) {
-	d, _, _, ok := pathDomain(w, r)
+	d, _, accounts, ok := pathDomain(w, r)
 	if !ok {
 		return
 	}
 	s, _, _ := loadSettings()
 	core.WriteJSON(w, http.StatusOK, map[string]any{
-		"records":    checkRecords(r.Context(), expectedRecords(s, d, core.DefaultRoute(r.Context()).Src)),
+		"records":    checkRecords(r.Context(), expectedRecords(s, d, core.DefaultRoute(r.Context()).Src, dmarcReports(d.Name, accounts))),
 		"mtaSTS":     mtaSTSPolicy(s),
 		"mtaSTSHost": "mta-sts." + d.Name,
 	})

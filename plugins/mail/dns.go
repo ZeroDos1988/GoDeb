@@ -31,7 +31,12 @@ var dnsResolver resolver = net.DefaultResolver
 
 // expectedRecords lists what a domain needs. SPF allows only the MX to
 // send (-all), DMARC asks receivers to quarantine what fails.
-func expectedRecords(s Settings, d Domain, publicIP string) []Record {
+// reports is the address for DMARC aggregate reports, "" for none.
+func expectedRecords(s Settings, d Domain, publicIP, reports string) []Record {
+	dmarc := "v=DMARC1; p=quarantine; adkim=s; aspf=s"
+	if reports != "" {
+		dmarc += "; rua=mailto:" + reports
+	}
 	recs := []Record{
 		{Kind: "mx", Name: d.Name, Type: "MX", Value: "10 " + s.Hostname + "."},
 		{Kind: "spf", Name: d.Name, Type: "TXT", Value: "v=spf1 mx -all"},
@@ -40,7 +45,7 @@ func expectedRecords(s Settings, d Domain, publicIP string) []Record {
 		recs = append(recs, Record{Kind: "dkim", Name: d.Selector + "._domainkey." + d.Name, Type: "TXT", Value: dkimRecordValue(d.DKIMPublic)})
 	}
 	recs = append(recs,
-		Record{Kind: "dmarc", Name: "_dmarc." + d.Name, Type: "TXT", Value: "v=DMARC1; p=quarantine; adkim=s; aspf=s"},
+		Record{Kind: "dmarc", Name: "_dmarc." + d.Name, Type: "TXT", Value: dmarc},
 		Record{Kind: "mtasts", Name: "_mta-sts." + d.Name, Type: "TXT", Value: mtaSTSRecord(d.Name, s)},
 		Record{Kind: "tlsrpt", Name: "_smtp._tls." + d.Name, Type: "TXT", Value: tlsRPTRecord(d.Name)},
 	)
