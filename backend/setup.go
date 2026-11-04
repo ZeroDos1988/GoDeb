@@ -39,6 +39,7 @@ type setupOptions struct {
 	LAN        string
 	FullTunnel bool
 	MailRelay  bool
+	MailServer string
 	Domains    string
 	NoDefaults bool
 	Yes        bool
@@ -65,6 +66,7 @@ func runSetup(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	fs.BoolVar(&opt.NoUFW, "no-firewall", false, "ufw nicht aktivieren, nur Regeln anlegen")
 	fs.BoolVar(&opt.FullTunnel, "full-tunnel", false, "Hub: Internetverkehr der Clients über diesen Server (NAT, Bandbreite und Traffic beachten)")
 	fs.BoolVar(&opt.MailRelay, "mail-relay", false, "Hub: Mail-Gateway installieren (Postfix-Relay an 10.8.0.2 im Tunnel)")
+	fs.StringVar(&opt.MailServer, "mail-server", "", "Mailserver (Postfix, Dovecot, Rspamd) auf diesem Server mit diesem Hostnamen, z. B. mail.example.com; schließt --mail-relay aus")
 	fs.StringVar(&opt.Domains, "domains", "", "Domains, durch Komma getrennt; mit GODEB_HETZNER_TOKEN legt GoDeb die DNS-Einträge bei Hetzner an")
 	fs.BoolVar(&opt.NoDefaults, "no-dns-defaults", false, "keine Standardeinträge (Web, www, mail, webmail, MX, SPF, DMARC) für --domains")
 	fs.BoolVar(&opt.Yes, "yes", false, "keine Rückfragen, Standardwerte nehmen")
@@ -153,7 +155,7 @@ func (s *setup) run(ctx context.Context) error {
 		return err
 	}
 
-	s.step(4, "Mail-Gateway und Domains (optional)")
+	s.step(4, "E-Mail und Domains (optional)")
 	if err := s.services(ctx); err != nil {
 		return err
 	}
@@ -167,8 +169,8 @@ func (s *setup) run(ctx context.Context) error {
 	return s.client(ctx, prefix)
 }
 
-// services installs the mail gateway and enters domains through
-// firstrun.InstallMailRelay and firstrun.SetupDomains, the same functions
+// services installs the mail gateway or the mail server and enters
+// domains through firstrun.InstallMailRelay, StartMailServer and SetupDomains, the same functions
 // as the wizard step "Mail und Domains". The Hetzner token comes from the
 // environment, never from the command line (it would show up in ps).
 func (s *setup) services(ctx context.Context) error {
@@ -177,12 +179,19 @@ func (s *setup) services(ctx context.Context) error {
 		return err
 	}
 	pluginmgr.SetDir(filepath.Join(root, "plugins"))
-	relay := s.opt.MailRelay
-	if !relay && !s.opt.Yes {
-		fmt.Fprintln(s.out, "  Das Mail-Gateway nimmt Post für deine Domains an und gibt sie durch den Tunnel")
-		fmt.Fprintln(s.out, "  an den Mailserver zu Hause (10.8.0.2) weiter. Installiert Postfix und OpenDKIM.")
-		answer := strings.ToLower(s.ask("Mail-Gateway einrichten? (j/N)", "n"))
-		relay = strings.HasPrefix(answer, "j") || strings.HasPrefix(answer, "y")
+	relay, server := s.opt.MailRelay, strings.TrimSpace(s.opt.MailServer)
+	if relay && server != "" {
+		return errors.New("--mail-relay und --mail-server schließen sich aus")
+	}
+	if !relay && server == "" && !s.opt.Yes {
+		fmt.Fprintln(s.out, "  E-Mail: relay = Post annehmen und durch den Tunnel an den Mailserver zu Hause (10.8.0.2)")
+		fmt.Fprintln(s.out, "  weitergeben; server = vollständiger Mailserver mit Postfächern auf diesem Server.")
+		switch strings.ToLower(s.ask("E-Mail: relay, server oder keine", "keine")) {
+		case "relay":
+			relay = true
+		case "server":
+			server = s.ask("Hostname des Mailservers (A-Eintrag auf diesen Server), z. B. mail.example.com", "")
+		}
 	}
 	if relay {
 		fmt.Fprintln(s.out, "  Installiere Postfix und OpenDKIM …")
@@ -190,6 +199,16 @@ func (s *setup) services(ctx context.Context) error {
 			return err
 		}
 		fmt.Fprintln(s.out, "  Mail-Gateway installiert.")
+	}
+	if server != "" {
+		fmt.Fprintln(s.out, "  Installiere den Mailserver (Postfix, Dovecot, Rspamd, Redis), das dauert ein paar Minuten …")
+		if err := firstrun.StartMailServer(ctx, server); err != nil {
+			return err
+		}
+		if err := firstrun.WaitMailJob(ctx); err != nil {
+			return err
+		}
+		fmt.Fprintln(s.out, "  Mailserver eingerichtet.")
 	}
 	list := s.opt.Domains
 	if list == "" && !s.opt.Yes {
@@ -201,7 +220,7 @@ func (s *setup) services(ctx context.Context) error {
 	}
 	token := strings.TrimSpace(os.Getenv("GODEB_HETZNER_TOKEN"))
 	results, err := firstrun.SetupDomains(ctx, firstrun.DomainsSpec{
-		Token: token, Domains: strings.Split(list, ","), Defaults: !s.opt.NoDefaults, MailRelay: relay,
+		Token: token, Domains: strings.Split(list, ","), Defaults: !s.opt.NoDefaults, MailRelay: relay, MailServer: server != "",
 	})
 	if err != nil {
 		return err
@@ -214,6 +233,10 @@ func (s *setup) services(ctx context.Context) error {
 		fmt.Fprintf(s.out, "  %s (%s)\n", d.Name, mode)
 		for _, r := range d.Records {
 			fmt.Fprintf(s.out, "    %-8s %s\n", r.Status, r.ZoneLine)
+		}
+		if d.Mailbox != "" {
+			fmt.Fprintf(s.out, "    Postfach %s (Aliasse %s), Passwort: %s\n", d.Mailbox, strings.Join(d.Aliases, ", "), d.Password)
+			fmt.Fprintln(s.out, "    Das Passwort wird nur jetzt angezeigt; ändern unter E-Mail.")
 		}
 		if d.Error != "" {
 			fmt.Fprintf(s.out, "    Fehler: %s\n", d.Error)

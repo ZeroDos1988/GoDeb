@@ -178,9 +178,12 @@ Bis die Einrichtung abgeschlossen ist, lauscht GoDeb zusätzlich auf `0.0.0.0:84
    - **WireGuard-Server** (VPS): `wg0.conf` mit `10.8.0.1/24` und `51820/udp`, dazu ein erster Client als QR-Code. Mit „+ Weiteres Gerät oder GoDeb-Server“ kommen beliebig viele weitere dazu: Handys und Laptops mit QR-Code und Datei, GoDeb-Server zu Hause (Standorte) mit Beitrittscode (`POST /api/setup/client`, `firstrun.AddClient`).
    - **Mit Hub verbinden** (Heim-VM): Beitrittscode oder Client-Datei des VPS einfügen (siehe „Zielbild“).
    - **Ohne WireGuard.**
-4. **Mail und Domains** (optional, „Überspringen“ geht immer):
-   - **Mail-Relay** (nur auf dem WireGuard-Server): „Mail-Gateway installieren“ installiert Postfix und OpenDKIM über den Plugin-Manager und schaltet das Plugin ein (`POST /api/setup/services`). Ist der Mailserver (Plugin E-Mail) auf diesem Server eingerichtet, gibt es den Punkt nicht.
-   - **Domains und DNS:** „Hetzner DNS verbinden“ (API-Token, versiegelt im Agenten) oder „Von Hand eintragen“, dann alle Domains in ein Feld. Jede Domain landet im Plugin Domains, auf Wunsch mit Standardeinträgen (Web, www, mail, webmail, MX, SPF, DMARC). Mit Mail-Gateway nimmt der VPS für jede Domain Post an (DKIM-Schlüssel, Relay an `10.8.0.2`, ufw `25/tcp`). Mit Hetzner legt GoDeb die Einträge sofort an, sonst zeigt der Schritt sie zum Kopieren (`POST /api/setup/domains`). Fehler einer Domain (z. B. Zone nicht im Hetzner-Projekt) halten die anderen nicht auf.
+4. **Domains und E-Mail** (optional, „Überspringen“ geht immer). Oben alle Domains in ein Feld, „Hetzner DNS verbinden“ (API-Token, versiegelt im Agenten) oder „Von Hand eintragen“, Standardeinträge (Web, www, mail, webmail, MX, SPF, DMARC). Darunter, wo die Post ankommt:
+   - **Kein E-Mail.**
+   - **Mail-Relay zum Server zu Hause** (nur auf dem WireGuard-Server): installiert Postfix und OpenDKIM über den Plugin-Manager, richtet für jede Domain DKIM, die Weiterleitung an `10.8.0.2` und ufw `25/tcp` ein. Die Postfächer liegen auf dem Mailserver zu Hause (dort legt das Plugin E-Mail sie an, siehe unten).
+   - **Mailserver auf diesem Server:** startet die Installation des Plugins E-Mail im Hintergrund (Hostname vorgeschlagen als `mail.<erste Domain>`), wartet darauf und legt dann jede Domain als Maildomain an, mit DKIM und dem Postfach `postmaster@` samt Aliassen (siehe „Mailserver“). Die Passwörter stehen einmal im Ergebnis. Danach „Zertifikat holen“ (Let's Encrypt für den Hostnamen, sobald der A-Eintrag sichtbar ist).
+
+   Ein Knopf „Einrichten“ erledigt alles nacheinander (`POST /api/setup/services`, dann `POST /api/setup/domains`). Mit Hetzner setzt GoDeb die Einträge sofort (beim Mailserver auch den Reverse-DNS), sonst zeigt der Schritt sie zum Kopieren. Fehler einer Domain (z. B. Zone nicht im Hetzner-Projekt) halten die anderen nicht auf.
 5. **Erreichbarkeit und Firewall:**
    - **Nur über WireGuard:** Loopback und `wg0:8080`. Empfohlen für einen VPS.
    - **Heimnetz und Tunnel:** zusätzlich HTTPS auf der LAN-Adresse (`<lan-ip>:8443`), in ufw nur für das LAN-Subnetz freigegeben.
@@ -202,7 +205,7 @@ sudo godeb setup --join - --access lan          # Beitrittscode einfügen
 sudo godeb setup --role none --access lan
 ```
 
-Der Hub bekommt einen ersten Client als QR-Code im Terminal (`firstrun.AddClient`, standardmäßig nur das Tunnelnetz als `AllowedIPs`). Optional **Volltunnel** (`--full-tunnel` bzw. Checkbox im Assistenten): IP-Forwarding und MASQUERADE in der nftables-Tabelle `godeb_volltunnel` plus `ufw route allow` von `wg0` zur öffentlichen Schnittstelle; Geräte-Clients erhalten dann `0.0.0.0/0`. Standorte bleiben ohne Volltunnel. Später unter WireGuard umschaltbar. Danach fragt `godeb setup` nach weiteren Geräten oder GoDeb-Servern, bis der Name leer bleibt; Standorte bekommen einen Beitrittscode statt des QR-Codes. 2FA richtet der Administrator dann beim ersten Login in der Web-UI ein. Auf dem Hub folgt der Schritt „Mail-Gateway und Domains“ (`--mail-relay`, `--domains a.de,b.de`, `--no-dns-defaults`); den Hetzner-Token liest `godeb setup` aus `GODEB_HETZNER_TOKEN`, nie aus einem Flag, weil Argumente in `ps` sichtbar sind (`sudo GODEB_HETZNER_TOKEN=… godeb setup …`). Flags: `--role`, `--access`, `--lan-address`, `--address`, `--port`, `--ui-port`, `--client`, `--admin`, `--ssh-port`, `--no-firewall`, `--full-tunnel`, `--join DATEI|-` (Client-Datei oder Beitrittscode, `-` liest von stdin), `--yes` (unbeaufsichtigt, braucht `--role` und einen vorhandenen Admin).
+Der Hub bekommt einen ersten Client als QR-Code im Terminal (`firstrun.AddClient`, standardmäßig nur das Tunnelnetz als `AllowedIPs`). Optional **Volltunnel** (`--full-tunnel` bzw. Checkbox im Assistenten): IP-Forwarding und MASQUERADE in der nftables-Tabelle `godeb_volltunnel` plus `ufw route allow` von `wg0` zur öffentlichen Schnittstelle; Geräte-Clients erhalten dann `0.0.0.0/0`. Standorte bleiben ohne Volltunnel. Später unter WireGuard umschaltbar. Danach fragt `godeb setup` nach weiteren Geräten oder GoDeb-Servern, bis der Name leer bleibt; Standorte bekommen einen Beitrittscode statt des QR-Codes. 2FA richtet der Administrator dann beim ersten Login in der Web-UI ein. Auf dem Hub folgt der Schritt „E-Mail und Domains“ (`--mail-relay` oder `--mail-server mail.example.com`, `--domains a.de,b.de`, `--no-dns-defaults`; ohne `--yes` fragt er nach); den Hetzner-Token liest `godeb setup` aus `GODEB_HETZNER_TOKEN`, nie aus einem Flag, weil Argumente in `ps` sichtbar sind (`sudo GODEB_HETZNER_TOKEN=… godeb setup …`). Flags: `--role`, `--access`, `--lan-address`, `--address`, `--port`, `--ui-port`, `--client`, `--admin`, `--ssh-port`, `--no-firewall`, `--full-tunnel`, `--join DATEI|-` (Client-Datei oder Beitrittscode, `-` liest von stdin), `--yes` (unbeaufsichtigt, braucht `--role` und einen vorhandenen Admin).
 
 ## Installation auf einem Hetzner-VPS
 
@@ -439,7 +442,9 @@ Die Domain-Seite ist die Zentrale wie bei HestiaCP: Die Liste zeigt je Domain DN
 
 Ein vollständiger Mailserver nach dem Vorbild von HestiaCP: Maildomains, Postfächer mit Quota, Aliase, Weiterleitungen (mit oder ohne eigene Kopie), reine Weiterleitungsadressen, Catch-all, Sperren von Postfach oder Domain, DKIM, SPF/DMARC-Vorgaben und Spamfilter. Bedienung: Domainliste, je Domain die Reiter Postfächer, DNS, Einstellungen und Mailprogramm. Gedacht ist er zuerst für den VPS; später soll der VPS nur weiterleiten und die Postfächer auf der Heim-VM liegen (siehe `ROADMAP.md`). Mailserver und Mail-Gateway schließen sich aus, weil beide Postfix konfigurieren.
 
-**Bausteine (Debian 13):** Postfix 3.10 (SMTP, Submission), Dovecot 2.4 (IMAP, LMTP, Sieve, Quota), Rspamd 3.12 (Spamfilter, DKIM-Signatur und ARC, Prüfung von SPF/DKIM/DMARC) mit Redis, optional ClamAV. „Einrichten“ installiert die Pakete, legt das Konto `vmail` und `/var/vmail` an, schreibt die Konfiguration, startet die Dienste und öffnet in ufw `25`, `465`, `587` und `993/tcp`.
+**Bausteine (Debian 13):** Postfix 3.10 (SMTP, Submission), Dovecot 2.4 (IMAP, LMTP, Sieve, Quota), Rspamd 3.12 (Spamfilter, DKIM-Signatur und ARC, Prüfung von SPF/DKIM/DMARC) mit Redis, optional ClamAV. „Einrichten“ installiert die Pakete, legt das Konto `vmail` und `/var/vmail` an, schreibt die Konfiguration, startet die Dienste und öffnet in ufw `25`, `465`, `587` und `993/tcp` (auch wenn ufw noch aus ist, damit die Regeln nach dem Einschalten im Assistenten gelten).
+
+**Postfach `postmaster@` automatisch:** Jede neue Maildomain bekommt das Postfach `postmaster@<domain>` (1 GB, zufälliges Passwort, einmal angezeigt) mit den Aliassen `abuse@`, `dmarc@` und `tls-reports@`. So kommen Missbrauchsmeldungen sowie die DMARC- und TLS-Berichte an, die die DNS-Einträge anfordern. Gibt es eine dieser Adressen schon, bleibt sie, wie sie ist. Das gilt auf dem VPS wie auf der Heim-VM, also auch hinter einem Mail-Gateway: Die Post an `dmarc@` geht durchs Gateway an das Postfach zu Hause.
 
 **Sicherheit:**
 
@@ -454,7 +459,7 @@ Ein vollständiger Mailserver nach dem Vorbild von HestiaCP: Maildomains, Postf�
 
 **Dateien**, alle von GoDeb erzeugt und bei jeder Änderung neu geschrieben: `/etc/postfix/godeb/{domains,mailboxes,aliases,senders}` (texthash, kein `postmap` nötig), Einstellungen in `main.cf`/`master.cf` per `postconf`, `/etc/dovecot/dovecot.conf`, `/etc/dovecot/godeb/{users,deny,spam.sieve}`, `/etc/rspamd/local.d/*.conf`, DKIM-Schlüssel `/var/lib/rspamd/dkim/<domain>.<selector>.key` (`root:_rspamd`, `0640`). Die Metadaten (Domains, Postfächer, Hashes) liegen in der Agent-Datenbank `/etc/godeb/godeb.db` (`mailserver_*`).
 
-**DNS pro Domain:** MX auf den Hostnamen, SPF `v=spf1 mx -all`, DKIM (Selector `godeb`, RSA 2048), DMARC `p=quarantine`, dazu einmal der A-Eintrag des Hostnamens und der Reverse-DNS (PTR) beim Hoster. Der Reiter DNS zeigt alle Einträge zum Kopieren und prüft sie live.
+**DNS pro Domain:** MX auf den Hostnamen, SPF `v=spf1 mx -all`, DKIM (Selector `godeb`, RSA 2048), DMARC `p=quarantine` mit `rua=mailto:dmarc@<domain>`, sobald es die Adresse gibt, dazu einmal der A-Eintrag des Hostnamens und der Reverse-DNS (PTR) beim Hoster. Der Reiter DNS zeigt alle Einträge zum Kopieren und prüft sie live.
 
 **Prüfen ohne Server:** `scripts/check-mail-config.sh` erzeugt die Konfiguration für ein Beispiel und prüft sie mit den echten Werkzeugen aus Debian 13 (`postconf`, `postmap`, `doveconf`, `sievec`, `doveadm pw`, `rspamadm configtest`). Die Pakete werden nur entpackt und in einem User-Namespace ausgeführt, ohne root.
 
@@ -482,8 +487,8 @@ Sitzung nötig, soweit nichts anderes steht. Antworten sind JSON.
 | POST | `/api/setup/hub` | WireGuard-Server und erster Client (`first`: Datei, QR als Data-URL) |
 | POST | `/api/setup/client` | weiterer Client auf dem Hub (`name`, `site`, `address`): Datei und QR bzw. Beitrittscode |
 | POST | `/api/setup/join` | Peer eines Hubs |
-| POST | `/api/setup/services` | `mailRelay`: Mail-Gateway installieren und einschalten (nur auf dem Hub) |
-| POST | `/api/setup/domains` | `domains`, `token` (Hetzner), `manual`, `defaults`, `mailRelay`, `relayHost`: Domains anlegen, Gateway einrichten, DNS setzen; Antwort pro Domain mit Einträgen und Fehler |
+| POST | `/api/setup/services` | `mailRelay`: Mail-Gateway installieren und einschalten (nur auf dem Hub); `mailServer` und `hostname`: Installation des Mailservers starten (Hintergrundjob, Stand in `services.mailJob` von `/api/setup/info`) |
+| POST | `/api/setup/domains` | `domains`, `token` (Hetzner), `manual`, `defaults`, `mailRelay`, `relayHost`, `mailServer`: Domains anlegen, Gateway bzw. Maildomain mit Postfach `postmaster@` einrichten, DNS setzen; Antwort pro Domain mit Einträgen, Fehler und einmalig dem Postfach-Passwort |
 | POST | `/api/setup/finish` | Erreichbarkeit, Trusted Endpoint, Firewall, Abschluss |
 
 Alle außer `status` antworten nach dem Abschluss mit `410`.
@@ -565,7 +570,7 @@ Alle außer `status` antworten nach dem Abschluss mit `410`.
 | GET | `/api/plugins/mail/status` (Einrichtung, Dienste, Domains, laufende Aufgabe) |
 | POST | `/api/plugins/mail/install` (`hostname`, `clamav`; frischer 2FA-Code) |
 | POST | `/api/plugins/mail/clamav` (`enabled`), `/api/plugins/mail/certificate` (`email`) |
-| POST | `/api/plugins/mail/domains` (`name`) |
+| POST | `/api/plugins/mail/domains` (`name`; Antwort mit `postmaster`, `password` einmalig und `aliases`) |
 | GET, POST | `/api/plugins/mail/domains/{domain}` (Postfächer, DNS-Einträge, Mailprogramm; ändern: `catchAll`, `suspended`) |
 | POST | `/api/plugins/mail/domains/{domain}/delete` |
 | GET | `/api/plugins/mail/domains/{domain}/dns` (Live-Prüfung) |

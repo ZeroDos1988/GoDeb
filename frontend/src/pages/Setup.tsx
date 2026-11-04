@@ -25,10 +25,21 @@ type SetupInfo = {
   services: ServicesInfo;
 };
 
-type ServicesInfo = { mailRelayReady: boolean; mailServer: boolean; relayDomains: string[]; tokenSet: boolean };
+type MailJob = { action: string; running: boolean; ok: boolean; error?: string; log: string[] };
+type ServicesInfo = { mailRelayReady: boolean; mailServer: boolean; mailHostname?: string; mailJob?: MailJob; relayDomains: string[]; tokenSet: boolean };
 
 type DnsRecord = { name: string; type: string; value: string; zoneLine: string; status: string; found?: string; source: string };
-type DomainResult = { name: string; mode: "manual" | "hetzner"; mailRelay: boolean; records: DnsRecord[]; error?: string };
+type DomainResult = {
+  name: string;
+  mode: "manual" | "hetzner";
+  mailRelay: boolean;
+  mailServer?: boolean;
+  records: DnsRecord[];
+  error?: string;
+  mailbox?: string;
+  password?: string;
+  aliases?: string[];
+};
 
 type HubResult = { publicKey?: string; endpoint: string; first?: ClientResult };
 type JoinResult = { address: string; hub: string; notes: string[]; handshake?: boolean; detail?: string };
@@ -309,115 +320,130 @@ function RoleStep({ info, role, setRole, onNext }: { info: SetupInfo; role: Role
   );
 }
 
-// ServicesStep offers what a fresh server usually needs next: on a hub the
-// mail gateway, everywhere the domains with their DNS records. Both are
-// optional; "Weiter" skips them. The backend uses the same functions as
-// the plugin pages and `godeb setup --mail-relay --domains`.
+type MailMode = "none" | "relay" | "server";
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// ServicesStep offers what a fresh server usually needs next: the domains
+// with their DNS records and e-mail, either as relay to the home server
+// (hub only) or as a full mail server on this host. One button sets up
+// everything; "Überspringen" skips it. The backend uses the same functions
+// as the plugin pages and `godeb setup --mail-relay|--mail-server --domains`.
 function ServicesStep({ info, role, onBack, onNext }: { info: SetupInfo; role: Role; onBack: () => void; onNext: () => void }) {
   const { t } = useTranslation();
   const hub = role === "hub" || info.role.role === "hub";
   const [services, setServices] = useState<ServicesInfo>(info.services);
-  const relayPossible = hub && !services.mailServer;
-  const [relay, setRelay] = useState(relayPossible);
+  const relaySet = services.relayDomains.length > 0;
+  const serverSet = services.mailServer && services.mailHostname !== undefined && services.mailHostname !== "";
+  const [mailMode, setMailMode] = useState<MailMode>(serverSet ? "server" : relaySet ? "relay" : hub ? "relay" : "none");
   const [relayHost, setRelayHost] = useState("10.8.0.2");
+  const [hostname, setHostname] = useState(services.mailHostname ?? "");
+  const [hostEdited, setHostEdited] = useState(serverSet);
   const [dnsMode, setDnsMode] = useState<"hetzner" | "manual">("hetzner");
   const [token, setToken] = useState("");
   const [domainText, setDomainText] = useState("");
   const [defaults, setDefaults] = useState(true);
-  const [busy, setBusy] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState("");
   const [error, setError] = useState("");
   const [results, setResults] = useState<DomainResult[] | null>(null);
+  const [certStarted, setCertStarted] = useState(false);
 
-  async function installRelay() {
-    setBusy("relay");
+  const domainList = domainText.split(/[\s,;]+/).map((d) => d.trim().toLowerCase()).filter(Boolean);
+  const shownHost = hostEdited ? hostname : domainList[0] ? `mail.${domainList[0]}` : "";
+
+  const mailModes: { id: MailMode; show: boolean }[] = [
+    { id: "none", show: !relaySet && !serverSet },
+    { id: "relay", show: hub && !serverSet },
+    { id: "server", show: !relaySet },
+  ];
+
+  async function refresh(): Promise<ServicesInfo> {
+    const next = (await api<SetupInfo>("/api/setup/info")).services;
+    setServices(next);
+    return next;
+  }
+
+  async function run() {
+    setBusy(true);
     setError("");
     try {
-      setServices(await api<ServicesInfo>("/api/setup/services", { method: "POST", body: JSON.stringify({ mailRelay: true }) }));
+      if (mailMode === "relay" && !services.mailRelayReady) {
+        setProgress(t("setup.relayInstalling"));
+        setServices(await api<ServicesInfo>("/api/setup/services", { method: "POST", body: JSON.stringify({ mailRelay: true }) }));
+      }
+      if (mailMode === "server" && !services.mailServer) {
+        setProgress(t("setup.serverInstalling"));
+        await api("/api/setup/services", { method: "POST", body: JSON.stringify({ mailServer: true, hostname: shownHost }) });
+        // The installation runs as a background job in the agent.
+        for (;;) {
+          await sleep(3000);
+          const next = await refresh();
+          const job = next.mailJob;
+          if (job && !job.running) {
+            if (!job.ok) throw new Error(job.error || t("setup.failed"));
+            break;
+          }
+          if (job?.log.length) setProgress(`${t("setup.serverInstalling")} ${job.log[job.log.length - 1]}`);
+        }
+      }
+      if (domainList.length > 0) {
+        setProgress(t("setup.domainsWorking"));
+        const res = await api<{ domains: DomainResult[]; services: ServicesInfo }>("/api/setup/domains", {
+          method: "POST",
+          body: JSON.stringify({
+            token: dnsMode === "hetzner" ? token.trim() : "",
+            manual: dnsMode === "manual",
+            domains: domainList,
+            defaults,
+            mailRelay: mailMode === "relay",
+            mailServer: mailMode === "server",
+            relayHost,
+          }),
+        });
+        setResults(res.domains);
+        setServices(res.services);
+        setToken("");
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : t("setup.failed"));
     } finally {
-      setBusy("");
+      setBusy(false);
+      setProgress("");
     }
   }
 
-  async function setupDomains() {
-    setBusy("domains");
+  async function certificate() {
     setError("");
     try {
-      const res = await api<{ domains: DomainResult[]; services: ServicesInfo }>("/api/setup/domains", {
-        method: "POST",
-        body: JSON.stringify({
-          token: dnsMode === "hetzner" ? token.trim() : "",
-          manual: dnsMode === "manual",
-          domains: domainText.split(/[\s,;]+/).filter(Boolean),
-          defaults,
-          mailRelay: relay && services.mailRelayReady,
-          relayHost,
-        }),
-      });
-      setResults(res.domains);
-      setServices(res.services);
-      setToken("");
+      await api("/api/plugins/mail/certificate", { method: "POST", body: JSON.stringify({ email: "" }) });
+      setCertStarted(true);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : t("setup.failed"));
-    } finally {
-      setBusy("");
     }
   }
 
-  const needToken = dnsMode === "hetzner" && !services.tokenSet && token.trim() === "";
-  const noDomains = domainText.trim() === "";
+  const needToken = domainList.length > 0 && dnsMode === "hetzner" && !services.tokenSet && token.trim() === "";
+  const needHost = mailMode === "server" && !services.mailServer && shownHost === "";
+  const nothing = domainList.length === 0 && (mailMode === "none" || (mailMode === "relay" && services.mailRelayReady) || (mailMode === "server" && services.mailServer));
 
   return (
     <SetupFrame step={4} total={5} wide>
       <h1 className="text-base font-semibold">{t("setup.servicesTitle")}</h1>
       <p className="mt-1 text-sm text-white/60">{t("setup.servicesText")}</p>
 
-      {hub ? (
-        <section className="mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
-          <h2 className="text-sm font-semibold">{t("setup.relayTitle")}</h2>
-          <p className="mt-1 text-xs text-white/60">{t("setup.relayText")}</p>
-          {services.mailServer ? (
-            <p className="mt-3 text-sm text-amber-200">{t("setup.relayMailServer")}</p>
-          ) : services.mailRelayReady ? (
-            <div className="mt-3 space-y-3">
-              <p className="text-sm text-emerald-300">{t("setup.relayReady")}</p>
-              <Check checked={relay} onChange={setRelay} label={t("setup.relayUse")} />
-              {relay ? (
-                <Field label={t("setup.relayHost")} hint={t("setup.relayHostHint")}>
-                  <input value={relayHost} onChange={(e) => setRelayHost(e.target.value)} className={`${input} font-mono`} />
-                </Field>
-              ) : null}
-            </div>
-          ) : (
-            <div className="mt-3 flex flex-wrap items-center gap-3">
-              <button type="button" className={primary} disabled={busy !== ""} onClick={() => void installRelay()}>
-                {busy === "relay" ? t("setup.relayInstalling") : t("setup.relayInstall")}
-              </button>
-              <span className="text-xs text-white/50">{t("setup.relayInstallHint")}</span>
-            </div>
-          )}
-        </section>
-      ) : null}
-
       <section className="mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
         <h2 className="text-sm font-semibold">{t("setup.domainsTitle")}</h2>
         <p className="mt-1 text-xs text-white/60">{t("setup.domainsText")}</p>
-        <div className="mt-3 grid gap-3 md:grid-cols-2">
-          {(["hetzner", "manual"] as const).map((m) => (
-            <button
-              key={m}
-              type="button"
-              aria-pressed={dnsMode === m}
-              onClick={() => setDnsMode(m)}
-              className={`rounded-2xl border px-3 py-3 text-left text-sm transition-all duration-200 ease-in-out ${dnsMode === m ? "border-white/40 bg-white/15" : "border-white/10 bg-white/5 hover:bg-white/10"}`}
-            >
-              <span className="block font-medium">{t(`setup.dns_${m}`)}</span>
-              <span className="mt-1 block text-xs text-white/60">{t(`setup.dns_${m}Text`)}</span>
-            </button>
-          ))}
-        </div>
         <div className="mt-3 space-y-3">
+          <Field label={t("setup.domainList")} hint={t("setup.domainListHint")}>
+            <textarea value={domainText} onChange={(e) => setDomainText(e.target.value)} rows={4} spellCheck={false} placeholder={"example.com\nexample.org"} className={`${input} font-mono`} />
+          </Field>
+          <div className="grid gap-3 md:grid-cols-2">
+            {(["hetzner", "manual"] as const).map((m) => (
+              <Choice key={m} active={dnsMode === m} onClick={() => setDnsMode(m)} title={t(`setup.dns_${m}`)} text={t(`setup.dns_${m}Text`)} />
+            ))}
+          </div>
           {dnsMode === "hetzner" ? (
             services.tokenSet ? (
               <p className="text-sm text-emerald-300">{t("setup.tokenStored")}</p>
@@ -427,25 +453,91 @@ function ServicesStep({ info, role, onBack, onNext }: { info: SetupInfo; role: R
               </Field>
             )
           ) : null}
-          <Field label={t("setup.domainList")} hint={t("setup.domainListHint")}>
-            <textarea value={domainText} onChange={(e) => setDomainText(e.target.value)} rows={4} spellCheck={false} placeholder={"example.com\nexample.org"} className={`${input} font-mono`} />
-          </Field>
           <Check checked={defaults} onChange={setDefaults} label={t("domains.defaults")} hint={t("setup.defaultsHint")} />
-          <button type="button" className={primary} disabled={busy !== "" || noDomains || needToken} onClick={() => void setupDomains()}>
-            {busy === "domains" ? t("setup.working") : t("setup.domainsApply")}
-          </button>
         </div>
-        {results ? <DomainResults results={results} /> : null}
       </section>
+
+      <section className="mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+        <h2 className="text-sm font-semibold">{t("setup.mailTitle")}</h2>
+        <p className="mt-1 text-xs text-white/60">{t("setup.mailText")}</p>
+        <div className="mt-3 grid gap-3 md:grid-cols-3">
+          {mailModes.filter((m) => m.show).map((m) => (
+            <Choice key={m.id} active={mailMode === m.id} onClick={() => setMailMode(m.id)} title={t(`setup.mail_${m.id}`)} text={t(`setup.mail_${m.id}Text`)} />
+          ))}
+        </div>
+        {mailMode === "relay" ? (
+          <div className="mt-3 space-y-2">
+            {services.mailRelayReady ? <p className="text-sm text-emerald-300">{t("setup.relayReady")}</p> : null}
+            <Field label={t("setup.relayHost")} hint={t("setup.relayHostHint")}>
+              <input value={relayHost} onChange={(e) => setRelayHost(e.target.value)} className={`${input} font-mono`} />
+            </Field>
+          </div>
+        ) : null}
+        {mailMode === "server" ? (
+          <div className="mt-3 space-y-2">
+            {services.mailServer ? (
+              <p className="text-sm text-emerald-300">{t("setup.serverReady", { host: services.mailHostname })}</p>
+            ) : (
+              <Field label={t("setup.mailHostname")} hint={t("setup.mailHostnameHint")}>
+                <input
+                  value={shownHost}
+                  onChange={(e) => {
+                    setHostEdited(true);
+                    setHostname(e.target.value);
+                  }}
+                  placeholder="mail.example.com"
+                  className={`${input} font-mono`}
+                />
+              </Field>
+            )}
+            <p className="text-xs text-white/55">{t("setup.mailboxHint")}</p>
+          </div>
+        ) : null}
+      </section>
+
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <button type="button" className={primary} disabled={busy || nothing || needToken || needHost} onClick={() => void run()}>
+          {busy ? t("setup.working") : t("setup.servicesApply")}
+        </button>
+        {progress ? <span className="min-w-0 text-xs break-words text-white/60">{progress}</span> : null}
+      </div>
+
+      {results ? <DomainResults results={results} /> : null}
+      {results && mailMode === "server" && services.mailServer ? (
+        <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm">
+          <p>{t("setup.certText", { host: services.mailHostname })}</p>
+          {certStarted ? (
+            <p className="mt-2 text-xs text-emerald-300">{t("setup.certStarted")}</p>
+          ) : (
+            <button type="button" className={`${secondary} mt-3`} onClick={() => void certificate()}>
+              {t("setup.certButton")}
+            </button>
+          )}
+        </div>
+      ) : null}
 
       {error ? <p className="mt-3 text-sm text-debian">{error}</p> : null}
       <div className="mt-5 flex flex-wrap gap-2">
-        <button type="button" className={secondary} onClick={onBack} disabled={busy !== ""}>{t("setup.back")}</button>
-        <button type="button" className={primary} onClick={onNext} disabled={busy !== ""}>
-          {results || services.relayDomains.length > 0 ? t("setup.next") : t("setup.skip")}
+        <button type="button" className={secondary} onClick={onBack} disabled={busy}>{t("setup.back")}</button>
+        <button type="button" className={primary} onClick={onNext} disabled={busy}>
+          {results || relaySet || serverSet ? t("setup.next") : t("setup.skip")}
         </button>
       </div>
     </SetupFrame>
+  );
+}
+
+function Choice({ active, onClick, title, text }: { active: boolean; onClick: () => void; title: string; text: string }) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onClick}
+      className={`rounded-2xl border px-3 py-3 text-left text-sm transition-all duration-200 ease-in-out ${active ? "border-white/40 bg-white/15" : "border-white/10 bg-white/5 hover:bg-white/10"}`}
+    >
+      <span className="block font-medium">{title}</span>
+      <span className="mt-1 block text-xs text-white/60">{text}</span>
+    </button>
   );
 }
 
@@ -460,8 +552,16 @@ function DomainResults({ results }: { results: DomainResult[] }) {
             <span className="text-xs font-normal text-white/60">
               {d.mode === "hetzner" ? t("setup.domainHetzner") : t("setup.domainManual")}
               {d.mailRelay ? ` · ${t("setup.domainRelay")}` : ""}
+              {d.mailServer ? ` · ${t("setup.domainServer")}` : ""}
             </span>
           </p>
+          {d.mailbox ? (
+            <div className="mt-2 rounded-2xl border border-amber-300/20 bg-amber-400/5 px-3 py-2 text-xs">
+              <p>{t("setup.mailboxCreated", { address: d.mailbox, aliases: (d.aliases ?? []).join(", ") })}</p>
+              <p className="mt-1 font-mono text-sm break-all select-all">{d.password}</p>
+              <p className="mt-1 text-white/55">{t("setup.mailboxOnce")}</p>
+            </div>
+          ) : null}
           {d.error ? <p className="mt-1 text-xs text-amber-200">{d.error}</p> : null}
           {d.records.length > 0 ? (
             <ul className="mt-2 space-y-1 rounded-2xl bg-slate-950/50 p-3 font-mono text-[11px]">

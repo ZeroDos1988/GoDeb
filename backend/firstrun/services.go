@@ -5,10 +5,12 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"time"
 
 	"godeb/backend/core"
 	"godeb/backend/pluginmgr"
 	"godeb/plugins/domains"
+	"godeb/plugins/mail"
 	mailgateway "godeb/plugins/mailgateway/backend"
 	"godeb/plugins/wireguard"
 )
@@ -19,15 +21,20 @@ const maxSetupDomains = 25
 
 // ServicesInfo tells the wizard what is already in place.
 type ServicesInfo struct {
-	MailRelayReady bool     `json:"mailRelayReady"` // Postfix and OpenDKIM installed
-	MailServer     bool     `json:"mailServer"`     // the mail server plugin owns Postfix
-	RelayDomains   []string `json:"relayDomains"`
-	TokenSet       bool     `json:"tokenSet"` // Hetzner Cloud API token stored
+	MailRelayReady bool      `json:"mailRelayReady"` // Postfix and OpenDKIM installed
+	MailServer     bool      `json:"mailServer"`     // the mail server plugin is set up (owns Postfix)
+	MailHostname   string    `json:"mailHostname,omitempty"`
+	MailJob        *mail.Job `json:"mailJob,omitempty"` // installation or certificate running or done
+	RelayDomains   []string  `json:"relayDomains"`
+	TokenSet       bool      `json:"tokenSet"` // Hetzner Cloud API token stored
 }
 
 // CurrentServices reads the state for the wizard.
 func CurrentServices(ctx context.Context) ServicesInfo {
-	info := ServicesInfo{MailServer: mailgateway.MailServerPresent(), TokenSet: domains.TokenSet(), RelayDomains: []string{}}
+	info := ServicesInfo{
+		MailServer: mail.Installed() || mailgateway.MailServerPresent(), MailHostname: mail.Hostname(),
+		MailJob: mail.JobState(), TokenSet: domains.TokenSet(), RelayDomains: []string{},
+	}
 	info.MailRelayReady, _ = pluginmgr.PackagesReady(ctx, "mailgateway")
 	if list, err := mailgateway.Domains(); err == nil {
 		info.RelayDomains = list
@@ -46,29 +53,69 @@ func InstallMailRelay(ctx context.Context) error {
 	if role.Role != wireguard.RoleHub {
 		return errors.New("Das Mail-Gateway gehört auf den WireGuard-Server (VPS), der die Post annimmt")
 	}
-	if mailgateway.MailServerPresent() {
+	if mailgateway.MailServerPresent() || mail.Installed() {
 		return errors.New("Auf diesem Server läuft der Mailserver (Plugin E-Mail); Mail-Gateway und Mailserver schließen sich aus")
 	}
 	return pluginmgr.InstallAndEnable(ctx, "mailgateway")
 }
 
+// StartMailServer switches the mail plugin on and starts the installation
+// of the full mail server (Postfix, Dovecot, Rspamd, Redis) in the
+// background, the same job as the button on the mail page. Mail gateway
+// and mail server exclude each other.
+func StartMailServer(ctx context.Context, hostname string) error {
+	if list, err := mailgateway.Domains(); err == nil && len(list) > 0 {
+		return errors.New("Das Mail-Gateway ist schon für Domains eingerichtet; Mail-Gateway und Mailserver schließen sich aus")
+	}
+	if err := pluginmgr.InstallAndEnable(ctx, "mail"); err != nil {
+		return err
+	}
+	return mail.StartInstall(hostname, false)
+}
+
+// WaitMailJob waits for the background job of the mail plugin (command
+// line; the wizard polls /api/setup/info instead).
+func WaitMailJob(ctx context.Context) error {
+	for {
+		job := mail.JobState()
+		if job == nil || !job.Running {
+			if job != nil && !job.OK {
+				return errors.New("Mailserver: " + job.Error)
+			}
+			return nil
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(2 * time.Second):
+		}
+	}
+}
+
 // DomainsSpec is the domains step of the wizard.
 type DomainsSpec struct {
-	Token     string   `json:"token"`     // Hetzner Cloud API token; empty keeps a stored one
-	Domains   []string `json:"domains"`   // apex domains
-	Manual    bool     `json:"manual"`    // keep the records by hand even with a stored token
-	Defaults  bool     `json:"defaults"`  // web, www, mail, webmail, MX, SPF, DMARC
-	MailRelay bool     `json:"mailRelay"` // accept mail for these domains on the gateway
-	RelayHost string   `json:"relayHost"` // next hop in the tunnel, default 10.8.0.2
+	Token      string   `json:"token"`      // Hetzner Cloud API token; empty keeps a stored one
+	Domains    []string `json:"domains"`    // apex domains
+	Manual     bool     `json:"manual"`     // keep the records by hand even with a stored token
+	Defaults   bool     `json:"defaults"`   // web, www, mail, webmail, MX, SPF, DMARC
+	MailRelay  bool     `json:"mailRelay"`  // accept mail for these domains on the gateway
+	MailServer bool     `json:"mailServer"` // mail domains with postmaster mailbox on this host
+	RelayHost  string   `json:"relayHost"`  // next hop in the tunnel, default 10.8.0.2
 }
 
 // DomainResult is what happened to one domain.
 type DomainResult struct {
-	Name      string           `json:"name"`
-	Mode      string           `json:"mode"`
-	MailRelay bool             `json:"mailRelay"`
-	Records   []domains.Record `json:"records"`
-	Error     string           `json:"error,omitempty"`
+	Name       string           `json:"name"`
+	Mode       string           `json:"mode"`
+	MailRelay  bool             `json:"mailRelay"`
+	MailServer bool             `json:"mailServer"`
+	Records    []domains.Record `json:"records"`
+	Error      string           `json:"error,omitempty"`
+	// Mail server: the postmaster mailbox created now and its password,
+	// shown once (only the hash is stored).
+	Mailbox  string   `json:"mailbox,omitempty"`
+	Password string   `json:"password,omitempty"`
+	Aliases  []string `json:"aliases,omitempty"`
 }
 
 // CleanDomains normalizes, deduplicates and bounds the domain list.
@@ -122,6 +169,17 @@ func SetupDomains(ctx context.Context, spec DomainsSpec) ([]DomainResult, error)
 			return nil, errors.New("Das Mail-Gateway ist noch nicht installiert")
 		}
 	}
+	if spec.MailServer {
+		if job := mail.JobState(); job != nil && job.Running {
+			return nil, errors.New("Der Mailserver wird noch eingerichtet; bitte warten")
+		}
+		if !mail.Installed() {
+			return nil, errors.New("Der Mailserver ist noch nicht eingerichtet")
+		}
+	}
+	if spec.MailServer && relay {
+		return nil, errors.New("Mail-Gateway und Mailserver schließen sich aus")
+	}
 	out := make([]DomainResult, 0, len(list))
 	for _, name := range list {
 		res := DomainResult{Name: name, Mode: mode, Records: []domains.Record{}}
@@ -136,6 +194,16 @@ func SetupDomains(ctx context.Context, spec DomainsSpec) ([]DomainResult, error)
 				problems = append(problems, "Mail-Gateway: "+err.Error())
 			} else {
 				res.MailRelay = true
+			}
+		}
+		if spec.MailServer {
+			setup, err := mail.AddDomain(ctx, name)
+			switch {
+			case err == nil, errors.Is(err, mail.ErrDomainExists):
+				res.MailServer = true
+				res.Mailbox, res.Password, res.Aliases = setup.Postmaster, setup.Password, setup.Aliases
+			default:
+				problems = append(problems, "Mailserver: "+err.Error())
 			}
 		}
 		var recs []domains.Record
@@ -162,13 +230,25 @@ func SetupDomains(ctx context.Context, spec DomainsSpec) ([]DomainResult, error)
 
 func handleServices(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		MailRelay bool `json:"mailRelay"`
+		MailRelay  bool   `json:"mailRelay"`
+		MailServer bool   `json:"mailServer"`
+		Hostname   string `json:"hostname"` // MX host name of the mail server
 	}
 	if !core.DecodeJSON(w, r, &req) {
 		return
 	}
+	if req.MailRelay && req.MailServer {
+		core.WriteError(w, http.StatusBadRequest, "Mail-Gateway und Mailserver schließen sich aus")
+		return
+	}
 	if req.MailRelay {
 		if err := InstallMailRelay(r.Context()); err != nil {
+			core.WriteError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+	}
+	if req.MailServer {
+		if err := StartMailServer(r.Context(), req.Hostname); err != nil {
 			core.WriteError(w, http.StatusBadRequest, err.Error())
 			return
 		}
