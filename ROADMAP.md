@@ -1,15 +1,15 @@
 # Fahrplan
 
-Stand: 03.11.2026. Reihenfolge = Priorität. `[x]` erledigt, `[ ]` offen. Neue Ideen kommen hierher (passende Phase oder Phase 7), getroffene Entscheidungen unten unter „Entscheidungen“.
+Stand: 04.11.2026. Reihenfolge = Priorität. `[x]` erledigt, `[ ]` offen. Neue Ideen kommen hierher (passende Phase oder Phase 7), getroffene Entscheidungen unten unter „Entscheidungen“.
 
-## Aktueller Stand (03.11., nach v0.2.18)
+## Aktueller Stand (04.11., v0.2.19)
 
-- **Neu seit v0.2.18 (03.11., noch ohne Release):** Plugin-Seite als Liste (aktive oben, ausgeschaltete darunter, sortiert nach „sofort einschaltbar“ → „Pakete fehlen“ → „läuft hier nicht“). Plugin `steam` entfernt, Spielserver bekommen ein eigenes Projekt (unten „Spielserver-Panel“). Assistent mit neuem Schritt „Mail und Domains“: Mail-Gateway per Klick, alle Domains auf einmal, Hetzner-DNS verbinden, Standardeinträge (Web, www, mail, webmail, MX, SPF, DMARC, mit Gateway DKIM) werden sofort gesetzt; dasselbe per `godeb setup --mail-relay --domains …`.
+- **v0.2.19 (04.11.)** fasst zusammen, was als v0.2.18 vorbereitet, aber nie getaggt war (App-Zugang, Fernzugang, Beheben-Knöpfe), und das Neue vom 03./04.11.: Plugin-Seite als Liste (aktive oben), Plugin `steam` entfernt (Spiele kommen in „GoDeb Play“), Assistent mit Schritt „Domains und E-Mail“: alle Domains auf einmal, Hetzner-DNS, Standardeinträge, wahlweise Mail-Relay zum Server zu Hause oder Mailserver auf dem VPS, jede Maildomain mit Postfach `postmaster@` und den Aliassen `abuse@`, `dmarc@`, `tls-reports@`; dasselbe per `godeb setup --mail-relay|--mail-server --domains`.
 
 Für einen neuen Chat: zuerst `/diagnose` (Skill in `.claude/skills/diagnose`, Skript `scripts/diagnose.sh`), dann hier weiterlesen.
 
 - **Veröffentlicht** (alle öffentlich, nur unter ZeroDos1988):
-  - `ZeroDos1988/GoDeb`: GPL-3.0, Release **v0.2.18** (30.10., Vorabversion: App-Zugang – HTTPS mit eigenem Namen im Tunnel und Let's-Encrypt-Zertifikat, GoDeb als App auf dem Handy installierbar; Fernzugang auf Zeit für die Einrichtung; „Beheben“-Knöpfe an den Warnungen der Übersicht, die Punkte führen zur passenden Seite). v0.2.17 (Dienste als Tabelle mit festen Spalten, Protokoll ohne doppelte Einträge, Cursor im 2FA-Dialog). v0.2.16 ( Dashboard mit Kacheln, Domain-Zentrale wie bei HestiaCP, Logo-Farben, einheitliche Felder, Hilfe als „?“). v0.2.15 (Navigation mit Reitern unter der Kopfzeile). v0.2.14 (aufgeräumte Seiten mit „Technische Details“, Hostname in der Kopfzeile, Fixes für Navigation und Timer-Liste) im APT-Repo `https://zerodos1988.github.io/GoDeb`. v0.2.13 (Logo, Anmeldung in drei Schritten ohne Verraten von Benutzernamen, fail2ban 5 Versuche/10 Minuten steigend). v0.2.12 (Fehlergrund und Hintergrundjobs im Journal, keine Fehlalarme bei Zustandsabfragen, go-jose 4.1.6 und weitere Abhängigkeiten). v0.2.11 (Sicherheitsupdate: Webseiten-Proxy-Pfad, `/var/vmail` per `os.Root`, PostgreSQL-2FA; dazu Datenbank-Prüfung, Hub-Überwachung von der Heim-VM, stabile und Test-Suite; amd64 und arm64, Suiten `trixie` und `trixie-testing`). v0.2.10 brachte arm64 ins APT-Repo, v0.2.9 brachte die Sicherheitsfixes für Webseiten, PostgreSQL und Cron aus v0.2.8; v0.2.8 Mail-Ausbau, nginx/Webseiten, PostgreSQL, Cron, Mobil-Feinschliff, Volltunnel. Jeder Tag `vX.Y.Z` baut Release (immer als Vorabversion, erst nach dem Update-Test) und APT-Repo automatisch; den Release-Text danach von Hand im Stil der vorigen Releases ersetzen. Ab 1.0 das Vorab-Häkchen entfernen, damit die Version in `trixie` landet.
+  - `ZeroDos1988/GoDeb`: GPL-3.0, Release **v0.2.19** (04.11., Vorabversion: Assistent mit Domains, DNS und E-Mail, Plugin-Liste, Steam entfernt; enthält die nie getaggte v0.2.18). v0.2.18 (vorbereitet 30.10., nicht veröffentlicht: App-Zugang – HTTPS mit eigenem Namen im Tunnel und Let's-Encrypt-Zertifikat, GoDeb als App auf dem Handy installierbar; Fernzugang auf Zeit für die Einrichtung; „Beheben“-Knöpfe an den Warnungen der Übersicht, die Punkte führen zur passenden Seite). v0.2.17 (Dienste als Tabelle mit festen Spalten, Protokoll ohne doppelte Einträge, Cursor im 2FA-Dialog). v0.2.16 ( Dashboard mit Kacheln, Domain-Zentrale wie bei HestiaCP, Logo-Farben, einheitliche Felder, Hilfe als „?“). v0.2.15 (Navigation mit Reitern unter der Kopfzeile). v0.2.14 (aufgeräumte Seiten mit „Technische Details“, Hostname in der Kopfzeile, Fixes für Navigation und Timer-Liste) im APT-Repo `https://zerodos1988.github.io/GoDeb`. v0.2.13 (Logo, Anmeldung in drei Schritten ohne Verraten von Benutzernamen, fail2ban 5 Versuche/10 Minuten steigend). v0.2.12 (Fehlergrund und Hintergrundjobs im Journal, keine Fehlalarme bei Zustandsabfragen, go-jose 4.1.6 und weitere Abhängigkeiten). v0.2.11 (Sicherheitsupdate: Webseiten-Proxy-Pfad, `/var/vmail` per `os.Root`, PostgreSQL-2FA; dazu Datenbank-Prüfung, Hub-Überwachung von der Heim-VM, stabile und Test-Suite; amd64 und arm64, Suiten `trixie` und `trixie-testing`). v0.2.10 brachte arm64 ins APT-Repo, v0.2.9 brachte die Sicherheitsfixes für Webseiten, PostgreSQL und Cron aus v0.2.8; v0.2.8 Mail-Ausbau, nginx/Webseiten, PostgreSQL, Cron, Mobil-Feinschliff, Volltunnel. Jeder Tag `vX.Y.Z` baut Release (immer als Vorabversion, erst nach dem Update-Test) und APT-Repo automatisch; den Release-Text danach von Hand im Stil der vorigen Releases ersetzen. Ab 1.0 das Vorab-Häkchen entfernen, damit die Version in `trixie` landet.
   - `ZeroDos1988/godeb-tunnel-android` (Release 1.1.0), `ZeroDos1988/godeb-tunnel-arch` (1.0.1). Privat: `godeb-wireguard-windows`.
 - **Auf den Servern:** Hetzner-VPS zuletzt mit älterer 0.2.x; Heim-VM noch nicht neu eingerichtet. **VPS am 30.10. auf v0.2.16 aktualisiert, v0.2.18 noch nicht.**
 - **Nächste Schritte:** der Fahrplan „Produktionsreife“ direkt unten. Alles, was ohne die Server ging, ist erledigt (28.10.); offen sind die Punkte beim Nutzer: Durchlauf auf beiden Servern, Hetzner-Grundschutz, Wiederherstellung üben, danach 1.0.
@@ -39,7 +39,7 @@ Funktional ist alles da, was für den Betrieb gewünscht ist; ab jetzt keine neu
 
 ### P2 – danach (nice to have)
 
-Das Spielserver-Panel (eigenes Projekt, siehe unten), Phase 7 (Webmail, eigener DNS), Phase 8 (Heim-VM als Gateway, gekoppelte Verwaltung, Netzwerk-Scanner), Push direkt in die App, IPv6-Weiterleitung, echte Spieler-IPs. Neue Wünsche kommen weiter in die passende Phase.
+GoDeb Play (eigenes Projekt, siehe unten), Phase 7 (Webmail, eigener DNS), Phase 8 (Heim-VM als Gateway, gekoppelte Verwaltung, Netzwerk-Scanner), Push direkt in die App, IPv6-Weiterleitung, echte Spieler-IPs. Neue Wünsche kommen weiter in die passende Phase.
 
 ## Leitplanken für alle Phasen
 
@@ -71,8 +71,8 @@ Offene Punkte, die beim Test auffallen können:
 
 - [x] SteamCMD und Serverdownload lokal ohne root getestet (20.10.): Die Download-URL war falsch, und `app_update` scheitert beim ersten Lauf mit „Missing configuration“. Beides ist behoben (drei Versuche).
 - [x] API-Ablauf mit Dev-Instanz getestet: Login, 2FA-Einrichtung, Fenster und kritische Aktionen, Replay-Schutz, fremder Origin, Logout.
-- [ ] → Spielserver-Panel: Wine unter Debian 13: Läuft `enshrouded_server.exe` ohne X-Server? Falls nicht, `xvfb-run` als Option im Unit-Template.
-- [ ] → Spielserver-Panel: Enshrouded-Ports: Neuere Serverversionen kennen nur `queryPort`. GoDeb öffnet zusätzlich `queryPort-1`; nach dem Test ggf. entfernen.
+- [ ] → GoDeb Play: Wine unter Debian 13: Läuft `enshrouded_server.exe` ohne X-Server? Falls nicht, `xvfb-run` als Option im Unit-Template.
+- [ ] → GoDeb Play: Enshrouded-Ports: Neuere Serverversionen kennen nur `queryPort`. GoDeb öffnet zusätzlich `queryPort-1`; nach dem Test ggf. entfernen.
 
 ## Phase 3 – VPS-Reife (Pflicht vor dem produktiven Einsatz auf Hetzner)
 
@@ -120,24 +120,24 @@ Die Portweiterleitung schreibt `/etc/sysctl.d/90-godeb-forward.conf`, `/etc/gode
 
 ## Phase 4 – Spielserver und Enshrouded ausbauen (beendet 03.11.)
 
-Das Plugin `steam` ist mit dem Commit „refactor!: Spielserver-Plugin (Steam) entfernt“ aus GoDeb raus. Der Code (SteamCMD-Gerüst, Enshrouded, A2S-Abfrage, Formular) liegt in der Git-Historie (`git show 346cc85:plugins/steam/…`) und ist der Startpunkt für das Spielserver-Panel. Offene Punkte von hier wandern dorthin.
+Das Plugin `steam` ist mit dem Commit „refactor!: Spielserver-Plugin (Steam) entfernt“ aus GoDeb raus. Der Code (SteamCMD-Gerüst, Enshrouded, A2S-Abfrage, Formular) liegt in der Git-Historie (`git show 346cc85:plugins/steam/…`) und ist der Startpunkt für GoDeb Play. Offene Punkte von hier wandern dorthin.
 
 
 - [x] Formular für `gameSettings` beim Preset „Custom“ (wichtigste Faktoren mit Schiebereglern) – 28.10.
-- [ ] → Spielserver-Panel: Savegame-Backup vor jedem Update und auf Knopfdruck, Wiederherstellen aus der UI.
+- [ ] → GoDeb Play: Savegame-Backup vor jedem Update und auf Knopfdruck, Wiederherstellen aus der UI.
 - [x] Zeitgesteuerte Updates/Neustarts mit Warnfenster – 28.10. (Warnfenster in der UI, Zeitplan über das Plugin „Geplante Aufgaben“).
 - [x] Spielerzahl/Status per Steam-Query anzeigen (Überwachung M3, 23.10.).
 - [x] Gemeinsames Gerüst „SteamCMD-Spiel“ (20.10.): Plugin `steam` mit Spielen als `Game`-Beschreibung, Enshrouded ist das erste. Weitere Spiele brauchen nur App-ID, Startbefehl, Ports und optional Konfiguration und Formular.
 
-## Spielserver-Panel (eigenes Projekt, Konzept 03.11.)
+## GoDeb Play – Spielserver-Panel (eigenes Projekt, Konzept 03.11.)
 
-Wunsch 03.11.: Spielserver gehören nicht in GoDeb. Stattdessen ein eigenes, kleines Panel nur für Spielserver, gedacht für einen Container oder eine VM auf dem Heimserver (Proxmox). Es fühlt sich an wie GoDeb (Einrichtung, Login, Optik), kennt aber nur Spiele. Arbeitstitel offen, Repo noch nicht angelegt (`ZeroDos1988/<name>`, öffentlich, GPL-3.0 wie GoDeb – Entscheidung beim Nutzer).
+Wunsch 03.11.: Spielserver gehören nicht in GoDeb. Stattdessen ein eigenes, kleines Panel nur für Spielserver, gedacht für einen Container oder eine VM auf dem Heimserver (Proxmox). Es fühlt sich an wie GoDeb (Einrichtung, Login, Optik), kennt aber nur Spiele. Name: **GoDeb Play** (Entscheidung 04.11.). Vorerst kein öffentliches Repo; wann und ob privat oder öffentlich, entscheidet der Nutzer.
 
 **Zielbild:**
 
 ```text
 Spieler --> VPS (GoDeb-Hub, öffentliche IP) --DNAT/SNAT--> WireGuard --> Spiel-Container 10.8.0.3
-                                                                          Spielserver-Panel + Enshrouded
+                                                                          GoDeb Play + Enshrouded       
 ```
 
 - Das Panel bringt **WireGuard selbst mit** und hängt sich wie die Heim-VM als Standort an den GoDeb-Hub: Auf dem Hub „+ GoDeb-Server zu Hause“ bzw. `godeb site add spiele`, den Beitrittscode (`godeb-join:…`) im Einrichtungsassistenten des Panels einfügen. Gleiches Format und gleiche strenge Prüfung der Client-Datei wie `wireguard.JoinHub` in GoDeb. Damit hat der Spielserver die statische öffentliche IP des VPS, ohne Portfreigabe am Heimrouter, auch hinter CGNAT/DS-Lite.
@@ -148,7 +148,8 @@ Spieler --> VPS (GoDeb-Hub, öffentliche IP) --DNAT/SNAT--> WireGuard --> Spiel-
 
 **Erste Schritte:**
 
-- [ ] Name festlegen und Repo anlegen (Nutzer).
+- [x] Name: GoDeb Play (04.11.).
+- [ ] Repo anlegen, wenn die Arbeit beginnt (Nutzer; vorerst nicht öffentlich).
 - [ ] Gerüst aus GoDeb übernehmen: Go-Daemon + React/Vite, `core.Run*`, `auth` (Login, 2FA, Sitzungen), `firstrun` (Token, Admin, Beitritt), Agent-Trennung. Prüfen, welche Pakete sich als gemeinsames Go-Modul lohnen, statt zu kopieren.
 - [ ] WireGuard-Beitritt mit dem bestehenden Beitrittscode und den Tests aus `plugins/wireguard/join_test.go`.
 - [ ] SteamCMD-Gerüst und Enshrouded aus `346cc85:plugins/steam/` übernehmen; offene Punkte von dort: Wine ohne X-Server, nur `queryPort`, Savegame-Backup.
@@ -230,8 +231,9 @@ Festgehalten, damit sie nicht wieder neu diskutiert werden.
 - **Ein Paket für alle Rollen** (20.10.): VPS und Heim-VM bekommen dasselbe GoDeb, Unterschiede nur über Setup-Rolle und eingeschaltete Plugins. Alle Plugins werden mitgeliefert und sind abschaltbar.
 - **Kein WireGuard-Server ohne Auswahl** (21.10.): Die Ersteinrichtung fragt die Rolle (Hub, Peer, ohne WireGuard) im Browser-Assistenten ab.
 - **Backups macht die Plattform** (21.10.): Proxmox bzw. Hetzner sichern die ganze Maschine, GoDeb hat keine eigene Backup-Funktion.
-- **Spielserver als eigenes Projekt** (03.11., ersetzt „Spielserver nur über das Plugin `steam`“ vom 20.10.): GoDeb bleibt Verwaltung für VPS und Heimserver; Spielserver laufen im eigenen Spielserver-Panel, das sich per WireGuard als Standort an den Hub hängt. Die Portweiterleitung bleibt in GoDeb.
-- **Assistent schlägt die VPS-Grundausstattung vor** (03.11.): WireGuard-Server, Mail-Gateway und Domains mit DNS lassen sich im Assistenten mit einem Klick einrichten. Es bleibt bei „nichts ohne Auswahl“: jeder Punkt ist abwählbar bzw. überspringbar. Der Hetzner-Token kommt auf der Kommandozeile nur über `GODEB_HETZNER_TOKEN`, nie als Flag.
+- **Spielserver als eigenes Projekt** (03.11., ersetzt „Spielserver nur über das Plugin `steam`“ vom 20.10.): GoDeb bleibt Verwaltung für VPS und Heimserver; Spielserver laufen in GoDeb Play (eigenes Projekt), das sich per WireGuard als Standort an den Hub hängt. Die Portweiterleitung bleibt in GoDeb.
+- **Postfach `postmaster@` automatisch** (04.11.): Jede Maildomain bekommt es mit den Aliassen `abuse@`, `dmarc@` und `tls-reports@`, damit die Berichte aus DMARC- und TLS-RPT-Eintrag ankommen; das Passwort wird einmal angezeigt. Gilt auf VPS und Heim-VM gleich (ein Paket).
+- **Assistent schlägt die VPS-Grundausstattung vor** (03.11.): WireGuard-Server, Mail-Gateway oder Mailserver und Domains mit DNS lassen sich im Assistenten mit einem Klick einrichten. Es bleibt bei „nichts ohne Auswahl“: jeder Punkt ist abwählbar bzw. überspringbar. Der Hetzner-Token kommt auf der Kommandozeile nur über `GODEB_HETZNER_TOKEN`, nie als Flag.
 - **Weboberfläche ohne root, root-Agent mit eigener 2FA** (22.10.) statt sudoers-Allowlist.
 - **Ein Repository** (21.10.): Plugins bleiben in `GoDeb`, keine Aufteilung in einzelne Repos oder eine GitHub-Organisation. Die Apps haben eigene Repos: `godeb-tunnel-android` (Apache-2.0) und `godeb-tunnel-arch` (GPL-3.0), öffentlich seit 23.10.; Windows (`godeb-wireguard-windows`) bleibt privat, bis der Produktname im Installer und in der Oberfläche umgebaut ist. Umbenannt von „GoDeb WireGuard“ wegen der Markenrichtlinie von WireGuard.
 - **Öffentlich unter GPL-3.0** (23.10.): neues Repo `ZeroDos1988/GoDeb` mit frischer Historie ab v0.2.1, nur unter dem Namen ZeroDos1988 (noreply-Adresse). Die Entwicklungsgeschichte bis dahin liegt im privaten Archiv `GoDeb-private`. `main` ist gegen Löschen und Force-Push geschützt, `v*`-Tags darf nur der Admin setzen; Lücken über Private Vulnerability Reporting.

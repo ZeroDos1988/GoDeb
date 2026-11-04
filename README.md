@@ -58,7 +58,7 @@ Jedes Plugin lässt sich im Plugin-Manager abschalten. Es verschwindet dann aus 
 | **E-Mail** | Mailserver wie bei HestiaCP: Domains, Postfächer mit Quota, Aliase, Weiterleitungen, Catch-all, DKIM/SPF/DMARC, Spamfilter (Postfix, Dovecot, Rspamd, optional ClamAV) |
 | **Mail-Gateway** | Postfix-Relay über WireGuard mit OpenDKIM, Queue und Statistik |
 
-Spielserver sind kein Teil von GoDeb mehr; dafür entsteht ein eigenes Spielserver-Panel, das sich per WireGuard an den GoDeb-Hub hängt.
+Spielserver sind kein Teil von GoDeb mehr; dafür entsteht das eigene Spielserver-Panel GoDeb Play, das sich per WireGuard an den GoDeb-Hub hängt.
 
 ## Installation
 

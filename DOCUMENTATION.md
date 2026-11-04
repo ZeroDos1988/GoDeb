@@ -96,7 +96,7 @@ Zwei Installationen mit **demselben GoDeb-Paket**. Sie unterscheiden sich nur in
 
 | | Hetzner-VPS | Heim-VM |
 | --- | --- | --- |
-| Rolle | Öffentlicher Eingang und WireGuard-Hub | Rechenleistung; Spielserver laufen im eigenen Spielserver-Panel (getrenntes Projekt) |
+| Rolle | Öffentlicher Eingang und WireGuard-Hub | Rechenleistung; Spielserver laufen in GoDeb Play (getrenntes Projekt) |
 | `wg0` | Server `10.8.0.1/24`, `ListenPort 51820` | Client des VPS, feste Adresse `10.8.0.2`, `AllowedIPs 10.8.0.0/24` |
 | Plugins | wireguard, ufw, fail2ban, apt, systemd, certbot, domains, Portweiterleitung, Mail-Gateway | ufw, fail2ban, apt, systemd |
 | Web-UI | `10.8.0.1:8080` | `10.8.0.2:8080` (über den Hub) |
@@ -131,7 +131,7 @@ Zwei Installationen mit **demselben GoDeb-Paket**. Sie unterscheiden sich nur in
    ```
 
    Beides schreibt `wg0.conf` als Peer, startet den Tunnel, wartet auf den Handshake und richtet ufw ein: SSH, `8080/tcp` auf `wg0`, HTTPS `8443/tcp` nur aus dem LAN, kein offener WireGuard-Port. `--join` nimmt auch eine Datei (Client-Datei oder Code).
-4. **Spielserver:** GoDeb bringt seit v0.2.19 keine Spielserver mehr mit. Sie laufen künftig im eigenen Spielserver-Panel (getrenntes Projekt, siehe `ROADMAP.md` „Spielserver-Panel“), das sich wie ein Standort per Beitrittscode mit dem Hub verbindet.
+4. **Spielserver:** GoDeb bringt seit v0.2.19 keine Spielserver mehr mit. Sie laufen künftig in GoDeb Play (getrenntes Projekt, siehe `ROADMAP.md` „GoDeb Play“), das sich wie ein Standort per Beitrittscode mit dem Hub verbindet.
 
    Wer das alte Plugin genutzt hat: Das Update lässt `godeb-steam-<spiel>.service`, das Konto `steam-<spiel>`, `/var/lib/godeb-steam` und die ufw-Regeln der Spielports unangetastet; der Server läuft weiter, GoDeb zeigt ihn nur nicht mehr an. Aufräumen, wenn er nicht mehr gebraucht wird (Spielstände vorher sichern):
 
@@ -671,7 +671,7 @@ sudo systemctl restart godeb-agent godeb
 
 **VPS ist weg (gelöscht, kompromittiert):** neuen VPS aus dem Hetzner-Backup erstellen; die IP ändert sich dabei meist. Danach: Endpoint in den Client-Dateien anpassen (WireGuard → Clients neu herunterladen bzw. QR neu scannen), Heim-VM neu verbinden (am Hub Standort neu anlegen; auf der Heim-VM `/etc/wireguard/wg0.conf` beiseitelegen, denn `godeb setup --join -` ersetzt eine abweichende Datei nicht, dann den neuen Beitrittscode einfügen), DNS-Einträge (Domains → Anwenden) und Reverse-DNS auf die neue IP. Ohne Backup: frisch installieren, Ersteinrichtung als Hub, Standort neu anlegen, Postfächer neu anlegen (Mails sind dann verloren). Bei Verdacht auf Einbruch nie das alte System weiterverwenden, sondern neu aufsetzen und alle Passwörter, das Hetzner-API-Token und die WireGuard-Schlüssel erneuern.
 
-**Heim-VM ist weg:** Proxmox-Backup zurückspielen. Ohne Backup: Debian 13 neu, GoDeb installieren, am Hub den Standort löschen und neu anlegen, mit dem neuen Beitrittscode verbinden, Spielserver im Spielserver-Panel wiederherstellen.
+**Heim-VM ist weg:** Proxmox-Backup zurückspielen. Ohne Backup: Debian 13 neu, GoDeb installieren, am Hub den Standort löschen und neu anlegen, mit dem neuen Beitrittscode verbinden, Spielserver in GoDeb Play wiederherstellen.
 
 ### Logs
 
