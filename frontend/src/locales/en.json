@@ -1017,7 +1017,9 @@
     "hide": "Hide",
     "postmasterCreated": "Mailbox {{address}} created, plus the aliases {{aliases}} for abuse reports and the DMARC and TLS reports. Password:",
     "postmasterOnce": "Shown only now. Write it down or set a new one on the mailbox later.",
-    "postmasterContinue": "Continue to the domain"
+    "postmasterContinue": "Continue to the domain",
+    "roleTarget": "Role addresses to (optional)",
+    "roleTargetHint": "postmaster@, abuse@, dmarc@ and tls-reports@ go to this existing address. Empty: a postmaster@ mailbox of its own."
   },
   "ens": {
     "name": "Server name",
@@ -1226,7 +1228,17 @@
     "mailboxOnce": "Shown only now. Write it down or set a new one later under E-mail.",
     "certText": "Mail clients expect a valid certificate for {{host}}. As soon as the A record is visible worldwide (at Hetzner usually within minutes), GoDeb gets it from Let's Encrypt.",
     "certButton": "Get certificate",
-    "certStarted": "Running in the background; the E-mail page shows the progress."
+    "certStarted": "Running in the background; the E-mail page shows the progress.",
+    "firstMailbox": "Create a first e-mail address of your own",
+    "firstMailboxHint": "Your mailbox, e.g. firstname@your-domain. You sign in with it in Thunderbird or on your phone.",
+    "mailboxAddress": "Address",
+    "mailboxLocalPlaceholder": "firstname",
+    "mailboxPasswordHint": "10 to 128 characters. Stored only as a hash.",
+    "rolesToMailbox": "Send postmaster@, abuse@, dmarc@ and tls-reports@ of all domains to {{address}}",
+    "rolesToMailboxHint": "Everything arrives in your mailbox, no postmaster mailbox of its own. Aliases in the same domain, forwards for the other domains.",
+    "yourAddress": "your address",
+    "personalCreated": "Mailbox {{address}} created.",
+    "rolesRouted": "{{aliases}} → {{target}}"
   },
   "clients": {
     "title": "Devices and sites",

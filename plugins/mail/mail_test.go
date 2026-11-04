@@ -363,3 +363,44 @@ func TestEnsurePostmasterAndReports(t *testing.T) {
 		}
 	}
 }
+
+func TestRouteRolesToPersonalMailbox(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("GODEB_MAIL_ROOT", dir)
+	t.Setenv("GODEB_AGENT_DB", filepath.Join(dir, "agent.db"))
+	t.Setenv("GODEB_AGENT_MASTER_KEY", filepath.Join(dir, "agent.key"))
+	anna := Account{Domain: "example.com", Local: "anna"}
+	if err := saveAccount(anna); err != nil {
+		t.Fatal(err)
+	}
+	_, accounts, _ := loadAll()
+	// Same domain: the role addresses become aliases of anna.
+	added, err := routeRoles("example.com", accounts, "anna@example.com")
+	if err != nil || len(added) != 4 {
+		t.Fatalf("same domain: %v %v", added, err)
+	}
+	_, accounts, _ = loadAll()
+	got, _ := findAccount(accounts, "anna@example.com")
+	if strings.Join(got.Aliases, ",") != "postmaster,abuse,dmarc,tls-reports" {
+		t.Fatalf("aliases = %v", got.Aliases)
+	}
+	// Other domain: one forward-only address carries all role addresses.
+	if _, err := routeRoles("example.org", accounts, "anna@example.com"); err != nil {
+		t.Fatal(err)
+	}
+	_, accounts, _ = loadAll()
+	pm, err := findAccount(accounts, "postmaster@example.org")
+	if err != nil || !pm.ForwardOnly || strings.Join(pm.Forward, ",") != "anna@example.com" || len(pm.Aliases) != 3 {
+		t.Fatalf("forward = %+v %v", pm, err)
+	}
+	if dmarcReports("example.org", accounts) != "dmarc@example.org" {
+		t.Fatal("dmarc@example.org should exist as alias")
+	}
+	// Nothing left to do on a second run; a missing target is refused.
+	if added, err := routeRoles("example.org", accounts, "anna@example.com"); err != nil || len(added) != 0 {
+		t.Fatalf("rerun: %v %v", added, err)
+	}
+	if _, err := routeRoles("example.net", nil, "bob@example.net"); err == nil {
+		t.Fatal("missing target accepted")
+	}
+}

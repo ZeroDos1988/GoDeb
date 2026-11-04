@@ -19,6 +19,7 @@ import (
 	"godeb/backend/core"
 	"godeb/backend/firstrun"
 	"godeb/backend/pluginmgr"
+	"godeb/plugins/mail"
 	"godeb/plugins/wireguard"
 )
 
@@ -40,6 +41,8 @@ type setupOptions struct {
 	FullTunnel bool
 	MailRelay  bool
 	MailServer string
+	Mailbox    string
+	OwnPM      bool
 	Domains    string
 	NoDefaults bool
 	Yes        bool
@@ -67,6 +70,8 @@ func runSetup(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	fs.BoolVar(&opt.FullTunnel, "full-tunnel", false, "Hub: Internetverkehr der Clients über diesen Server (NAT, Bandbreite und Traffic beachten)")
 	fs.BoolVar(&opt.MailRelay, "mail-relay", false, "Hub: Mail-Gateway installieren (Postfix-Relay an 10.8.0.2 im Tunnel)")
 	fs.StringVar(&opt.MailServer, "mail-server", "", "Mailserver (Postfix, Dovecot, Rspamd) auf diesem Server mit diesem Hostnamen, z. B. mail.example.com; schließt --mail-relay aus")
+	fs.StringVar(&opt.Mailbox, "mailbox", "", "mit --mail-server: erstes eigenes Postfach, z. B. anna@example.com (Passwort aus GODEB_MAILBOX_PASSWORD, sonst zufällig und angezeigt)")
+	fs.BoolVar(&opt.OwnPM, "separate-postmaster", false, "mit --mailbox: eigenes Postfach postmaster@ statt postmaster, abuse, dmarc und tls-reports an --mailbox")
 	fs.StringVar(&opt.Domains, "domains", "", "Domains, durch Komma getrennt; mit GODEB_HETZNER_TOKEN legt GoDeb die DNS-Einträge bei Hetzner an")
 	fs.BoolVar(&opt.NoDefaults, "no-dns-defaults", false, "keine Standardeinträge (Web, www, mail, webmail, MX, SPF, DMARC) für --domains")
 	fs.BoolVar(&opt.Yes, "yes", false, "keine Rückfragen, Standardwerte nehmen")
@@ -219,8 +224,24 @@ func (s *setup) services(ctx context.Context) error {
 		return nil
 	}
 	token := strings.TrimSpace(os.Getenv("GODEB_HETZNER_TOKEN"))
+	mailbox, mbPassword := "", ""
+	if server != "" {
+		mailbox = strings.TrimSpace(s.opt.Mailbox)
+		if mailbox == "" && !s.opt.Yes {
+			mailbox = s.ask("Erste eigene E-Mail-Adresse, z. B. anna@example.com (leer = keine)", "")
+		}
+		if mailbox != "" {
+			if mbPassword = os.Getenv("GODEB_MAILBOX_PASSWORD"); mbPassword == "" {
+				if mbPassword, err = mail.RandomPassword(); err != nil {
+					return err
+				}
+				fmt.Fprintf(s.out, "  Passwort für %s: %s (wird nur jetzt angezeigt)\n", mailbox, mbPassword)
+			}
+		}
+	}
 	results, err := firstrun.SetupDomains(ctx, firstrun.DomainsSpec{
 		Token: token, Domains: strings.Split(list, ","), Defaults: !s.opt.NoDefaults, MailRelay: relay, MailServer: server != "",
+		Mailbox: mailbox, MailboxPassword: mbPassword, RolesToMailbox: mailbox != "" && !s.opt.OwnPM,
 	})
 	if err != nil {
 		return err
@@ -233,6 +254,12 @@ func (s *setup) services(ctx context.Context) error {
 		fmt.Fprintf(s.out, "  %s (%s)\n", d.Name, mode)
 		for _, r := range d.Records {
 			fmt.Fprintf(s.out, "    %-8s %s\n", r.Status, r.ZoneLine)
+		}
+		if d.Personal != "" {
+			fmt.Fprintf(s.out, "    Postfach %s angelegt\n", d.Personal)
+		}
+		if d.RoleTarget != "" && len(d.Aliases) > 0 {
+			fmt.Fprintf(s.out, "    %s → %s\n", strings.Join(d.Aliases, ", "), d.RoleTarget)
 		}
 		if d.Mailbox != "" {
 			fmt.Fprintf(s.out, "    Postfach %s (Aliasse %s), Passwort: %s\n", d.Mailbox, strings.Join(d.Aliases, ", "), d.Password)

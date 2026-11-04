@@ -39,6 +39,8 @@ type DomainResult = {
   mailbox?: string;
   password?: string;
   aliases?: string[];
+  personal?: string;
+  roleTarget?: string;
 };
 
 type HubResult = { publicKey?: string; endpoint: string; first?: ClientResult };
@@ -348,9 +350,19 @@ function ServicesStep({ info, role, onBack, onNext }: { info: SetupInfo; role: R
   const [error, setError] = useState("");
   const [results, setResults] = useState<DomainResult[] | null>(null);
   const [certStarted, setCertStarted] = useState(false);
+  const [withMailbox, setWithMailbox] = useState(true);
+  const [mbLocal, setMbLocal] = useState("");
+  const [mbDomain, setMbDomain] = useState("");
+  const [mbPassword, setMbPassword] = useState("");
+  const [mbRepeat, setMbRepeat] = useState("");
+  const [rolesToMailbox, setRolesToMailbox] = useState(true);
 
   const domainList = domainText.split(/[\s,;]+/).map((d) => d.trim().toLowerCase()).filter(Boolean);
   const shownHost = hostEdited ? hostname : domainList[0] ? `mail.${domainList[0]}` : "";
+  // The first personal mailbox only exists with the mail server here.
+  const mailbox = mailMode === "server" && withMailbox && domainList.length > 0;
+  const mbDomainShown = domainList.includes(mbDomain) ? mbDomain : (domainList[0] ?? "");
+  const mbAddress = `${mbLocal.trim().toLowerCase()}@${mbDomainShown}`;
 
   const mailModes: { id: MailMode; show: boolean }[] = [
     { id: "none", show: !relaySet && !serverSet },
@@ -399,6 +411,9 @@ function ServicesStep({ info, role, onBack, onNext }: { info: SetupInfo; role: R
             mailRelay: mailMode === "relay",
             mailServer: mailMode === "server",
             relayHost,
+            mailbox: mailbox ? mbAddress : "",
+            mailboxPassword: mailbox ? mbPassword : "",
+            rolesToMailbox: mailbox && rolesToMailbox,
           }),
         });
         setResults(res.domains);
@@ -425,6 +440,7 @@ function ServicesStep({ info, role, onBack, onNext }: { info: SetupInfo; role: R
 
   const needToken = domainList.length > 0 && dnsMode === "hetzner" && !services.tokenSet && token.trim() === "";
   const needHost = mailMode === "server" && !services.mailServer && shownHost === "";
+  const mailboxIncomplete = mailbox && (mbLocal.trim() === "" || mbPassword.length < 10 || mbPassword !== mbRepeat);
   const nothing = domainList.length === 0 && (mailMode === "none" || (mailMode === "relay" && services.mailRelayReady) || (mailMode === "server" && services.mailServer));
 
   return (
@@ -490,13 +506,54 @@ function ServicesStep({ info, role, onBack, onNext }: { info: SetupInfo; role: R
                 />
               </Field>
             )}
-            <p className="text-xs text-white/55">{t("setup.mailboxHint")}</p>
+            {domainList.length > 0 ? (
+              <div className="mt-3 rounded-2xl border border-white/10 bg-black/10 px-3 py-3">
+                <Check checked={withMailbox} onChange={setWithMailbox} label={t("setup.firstMailbox")} hint={t("setup.firstMailboxHint")} />
+                {withMailbox ? (
+                  <div className="mt-3 space-y-3">
+                    <Field label={t("setup.mailboxAddress")}>
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
+                        <input
+                          value={mbLocal}
+                          onChange={(e) => setMbLocal(e.target.value)}
+                          placeholder={t("setup.mailboxLocalPlaceholder")}
+                          autoComplete="off"
+                          className={`${input} min-w-0 flex-1 basis-32 font-mono`}
+                        />
+                        <span className="text-white/60">@</span>
+                        <select value={mbDomainShown} onChange={(e) => setMbDomain(e.target.value)} className={`${input} min-w-0 flex-1 basis-40 font-mono`}>
+                          {domainList.map((d) => (
+                            <option key={d} value={d}>{d}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </Field>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <Field label={t("login.password")} hint={t("setup.mailboxPasswordHint")}>
+                        <input type="password" value={mbPassword} onChange={(e) => setMbPassword(e.target.value)} autoComplete="new-password" className={input} />
+                      </Field>
+                      <Field label={t("setup.passwordRepeat")}>
+                        <input type="password" value={mbRepeat} onChange={(e) => setMbRepeat(e.target.value)} autoComplete="new-password" className={input} />
+                      </Field>
+                    </div>
+                    {mbRepeat !== "" && mbPassword !== mbRepeat ? <p className="text-xs text-debian">{t("setup.passwordMismatch")}</p> : null}
+                    <Check
+                      checked={rolesToMailbox}
+                      onChange={setRolesToMailbox}
+                      label={t("setup.rolesToMailbox", { address: mbLocal.trim() ? mbAddress : t("setup.yourAddress") })}
+                      hint={t("setup.rolesToMailboxHint")}
+                    />
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+            {!mailbox || !rolesToMailbox ? <p className="text-xs text-white/55">{t("setup.mailboxHint")}</p> : null}
           </div>
         ) : null}
       </section>
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
-        <button type="button" className={primary} disabled={busy || nothing || needToken || needHost} onClick={() => void run()}>
+        <button type="button" className={primary} disabled={busy || nothing || needToken || needHost || mailboxIncomplete} onClick={() => void run()}>
           {busy ? t("setup.working") : t("setup.servicesApply")}
         </button>
         {progress ? <span className="min-w-0 text-xs break-words text-white/60">{progress}</span> : null}
@@ -555,6 +612,10 @@ function DomainResults({ results }: { results: DomainResult[] }) {
               {d.mailServer ? ` · ${t("setup.domainServer")}` : ""}
             </span>
           </p>
+          {d.personal ? <p className="mt-1 text-xs text-emerald-300">{t("setup.personalCreated", { address: d.personal })}</p> : null}
+          {d.roleTarget && (d.aliases ?? []).length > 0 ? (
+            <p className="mt-1 text-xs text-white/70">{t("setup.rolesRouted", { aliases: (d.aliases ?? []).join(", "), target: d.roleTarget })}</p>
+          ) : null}
           {d.mailbox ? (
             <div className="mt-2 rounded-2xl border border-amber-300/20 bg-amber-400/5 px-3 py-2 text-xs">
               <p>{t("setup.mailboxCreated", { address: d.mailbox, aliases: (d.aliases ?? []).join(", ") })}</p>

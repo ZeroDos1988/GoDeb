@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
@@ -100,7 +101,14 @@ type DomainsSpec struct {
 	Defaults   bool     `json:"defaults"`   // web, www, mail, webmail, MX, SPF, DMARC
 	MailRelay  bool     `json:"mailRelay"`  // accept mail for these domains on the gateway
 	MailServer bool     `json:"mailServer"` // mail domains with postmaster mailbox on this host
-	RelayHost  string   `json:"relayHost"`  // next hop in the tunnel, default 10.8.0.2
+	// First personal mailbox (mail server only), e.g. anna@example.com; its
+	// domain must be in Domains. RolesToMailbox sends postmaster, abuse,
+	// dmarc and tls-reports of every domain there instead of postmaster
+	// mailboxes of their own.
+	Mailbox         string `json:"mailbox"`
+	MailboxPassword string `json:"mailboxPassword"`
+	RolesToMailbox  bool   `json:"rolesToMailbox"`
+	RelayHost       string `json:"relayHost"` // next hop in the tunnel, default 10.8.0.2
 }
 
 // DomainResult is what happened to one domain.
@@ -113,9 +121,11 @@ type DomainResult struct {
 	Error      string           `json:"error,omitempty"`
 	// Mail server: the postmaster mailbox created now and its password,
 	// shown once (only the hash is stored).
-	Mailbox  string   `json:"mailbox,omitempty"`
-	Password string   `json:"password,omitempty"`
-	Aliases  []string `json:"aliases,omitempty"`
+	Mailbox    string   `json:"mailbox,omitempty"`
+	Password   string   `json:"password,omitempty"`
+	Aliases    []string `json:"aliases,omitempty"`
+	Personal   string   `json:"personal,omitempty"`   // first personal mailbox created in this domain
+	RoleTarget string   `json:"roleTarget,omitempty"` // where the role addresses go, if not postmaster@
 }
 
 // CleanDomains normalizes, deduplicates and bounds the domain list.
@@ -180,6 +190,26 @@ func SetupDomains(ctx context.Context, spec DomainsSpec) ([]DomainResult, error)
 	if spec.MailServer && relay {
 		return nil, errors.New("Mail-Gateway und Mailserver schließen sich aus")
 	}
+	personal, personalDomain := "", ""
+	if spec.MailServer && strings.TrimSpace(spec.Mailbox) != "" {
+		if personal, err = mail.NormalizeAddress(spec.Mailbox); err != nil {
+			return nil, err
+		}
+		_, personalDomain, _ = strings.Cut(personal, "@")
+		if !slices.Contains(list, personalDomain) {
+			return nil, errors.New("Die Domain von " + personal + " fehlt in der Liste")
+		}
+		if err := mail.CheckMailboxPassword(spec.MailboxPassword); err != nil {
+			return nil, err
+		}
+		// The mailbox domain first, so the role addresses of the other
+		// domains can point to the new mailbox.
+		list = append([]string{personalDomain}, slices.DeleteFunc(list, func(d string) bool { return d == personalDomain })...)
+	}
+	roleTarget := ""
+	if personal != "" && spec.RolesToMailbox {
+		roleTarget = personal
+	}
 	out := make([]DomainResult, 0, len(list))
 	for _, name := range list {
 		res := DomainResult{Name: name, Mode: mode, Records: []domains.Record{}}
@@ -197,13 +227,24 @@ func SetupDomains(ctx context.Context, spec DomainsSpec) ([]DomainResult, error)
 			}
 		}
 		if spec.MailServer {
-			setup, err := mail.AddDomain(ctx, name)
+			opt := mail.DomainOptions{RoleTarget: roleTarget}
+			if name == personalDomain {
+				opt.Mailbox, _, _ = strings.Cut(personal, "@")
+				opt.Password = spec.MailboxPassword
+			}
+			setup, err := mail.AddDomain(ctx, name, opt)
 			switch {
 			case err == nil, errors.Is(err, mail.ErrDomainExists):
 				res.MailServer = true
 				res.Mailbox, res.Password, res.Aliases = setup.Postmaster, setup.Password, setup.Aliases
+				res.Personal, res.RoleTarget = setup.Mailbox, setup.RoleTarget
 			default:
 				problems = append(problems, "Mailserver: "+err.Error())
+				if name == personalDomain {
+					// Without the mailbox the other domains get their own
+					// postmaster instead of forwarding into nothing.
+					roleTarget = ""
+				}
 			}
 		}
 		var recs []domains.Record

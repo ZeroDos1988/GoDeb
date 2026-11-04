@@ -35,3 +35,14 @@ func TestSetupDomainsRefusesRelayWithoutPackages(t *testing.T) {
 		t.Fatalf("err = %v", err)
 	}
 }
+
+func TestSetupDomainsChecksMailboxFirst(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("GODEB_AGENT_DB", filepath.Join(dir, "agent.db"))
+	t.Setenv("GODEB_MASTER_KEY", filepath.Join(dir, "master.key"))
+	// Without an installed mail server nothing is created.
+	_, err := SetupDomains(context.Background(), DomainsSpec{Domains: []string{"example.com"}, MailServer: true, Mailbox: "anna@example.com", MailboxPassword: "lang-genug-123"})
+	if err == nil || !strings.Contains(err.Error(), "nicht eingerichtet") {
+		t.Fatalf("err = %v", err)
+	}
+}

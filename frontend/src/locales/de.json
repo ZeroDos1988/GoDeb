@@ -1017,7 +1017,9 @@
     "hide": "Verbergen",
     "postmasterCreated": "Postfach {{address}} angelegt, dazu die Aliasse {{aliases}} für Missbrauchsmeldungen und die DMARC- und TLS-Berichte. Passwort:",
     "postmasterOnce": "Wird nur jetzt angezeigt. Notieren oder später beim Postfach ein neues setzen.",
-    "postmasterContinue": "Weiter zur Domain"
+    "postmasterContinue": "Weiter zur Domain",
+    "roleTarget": "Rollenadressen an (optional)",
+    "roleTargetHint": "postmaster@, abuse@, dmarc@ und tls-reports@ gehen an diese vorhandene Adresse. Leer: eigenes Postfach postmaster@."
   },
   "ens": {
     "name": "Servername",
@@ -1226,7 +1228,17 @@
     "mailboxOnce": "Wird nur jetzt angezeigt. Notieren oder später unter E-Mail ein neues setzen.",
     "certText": "Mailprogramme erwarten ein gültiges Zertifikat für {{host}}. Sobald der A-Eintrag weltweit sichtbar ist (bei Hetzner meist nach wenigen Minuten), holt GoDeb es bei Let's Encrypt.",
     "certButton": "Zertifikat holen",
-    "certStarted": "Läuft im Hintergrund; den Stand zeigt die Seite E-Mail."
+    "certStarted": "Läuft im Hintergrund; den Stand zeigt die Seite E-Mail.",
+    "firstMailbox": "Erste eigene E-Mail-Adresse anlegen",
+    "firstMailboxHint": "Dein Postfach, z. B. vorname@deine-domain. Damit meldest du dich in Thunderbird oder am Handy an.",
+    "mailboxAddress": "Adresse",
+    "mailboxLocalPlaceholder": "vorname",
+    "mailboxPasswordHint": "10 bis 128 Zeichen. Wird nur als Hash gespeichert.",
+    "rolesToMailbox": "postmaster@, abuse@, dmarc@ und tls-reports@ aller Domains an {{address}} leiten",
+    "rolesToMailboxHint": "Alles landet zentral in deinem Postfach, kein eigenes Postmaster-Postfach. In derselben Domain als Aliasse, bei den anderen Domains als Weiterleitung.",
+    "yourAddress": "deine Adresse",
+    "personalCreated": "Postfach {{address}} angelegt.",
+    "rolesRouted": "{{aliases}} → {{target}}"
   },
   "clients": {
     "title": "Geräte und Standorte",

@@ -179,12 +179,13 @@ func applyAndRespond(w http.ResponseWriter, r *http.Request, status int, body ma
 
 func handleAddDomain(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Name string `json:"name"`
+		Name       string `json:"name"`
+		RoleTarget string `json:"roleTarget"` // existing address for postmaster, abuse, dmarc, tls-reports
 	}
 	if !core.DecodeJSON(w, r, &req) || !requireInstalled(w) {
 		return
 	}
-	res, err := AddDomain(r.Context(), req.Name)
+	res, err := AddDomain(r.Context(), req.Name, DomainOptions{RoleTarget: req.RoleTarget})
 	switch {
 	case errors.Is(err, ErrDomainExists):
 		core.WriteError(w, http.StatusConflict, res.Domain.Name+" ist bereits eingerichtet")

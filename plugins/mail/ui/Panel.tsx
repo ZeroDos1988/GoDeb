@@ -297,6 +297,7 @@ function Domains({
   const { t } = useTranslation();
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
+  const [roleTarget, setRoleTarget] = useState("");
   const [busy, setBusy] = useState(false);
   // The postmaster password of a new domain is shown once.
   const [created, setCreated] = useState<{ name: string; postmaster: string; password: string; aliases: string[] } | null>(null);
@@ -309,11 +310,12 @@ function Domains({
     try {
       const res = await api<{ domain: { name: string }; postmaster?: string; password?: string; aliases?: string[] }>(`${base}/domains`, {
         method: "POST",
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ name, roleTarget: roleTarget.trim() }),
       });
       setAdding(false);
       onChanged();
       setName("");
+      setRoleTarget("");
       if (res.postmaster && res.password) {
         setCreated({ name: res.domain.name, postmaster: res.postmaster, password: res.password, aliases: res.aliases ?? [] });
       } else {
@@ -355,6 +357,16 @@ function Domains({
                 placeholder="example.com"
                 required
                 autoFocus
+                className={`${input} font-mono`}
+              />
+            </Field>
+          </div>
+          <div className="min-w-0 flex-1 basis-60">
+            <Field label={t("mail.roleTarget")} hint={t("mail.roleTargetHint")}>
+              <input
+                value={roleTarget}
+                onChange={(e) => setRoleTarget(e.target.value)}
+                placeholder="anna@example.com"
                 className={`${input} font-mono`}
               />
             </Field>
