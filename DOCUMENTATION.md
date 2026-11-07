@@ -322,8 +322,16 @@ Ein Befund aus `/api/doctor` oder der Überwachung kann eine Aktion tragen (`fix
 | Sicherheitsupdates ausstehend | Sicherheitsupdates einspielen | `POST /api/plugins/apt/security` |
 | DNS-Eintrag fehlt oder falsch, Domain im Hetzner-Modus | Einträge setzen | `POST /api/plugins/domains/domains/{domain}/apply` |
 | App-Zugang ohne Zertifikat oder kurz vor Ablauf | Zertifikat neu holen | `POST /api/plugins/apphttps/renew` |
+| Neustart nötig (`/run/reboot-required`) | Jetzt neu starten | `POST /api/plugins/systemd/reboot` |
+| Neustart geplant | Abbrechen | `POST /api/plugins/systemd/reboot/cancel` |
 
-Was sich nicht sicher automatisch lösen lässt (Platte voll, Journal-Fehler, Härtung, Zertifikate von Certbot, Neustart nötig), führt weiter mit dem Pfeil zur passenden Seite. Plugins melden eigene Befunde mit `doctor.Register`.
+Was sich nicht sicher automatisch lösen lässt (Platte voll, Journal-Fehler, Härtung, Zertifikate von Certbot), führt weiter mit dem Pfeil zur passenden Seite. Plugins melden eigene Befunde mit `doctor.Register`.
+
+### Server neu starten
+
+Unter System → Dienste steht oben die Karte „Server“: Neustart nötig (aus `/run/reboot-required`, mit den Paketen), „Server neu starten“ und ein geplanter Neustart mit „Abbrechen“. Der Neustart läuft im Agenten als `shutdown -r +1` mit Ankündigung an angemeldete Terminals, verlangt Passwort und frischen Code und wird abgelehnt, solange eine APT-Aktion läuft (halb konfigurierte Pakete). Den geplanten Zeitpunkt liest GoDeb aus logind (`busctl … ScheduledShutdown`), also sieht die Oberfläche auch ein `shutdown -r` aus dem Terminal. Herunterfahren gibt es bewusst nicht: Einen VPS bekommt man danach nur über die Hetzner-Konsole wieder an.
+
+**Automatisch nachts** (aus, Standard 04:00): Der Agent prüft jede Minute; ist `/run/reboot-required` gesetzt und die gewählte Uhrzeit erreicht (Fenster eine Stunde, Ortszeit des Servers), plant er denselben Neustart. Nicht bei laufender APT-Aktion (er versucht es in der Stunde erneut) und nicht, wenn der Server weniger als zwei Stunden läuft (keine Neustart-Schleife). Hub und Heim-VM auf verschiedene Zeiten stellen, damit die Heim-VM den Hub nach dessen Neustart wieder erreicht und nicht beide gleichzeitig fehlen. Einstellung in `/etc/godeb/reboot.json`.
 
 ### Notfall-Reset
 
@@ -536,6 +544,10 @@ Alle außer `status` antworten nach dem Abschluss mit `410`.
 | GET | `/api/plugins/systemd/overview` (Eckdaten des Servers, ausgewählte Dienste mit Status, Laufzeit, CPU, RAM) |
 | GET | `/api/plugins/systemd/services` |
 | POST | `/api/plugins/systemd/action` (`unit`, `action`: `start`, `stop`, `restart`; nicht für GoDebs eigene Units) |
+| GET | `/api/plugins/systemd/reboot` (Neustart nötig, betroffene Pakete, geplanter Zeitpunkt aus logind, Einstellung des automatischen Neustarts) |
+| POST | `/api/plugins/systemd/reboot` (`shutdown -r +1` mit Ankündigung; Passwort und frischer Code; abgelehnt, solange eine APT-Aktion läuft) |
+| POST | `/api/plugins/systemd/reboot/cancel` (`shutdown -c`; ohne Code, weil es nur einen Neustart verhindert) |
+| POST | `/api/plugins/systemd/reboot/settings` (`auto`, `time` `HH:MM`; `/etc/godeb/reboot.json`) |
 | GET | `/api/plugins/certbot/certificates` |
 | GET | `/api/plugins/fail2ban/status` |
 | POST | `/api/plugins/fail2ban/unban` |

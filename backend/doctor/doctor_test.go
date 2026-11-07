@@ -222,3 +222,42 @@ func TestCheckDatabases(t *testing.T) {
 		t.Fatal("without CheckDB there must be no finding")
 	}
 }
+
+func TestParseScheduledShutdown(t *testing.T) {
+	mode, at, ok := ParseScheduledShutdown("(st) \"reboot\" 1731024000000000\n")
+	if !ok || mode != "reboot" || at.Unix() != 1731024000 {
+		t.Fatalf("%q %v %v", mode, at, ok)
+	}
+	for _, in := range []string{`(st) "" 0`, "", "garbage", `(st) "reboot" 0`, `(st) "reboot" x`} {
+		if _, _, ok := ParseScheduledShutdown(in); ok {
+			t.Errorf("%q parsed as scheduled", in)
+		}
+	}
+}
+
+func TestCheckReboot(t *testing.T) {
+	scheduled := ""
+	env := Env{
+		Run: func(_ context.Context, name string, _ ...string) core.CommandResult {
+			if name != "busctl" {
+				return core.CommandResult{Err: exec.ErrNotFound}
+			}
+			return core.CommandResult{Stdout: scheduled}
+		},
+		Exists: func(p string) bool { return p == "/run/reboot-required" },
+	}
+	got := checkReboot(context.Background(), env)
+	if len(got) != 1 || got[0].Fix == nil || got[0].Fix.Action != "reboot" || got[0].Fix.Path != RebootPath {
+		t.Fatalf("required: %+v", got)
+	}
+	scheduled = `(st) "reboot" 1731024000000000`
+	got = checkReboot(context.Background(), env)
+	if len(got) != 1 || got[0].Fix == nil || got[0].Fix.Action != "rebootCancel" || !strings.Contains(got[0].Text, "Neustart geplant") {
+		t.Fatalf("scheduled: %+v", got)
+	}
+	scheduled = `(st) "" 0`
+	env.Exists = func(string) bool { return false }
+	if got := checkReboot(context.Background(), env); len(got) != 0 {
+		t.Fatalf("nothing pending: %+v", got)
+	}
+}

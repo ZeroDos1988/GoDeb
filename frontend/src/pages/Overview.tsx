@@ -82,8 +82,12 @@ export function Overview() {
   const series = (name: string) => health.data?.series?.find((s) => s.name === name)?.value;
   const cpu = series("cpu") ?? info?.cpu ?? 0;
 
-  const monitorIssues = (health.data?.findings ?? []).filter((f) => f.status !== "info");
   const doctorIssues = (doctor.data?.findings ?? []).filter((f) => f.level === "FAIL" || f.level === "WARN");
+  // The doctor's reboot finding carries the button; skip the monitor's twin.
+  const doctorReboot = doctorIssues.some((f) => f.page === "systemd" && f.fix?.path.includes("/reboot"));
+  const monitorIssues = (health.data?.findings ?? []).filter(
+    (f) => f.status !== "info" && !(doctorReboot && f.id === "reboot"),
+  );
   const issueCount = monitorIssues.length + doctorIssues.length;
   const status = worst(
     health.data?.status ?? "ok",

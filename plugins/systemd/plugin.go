@@ -11,6 +11,7 @@ import (
 
 func init() {
 	core.Register("systemd", Mount)
+	core.RegisterService("systemd", runAutoReboot)
 }
 
 var unitPattern = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9:._@-]{0,120}\.service$`)
@@ -20,6 +21,10 @@ func Mount(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/plugins/systemd/services", handleServices)
 	mux.HandleFunc("GET /api/plugins/systemd/overview", handleOverview)
 	mux.HandleFunc("POST /api/plugins/systemd/action", handleAction)
+	mux.HandleFunc("GET /api/plugins/systemd/reboot", handleRebootStatus)
+	mux.HandleFunc("POST /api/plugins/systemd/reboot", handleReboot)
+	mux.HandleFunc("POST /api/plugins/systemd/reboot/cancel", handleRebootCancel)
+	mux.HandleFunc("POST /api/plugins/systemd/reboot/settings", handleRebootSettings)
 }
 
 type listResponse struct {

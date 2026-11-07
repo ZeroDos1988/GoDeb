@@ -124,7 +124,7 @@ func Check(ctx context.Context, env Env) []Finding {
 	var out []Finding
 	for _, c := range []func(context.Context, Env) []Finding{
 		checkVersion, checkServices, checkPorts, checkFirewall, checkRegistered, checkWireGuard,
-		checkCerts, checkDNS, checkJournal, checkUpdates, checkDisk, CheckDatabases, checkHardening,
+		checkCerts, checkDNS, checkJournal, checkUpdates, checkReboot, checkDisk, CheckDatabases, checkHardening,
 	} {
 		out = append(out, c(ctx, env)...)
 	}
@@ -174,6 +174,7 @@ var pages = map[string]string{
 	"Journal (Fehler seit Systemstart)": "logs",
 	"Speicher":                          "monitor",
 	"Fernzugang":                        "ufw",
+	"Neustart":                          "systemd",
 }
 
 // NewReport turns Check results into the API payload.
@@ -609,10 +610,56 @@ func checkUpdates(ctx context.Context, env Env) []Finding {
 			out = append(out, Finding{Area: area, Level: OK, Text: "System aktuell"})
 		}
 	}
-	if env.Exists("/run/reboot-required") {
-		out = append(out, Finding{Area: area, Level: Warn, Text: "Neustart nötig (/run/reboot-required)"})
-	}
 	return out
+}
+
+// RebootPath and RebootCancelPath are the routes of the systemd plugin that
+// schedule and cancel a reboot (fix buttons on the overview).
+const (
+	RebootPath       = "/api/plugins/systemd/reboot"
+	RebootCancelPath = "/api/plugins/systemd/reboot/cancel"
+)
+
+func checkReboot(ctx context.Context, env Env) []Finding {
+	const area = "Neustart"
+	if mode, at, ok := ScheduledShutdown(ctx, env.Run); ok {
+		text := "Neustart geplant um " + at.Local().Format("15:04")
+		if mode != "reboot" {
+			text = "Herunterfahren geplant um " + at.Local().Format("15:04")
+		}
+		return []Finding{{Area: area, Level: Warn, Text: text, Fix: &core.Fix{Action: "rebootCancel", Path: RebootCancelPath}}}
+	}
+	if env.Exists("/run/reboot-required") {
+		return []Finding{{Area: area, Level: Warn, Text: "Neustart nötig (/run/reboot-required)", Fix: &core.Fix{Action: "reboot", Path: RebootPath}}}
+	}
+	return nil
+}
+
+// scheduledPattern matches busctl's view of logind's ScheduledShutdown
+// property: (st) "reboot" 1731024000000000.
+var scheduledPattern = regexp.MustCompile(`^\(st\) "([a-z-]*)" (\d+)$`)
+
+// ParseScheduledShutdown reads the busctl output of ScheduledShutdown. ok is
+// false when nothing is scheduled or the output is not understood.
+func ParseScheduledShutdown(out string) (mode string, at time.Time, ok bool) {
+	m := scheduledPattern.FindStringSubmatch(strings.TrimSpace(out))
+	if m == nil || m[1] == "" {
+		return "", time.Time{}, false
+	}
+	usec, err := strconv.ParseInt(m[2], 10, 64)
+	if err != nil || usec <= 0 {
+		return "", time.Time{}, false
+	}
+	return m[1], time.UnixMicro(usec), true
+}
+
+// ScheduledShutdown asks logind whether `shutdown -r +N` (or -h) is pending.
+func ScheduledShutdown(ctx context.Context, run func(ctx context.Context, name string, args ...string) core.CommandResult) (mode string, at time.Time, ok bool) {
+	res := run(ctx, "busctl", "get-property", "org.freedesktop.login1", "/org/freedesktop/login1", "org.freedesktop.login1.Manager", "ScheduledShutdown")
+	if res.Err != nil {
+		return "", time.Time{}, false
+	}
+	return ParseScheduledShutdown(res.Stdout)
 }
 
 // ParseUpgradable reads `apt list --upgradable` and returns all package

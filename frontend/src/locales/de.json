@@ -427,7 +427,24 @@
     "activeOneshot": "aktiv",
     "service": "Dienst",
     "actions": "Aktionen",
-    "unused": "Nicht genutzt ({{count}})"
+    "unused": "Nicht genutzt ({{count}})",
+    "reboot": {
+      "title": "Server",
+      "required": "Neustart nötig, damit Updates (meist der Kernel) wirksam werden.",
+      "notRequired": "Kein Neustart nötig.",
+      "scheduled": "Neustart geplant um {{time}}.",
+      "scheduledOther": "Herunterfahren geplant um {{time}}.",
+      "now": "Server neu starten",
+      "cancel": "Abbrechen",
+      "confirm": "Server in einer Minute neu starten? Alle Dienste, der Tunnel und diese Oberfläche sind dann ein paar Minuten weg. Bis dahin lässt sich der Neustart abbrechen.",
+      "autoTitle": "Automatischer Neustart",
+      "autoBefore": "Nachts neu starten, wenn Updates es verlangen, um",
+      "autoAfter": "Uhr",
+      "autoTime": "Uhrzeit",
+      "autoHint": "Nur wenn /run/reboot-required gesetzt ist und keine APT-Aktion läuft, mit einer Minute Vorlauf. Ortszeit des Servers, Fenster eine Stunde. Hub und Heim-VM auf verschiedene Zeiten stellen.",
+      "save": "Speichern",
+      "saved": "Gespeichert"
+    }
   },
   "services": {
     "godeb": {
@@ -1381,6 +1398,8 @@
     "securityUpdates": "Sicherheitsupdates einspielen",
     "dnsApply": "Einträge setzen",
     "renewCert": "Zertifikat neu holen",
-    "closeRemote": "Jetzt schließen"
+    "closeRemote": "Jetzt schließen",
+    "reboot": "Jetzt neu starten",
+    "rebootCancel": "Abbrechen"
   }
 }

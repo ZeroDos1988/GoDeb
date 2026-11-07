@@ -6,6 +6,7 @@ import type { CommandEnvelope } from "@/lib/types.ts";
 import { useGet } from "@/lib/useAsync.ts";
 import * as ui from "@/components/ui.ts";
 import { More } from "@/components/Section.tsx";
+import { AutoRebootForm, RebootCard, useReboot } from "./Reboot.tsx";
 
 type Service = {
   unit: string;
@@ -104,12 +105,17 @@ function ServerServices({ tabs }: { tabs: ReactNode }) {
   const query = useGet<Overview>("/api/plugins/systemd/overview");
   const { reload } = query;
   const { busy, error, run } = useAction(reload);
+  const reboot = useReboot();
+  const reloadReboot = reboot.reload;
 
   // CPU is measured between two polls, so the page refreshes itself.
   useEffect(() => {
-    const id = window.setInterval(reload, 10000);
+    const id = window.setInterval(() => {
+      reload();
+      reloadReboot();
+    }, 10000);
     return () => window.clearInterval(id);
-  }, [reload]);
+  }, [reload, reloadReboot]);
 
   function confirmAndRun(s: ServiceView, act: Action) {
     if (
@@ -141,6 +147,7 @@ function ServerServices({ tabs }: { tabs: ReactNode }) {
     >
       {data ? (
         <>
+          {reboot.data ? <RebootCard status={reboot.data} onChanged={reloadReboot} /> : null}
           {error ? <p className="mb-4 text-sm text-debian">{error}</p> : null}
           <ServiceTable
             services={data.services.filter((s) => !unused(s))}
@@ -150,6 +157,11 @@ function ServerServices({ tabs }: { tabs: ReactNode }) {
           {data.services.some(unused) ? (
             <More title={t("systemd.unused", { count: data.services.filter(unused).length })}>
               <ServiceTable services={data.services.filter(unused)} busy={busy} onAction={confirmAndRun} />
+            </More>
+          ) : null}
+          {reboot.data ? (
+            <More title={t("systemd.reboot.autoTitle")}>
+              <AutoRebootForm settings={reboot.data.settings} onSaved={reloadReboot} />
             </More>
           ) : null}
         </>

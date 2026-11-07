@@ -427,7 +427,24 @@
     "activeOneshot": "active",
     "service": "Service",
     "actions": "Actions",
-    "unused": "Not in use ({{count}})"
+    "unused": "Not in use ({{count}})",
+    "reboot": {
+      "title": "Server",
+      "required": "Reboot needed for updates (usually the kernel) to take effect.",
+      "notRequired": "No reboot needed.",
+      "scheduled": "Reboot scheduled for {{time}}.",
+      "scheduledOther": "Shutdown scheduled for {{time}}.",
+      "now": "Reboot server",
+      "cancel": "Cancel",
+      "confirm": "Reboot the server in one minute? All services, the tunnel and this interface will be gone for a few minutes. Until then the reboot can be cancelled.",
+      "autoTitle": "Automatic reboot",
+      "autoBefore": "Reboot at night when updates require it, at",
+      "autoAfter": "",
+      "autoTime": "Time",
+      "autoHint": "Only when /run/reboot-required exists and no APT run is active, with one minute's notice. Server local time, one-hour window. Give hub and home VM different times.",
+      "save": "Save",
+      "saved": "Saved"
+    }
   },
   "services": {
     "godeb": {
@@ -1381,6 +1398,8 @@
     "securityUpdates": "Install security updates",
     "dnsApply": "Publish records",
     "renewCert": "Get certificate again",
-    "closeRemote": "Close now"
+    "closeRemote": "Close now",
+    "reboot": "Reboot now",
+    "rebootCancel": "Cancel"
   }
 }
