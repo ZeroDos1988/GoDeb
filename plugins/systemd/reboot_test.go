@@ -31,9 +31,16 @@ func TestAutoRebootDue(t *testing.T) {
 		{"past midnight, too late", RebootSettings{Auto: true, Time: "23:30"}, at(0, 30), true, false, up, false},
 	}
 	for _, c := range cases {
-		if got := autoRebootDue(c.s, c.now, c.required, c.scheduled, c.uptime); got != c.want {
+		if got := autoRebootDue(c.s, c.now, time.Time{}, c.required, c.scheduled, c.uptime); got != c.want {
 			t.Errorf("%s: got %v, want %v", c.name, got, c.want)
 		}
+	}
+	// Cancelled in this window: not again until the next night.
+	if autoRebootDue(on, at(4, 5), at(4, 0), true, false, up) {
+		t.Error("rescheduled after cancel in the same window")
+	}
+	if !autoRebootDue(on, at(4, 5), at(4, 0).AddDate(0, 0, -1), true, false, up) {
+		t.Error("yesterday's run blocks today")
 	}
 }
 

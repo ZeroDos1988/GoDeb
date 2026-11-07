@@ -167,9 +167,10 @@ func scheduleReboot(ctx context.Context, who string) error {
 
 // autoRebootDue decides whether the automatic reboot starts now: the option
 // is on, the host asks for a reboot, nothing is scheduled yet, the clock is
-// within autoWindow after the chosen time and the host has been up long
-// enough.
-func autoRebootDue(s RebootSettings, now time.Time, required, scheduled bool, uptime time.Duration) bool {
+// within autoWindow after the chosen time, no automatic reboot was scheduled
+// in this window before (last; a cancelled one stays cancelled) and the host
+// has been up long enough.
+func autoRebootDue(s RebootSettings, now, last time.Time, required, scheduled bool, uptime time.Duration) bool {
 	if !s.Auto || !required || scheduled || uptime < minUptime {
 		return false
 	}
@@ -182,7 +183,7 @@ func autoRebootDue(s RebootSettings, now time.Time, required, scheduled bool, up
 		// A window that started yesterday may still run past midnight.
 		start = start.AddDate(0, 0, -1)
 	}
-	return now.Sub(start) < autoWindow
+	return now.Sub(start) < autoWindow && last.Before(start)
 }
 
 func parseClock(s string) (h, m int, ok bool) {
@@ -215,6 +216,9 @@ func uptime() time.Duration {
 // runAutoReboot checks once a minute whether the nightly reboot is due. It
 // runs in the agent.
 func runAutoReboot(ctx context.Context) {
+	// last is when this agent last scheduled an automatic reboot. After the
+	// reboot the agent starts fresh, and minUptime covers that case.
+	var last time.Time
 	t := time.NewTicker(time.Minute)
 	defer t.Stop()
 	for {
@@ -232,13 +236,15 @@ func runAutoReboot(ctx context.Context) {
 		}
 		_, statErr := os.Stat(rebootRequiredFile)
 		_, _, scheduled := doctor.ScheduledShutdown(ctx, core.RunQuiet)
-		if !autoRebootDue(s, time.Now(), statErr == nil, scheduled, uptime()) {
+		now := time.Now()
+		if !autoRebootDue(s, now, last, statErr == nil, scheduled, uptime()) {
 			continue
 		}
 		if err := scheduleReboot(ctx, "auto"); err != nil {
 			slog.Warn("Automatischer Neustart verschoben", "fehler", err)
 			continue
 		}
+		last = now
 		slog.Info("Automatischer Neustart geplant", "uhrzeit", s.Time)
 	}
 }
