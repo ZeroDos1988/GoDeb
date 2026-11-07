@@ -129,7 +129,7 @@ Das Plugin `steam` ist mit dem Commit „refactor!: Spielserver-Plugin (Steam) e
 
 ## GoDeb Play – Spielserver-Panel (eigenes Projekt, Konzept 03.11.)
 
-Wunsch 03.11.: Spielserver gehören nicht in GoDeb. Stattdessen ein eigenes, kleines Panel nur für Spielserver, gedacht für einen Container oder eine VM auf dem Heimserver (Proxmox). Es fühlt sich an wie GoDeb (Einrichtung, Login, Optik), kennt aber nur Spiele. Name: **GoDeb Play** (Entscheidung 04.11.). Vorerst kein öffentliches Repo; wann und ob privat oder öffentlich, entscheidet der Nutzer.
+Wunsch 03.11.: Spielserver gehören nicht in GoDeb. Stattdessen ein eigenes, kleines Panel nur für Spielserver, gedacht für einen Container oder eine VM auf dem Heimserver (Proxmox). Es fühlt sich an wie GoDeb (Einrichtung, Login, Optik), kennt aber nur Spiele. Name: **GoDeb Play** (Entscheidung 04.11.). Repo seit 07.11. privat: `ZeroDos1988/godeb-play` (Unterbau aus GoDeb kopiert, eigene Namen `godeb-play…`, nur Standort, nie Hub).
 
 **Zielbild:**
 
@@ -147,9 +147,9 @@ Spieler --> VPS (GoDeb-Hub, öffentliche IP) --DNAT/SNAT--> WireGuard --> Spiel-
 **Erste Schritte:**
 
 - [x] Name: GoDeb Play (04.11.).
-- [ ] (Nutzer) Repo anlegen, wenn die Arbeit beginnt ( vorerst nicht öffentlich).
-- [ ] (anderes Repo) Gerüst aus GoDeb übernehmen: Go-Daemon + React/Vite, `core.Run*`, `auth` (Login, 2FA, Sitzungen), `firstrun` (Token, Admin, Beitritt), Agent-Trennung. Prüfen, welche Pakete sich als gemeinsames Go-Modul lohnen, statt zu kopieren.
-- [ ] (anderes Repo) WireGuard-Beitritt mit dem bestehenden Beitrittscode und den Tests aus `plugins/wireguard/join_test.go`.
+- [x] Repo angelegt (07.11.): `ZeroDos1988/godeb-play`, privat, lokal `~/Projects/godeb-play`. Ab hier steht der Fahrplan von GoDeb Play in dessen `ROADMAP.md`; die Punkte unten sind dorthin übernommen.
+- [x] (anderes Repo, 07.11.: kopiert aus `24f6000`, gemeinsames Modul nach GoDeb 1.0) Gerüst aus GoDeb übernehmen: Go-Daemon + React/Vite, `core.Run*`, `auth` (Login, 2FA, Sitzungen), `firstrun` (Token, Admin, Beitritt), Agent-Trennung. Prüfen, welche Pakete sich als gemeinsames Go-Modul lohnen, statt zu kopieren.
+- [x] (anderes Repo, 07.11., Test im Container offen) WireGuard-Beitritt mit dem bestehenden Beitrittscode und den Tests aus `plugins/wireguard/join_test.go`.
 - [ ] (anderes Repo) SteamCMD-Gerüst und Enshrouded aus `346cc85:plugins/steam/` übernehmen; offene Punkte von dort: Wine ohne X-Server, nur `queryPort`, Savegame-Backup.
 - [ ] (anderes Repo) Paket bzw. Container-Vorlage (Debian 13, LXC unter Proxmox), ein Befehl zum Installieren.
 
