@@ -51,7 +51,7 @@ Jedes Plugin lässt sich im Plugin-Manager abschalten. Es verschwindet dann aus 
 | **APT** | Alle 10 Minuten nach Updates suchen, Sicherheitsupdates automatisch einspielen, alles andere per Knopf (GoDeb inklusive) |
 | **UFW** | Firewall-Status, Regeln anlegen und löschen |
 | **Fail2ban** | Jails, gesperrte IPs, Entsperren |
-| **Systemd** | Dienste auflisten, starten, stoppen, neu starten |
+| **Systemd** | Dienste auflisten, starten, stoppen, neu starten; Server neu starten (mit einer Minute Vorlauf, abbrechbar, optional nachts automatisch nach Updates) |
 | **Certbot** | Let's-Encrypt-Zertifikate unter `/etc/letsencrypt` |
 | **WireGuard** | Hub oder Peer, Clients mit QR-Code, Standorte per Beitrittscode, Trusted Endpoint |
 | **Portweiterleitung** | Öffentliche Ports des Hubs an Standorte im Tunnel weiterleiten (eigene nftables-Tabelle) |

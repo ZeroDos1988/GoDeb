@@ -469,6 +469,8 @@ Ein vollständiger Mailserver nach dem Vorbild von HestiaCP: Maildomains, Postf�
 
 **DNS pro Domain:** MX auf den Hostnamen, SPF `v=spf1 mx -all`, DKIM (Selector `godeb`, RSA 2048), DMARC `p=quarantine` mit `rua=mailto:dmarc@<domain>`, sobald es die Adresse gibt, dazu einmal der A-Eintrag des Hostnamens und der Reverse-DNS (PTR) beim Hoster. Der Reiter DNS zeigt alle Einträge zum Kopieren und prüft sie live.
 
+**Mailprogramme einrichten (Autoconfig, Autodiscover) und MTA-STS:** Ist nginx installiert (Plugin Webseiten), schreibt GoDeb pro aktiver Maildomain `/var/www/godeb/mail/<domain>` (Thunderbird: `config-v1.1.xml`, Outlook: `autodiscover.xml`, jeweils IMAP 993 und SMTP 465 mit TLS) und einen vhost `godeb-mail-<domain>.conf` auf Port 80 für `autoconfig.`, `autodiscover.` und `mta-sts.<domain>` (die Richtlinie aus `/etc/godeb/mta-sts/<domain>.txt`). Die nackte Domain bleibt frei für eine Webseite. vhosts entfernter oder gesperrter Domains löscht GoDeb wieder. Grenze: Nur HTTP. Thunderbird kommt damit aus; Outlook und MTA-STS verlangen HTTPS, das fehlt noch (`ROADMAP.md`). Die A-Einträge dafür meldet das Plugin an Domains.
+
 **Prüfen ohne Server:** `scripts/check-mail-config.sh` erzeugt die Konfiguration für ein Beispiel und prüft sie mit den echten Werkzeugen aus Debian 13 (`postconf`, `postmap`, `doveconf`, `sievec`, `doveadm pw`, `rspamadm configtest`). Die Pakete werden nur entpackt und in einem User-Namespace ausgeführt, ohne root.
 
 ### Mail-Gateway

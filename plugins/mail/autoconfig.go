@@ -74,13 +74,17 @@ func autodiscoverXML(s Settings, domain string) string {
 `, host, host)
 }
 
+// autoconfigNginx serves the client setup files on port 80. Only the
+// autoconfig, autodiscover and mta-sts names: the bare domain belongs to a
+// website of the websites plugin, and two server blocks with the same
+// server_name make nginx ignore one of them.
 func autoconfigNginx(domain string) string {
 	root := filepath.Join(autoWWW, domain)
 	policy := mtaSTSFilePath(domain)
 	return header + fmt.Sprintf(`server {
   listen 80;
   listen [::]:80;
-  server_name %s autoconfig.%s autodiscover.%s mta-sts.%s;
+  server_name autoconfig.%s autodiscover.%s mta-sts.%s;
   root %s;
 
   location = /.well-known/mta-sts.txt {
@@ -100,9 +104,11 @@ func autoconfigNginx(domain string) string {
     try_files $uri =404;
   }
 }
-`, domain, domain, domain, domain, root, policy)
+`, domain, domain, domain, root, policy)
 }
 
+// syncAutoconfig writes the setup files and one vhost per active mail
+// domain and removes the vhosts of domains that are gone or suspended.
 func syncAutoconfig(s Settings, domains []Domain) error {
 	if _, err := os.Stat("/usr/sbin/nginx"); err != nil {
 		return nil // websites/nginx not installed yet
@@ -149,6 +155,20 @@ func syncAutoconfig(s Settings, domains []Domain) error {
 		_ = os.Remove(link)
 		if err := os.Symlink(path, link); err != nil && !os.IsExist(err) {
 			return err
+		}
+	}
+	entries, err := os.ReadDir(autoNginx)
+	if err != nil {
+		return nil
+	}
+	for _, e := range entries {
+		name := e.Name()
+		if e.IsDir() || !strings.HasPrefix(name, "godeb-mail-") || !strings.HasSuffix(name, ".conf") {
+			continue
+		}
+		if path := filepath.Join(autoNginx, name); !want[path] {
+			_ = os.Remove(filepath.Join(autoEnabled, name))
+			_ = os.Remove(path)
 		}
 	}
 	return nil
