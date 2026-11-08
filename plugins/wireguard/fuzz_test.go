@@ -14,6 +14,10 @@ var peerLine = regexp.MustCompile(`^(?:#[^\n]*|\[Interface\]|\[Peer\]|` +
 	`Address = [0-9.]+/32|MTU = [0-9]{4}|Endpoint = [A-Za-z0-9.:\[\]-]+|` +
 	`AllowedIPs = [0-9./, ]+|PersistentKeepalive = [0-9]{1,5})$`)
 
+// profileValue is what a profile may hand on to the setup of the site: the
+// mail host and domains end up in the Postfix and Dovecot configuration.
+var profileValue = regexp.MustCompile(`^[a-z0-9](?:[a-z0-9.-]{0,251}[a-z0-9])?$`)
+
 const (
 	fuzzPriv = "eL0jO0wH0p2vx1v3ZpDqVnN3q7l0bW1yJwqGqG7m8Xo="
 	fuzzPub  = "Q2XyT3hZx0oN2j3w2bq9HqFvCq7m3m1ZrD4dGkY0hWA="
@@ -38,6 +42,11 @@ func FuzzJoinConfig(f *testing.F) {
 	f.Add(strings.Replace(good, "vpn.example.com:51820", "vpn.example.com:51820\nPostUp = id", 1))
 	f.Add(strings.Replace(good, "10.8.0.0/24", "0.0.0.0/0", 1))
 	f.Add(strings.Replace(good, "[Peer]", "[Peer]\nTable = off", 1))
+	home := "# GoDeb-Profile: home\n# GoDeb-Mail-Host: postfach.example.com\n# GoDeb-Mail-Domains: example.com, example.org\n" + good
+	f.Add(home)
+	f.Add(strings.Replace(home, "example.org", "example.org; PostUp = id", 1))
+	f.Add(strings.Replace(home, "postfach.example.com", "postfach.example.com\\nmydestination=evil", 1))
+	f.Add("# GoDeb-Profile: play\n" + good)
 	f.Fuzz(func(t *testing.T, input string) {
 		content, err := decodeJoinInput(input)
 		if err != nil {
@@ -46,6 +55,11 @@ func FuzzJoinConfig(f *testing.F) {
 		jc, _, err := parseJoinConfig(content)
 		if err != nil {
 			return
+		}
+		for _, v := range append([]string{jc.Profile.Kind, jc.Profile.MailHost}, jc.Profile.MailDomains...) {
+			if v != "" && !profileValue.MatchString(v) {
+				t.Fatalf("profile value %q passed", v)
+			}
 		}
 		out := renderPeerConfig(jc)
 		for _, line := range strings.Split(strings.TrimSpace(out), "\n") {
@@ -57,6 +71,9 @@ func FuzzJoinConfig(f *testing.F) {
 		again, _, err := parseJoinConfig(out)
 		if err != nil {
 			t.Fatalf("rendered wg0.conf rejected: %v\n%s", err, out)
+		}
+		if DetectRole(out).Profile.Kind != jc.Profile.Kind {
+			t.Fatalf("profile lost in wg0.conf:\n%s", out)
 		}
 		if renderPeerConfig(again) != out {
 			t.Fatalf("not stable:\n%s\n---\n%s", out, renderPeerConfig(again))

@@ -32,7 +32,8 @@ type Client struct {
 	AllowedIPsBase []string `json:"allowedIPsBase,omitempty"`
 	ExcludedIPs    []string `json:"excludedIPs,omitempty"`
 	// Site marks a GoDeb host behind the hub (the home VM), see CreatePeer.
-	Site bool `json:"site,omitempty"`
+	Site    bool        `json:"site,omitempty"`
+	Profile SiteProfile `json:"profile"`
 }
 
 // ClientSpec holds everything needed to render a client configuration.
@@ -50,6 +51,7 @@ type ClientSpec struct {
 	Keepalive      int
 	Created        time.Time
 	Site           bool
+	Profile        SiteProfile
 	// Trust are the trusted endpoints the app pins (see trust.go).
 	Trust []TrustInfo
 }
@@ -73,6 +75,7 @@ func RenderClient(s ClientSpec) string {
 	}
 	if s.Site {
 		fmt.Fprintf(&b, "# %s: %s\n", roleMarker, siteRole)
+		b.WriteString(s.Profile.comments())
 	}
 	b.WriteString(renderTrustComments(s.Trust))
 	b.WriteString("[Interface]\n")
@@ -136,6 +139,9 @@ func ParseClient(name, content string) Client {
 		} else if v, ok := commentValue(line, roleMarker); ok {
 			c.Site = v == siteRole
 		}
+	}
+	if c.Site {
+		c.Profile = profileFrom(content)
 	}
 	return c
 }

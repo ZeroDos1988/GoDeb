@@ -187,6 +187,8 @@ type PeerRequest struct {
 	// only the public key in wg0.conf and does not write a client file with
 	// a private key. Mutually exclusive with Site.
 	PublicKey string `json:"publicKey,omitempty"`
+	// Profile tells a site what to set up when it joins (only with Site).
+	Profile SiteProfile `json:"profile"`
 }
 
 type createResponse struct {
@@ -254,6 +256,13 @@ func CreatePeer(ctx context.Context, req PeerRequest) (PeerResult, error) {
 		if req.Site {
 			return PeerResult{}, reject(http.StatusBadRequest, "Standort braucht einen privaten Schlüssel (Beitrittscode), kein PublicKey allein")
 		}
+	}
+	profile, err := req.Profile.Normalize()
+	if err != nil {
+		return PeerResult{}, reject(http.StatusBadRequest, err.Error())
+	}
+	if profile.Kind != "" && !req.Site {
+		return PeerResult{}, reject(http.StatusBadRequest, "Ein Profil gibt es nur für Standorte")
 	}
 	if req.Site {
 		// Filled in below from the server prefix; DNS would need resolvconf
@@ -380,6 +389,7 @@ func CreatePeer(ctx context.Context, req PeerRequest) (PeerResult, error) {
 			Keepalive:      keepalive,
 			Created:        created,
 			Site:           req.Site,
+			Profile:        profile,
 			Trust:          trust,
 		})
 	}
