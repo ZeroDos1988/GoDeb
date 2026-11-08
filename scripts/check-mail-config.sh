@@ -67,6 +67,19 @@ for m in domains mailboxes aliases senders; do run /usr/sbin/postmap -c /t/pf -s
 [ "$(run /usr/sbin/postmap -c /t/pf -q @example.com texthash:/t/out/etc/postfix/godeb/aliases)" = "info@example.com" ]
 echo "    main.cf/master.cf ohne Warnung, Maps lesbar"
 
+echo "==> Mail-Gateway (Postfix auf dem VPS)"
+rm -rf "$T/gw" "$T/gwpf" && mkdir -p "$T/gwpf"
+GODEB_MAILGW_DUMP="$T/gw" go test -count=1 -run TestDumpConfig ./plugins/mailgateway/backend/ >/dev/null
+cp "$R/etc/postfix/main.cf.proto" "$T/gwpf/main.cf"
+cp "$R/etc/postfix/master.cf.proto" "$T/gwpf/master.cf"
+run /usr/sbin/postconf -c /t/gwpf -e "myhostname=debian" "compatibility_level=3.6"
+while IFS= read -r l; do run /usr/sbin/postconf -c /t/gwpf -e "$l"; done <"$T/gw/postconf-e.txt"
+warn=$(run /usr/sbin/postconf -c /t/gwpf -n 2>&1 >/dev/null || true)
+[ -z "$warn" ] || { echo "$warn"; exit 1; }
+[ "$(run /usr/sbin/postconf -c /t/gwpf -h relay_transport)" = "smtp:[10.8.0.2]:25" ]
+[ -z "$(run /usr/sbin/postconf -c /t/gwpf -h relayhost)" ]
+echo "    main.cf ohne Warnung, Eingang über relay_transport, Ausgang direkt"
+
 echo "==> Dovecot"
 run /usr/bin/doveconf -c /t/out/etc/dovecot/dovecot.conf -n >/dev/null
 cp "$T/out/etc/dovecot/dovecot.conf" "$R/etc/dovecot/dovecot.conf"

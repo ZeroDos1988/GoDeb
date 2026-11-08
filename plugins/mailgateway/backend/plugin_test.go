@@ -35,8 +35,11 @@ func TestNormalizeRelayAndDomain(t *testing.T) {
 func TestPostfixIsNotAnOpenRelay(t *testing.T) {
 	settings := strings.Join(postfixSettings("10.8.0.2", []string{"b.example", "a.example"}), "\n")
 	for _, want := range []string{
-		"relayhost=[10.8.0.2]:25",
+		"relayhost=\n",
+		"relay_transport=smtp:[10.8.0.2]:25",
 		"relay_domains=a.example, b.example",
+		// Only the mail server's own tunnel address may send out.
+		"mynetworks=127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128 10.8.0.2/32\n",
 		"reject_unauth_destination",
 		"smtp_tls_security_level=may",
 	} {
@@ -44,7 +47,7 @@ func TestPostfixIsNotAnOpenRelay(t *testing.T) {
 			t.Fatalf("missing %s in %s", want, settings)
 		}
 	}
-	if strings.Contains(settings, "0.0.0.0/0") {
+	if strings.Contains(settings, "0.0.0.0/0") || strings.Contains(settings, "10.8.0.0/24 ") {
 		t.Fatal("relay accepts the whole internet")
 	}
 }

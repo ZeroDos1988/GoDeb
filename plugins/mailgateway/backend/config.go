@@ -14,17 +14,21 @@ import (
 )
 
 // postfixSettings are the main.cf keys for a closed store-and-forward relay.
-// relay_domains lists only the configured domains, and the next hop stays
-// inside the WireGuard transfer network.
+// Incoming: relay_domains lists only the configured domains, and
+// relay_transport hands their mail to the mail server in the WireGuard
+// network. Outgoing: that mail server (and only its tunnel address, which
+// WireGuard binds to its key) may send through this host; OpenDKIM signs
+// it. Everything else is rejected by reject_unauth_destination.
 func postfixSettings(relayHost string, domains []string) []string {
 	sorted := append([]string(nil), domains...)
 	sort.Strings(sorted)
 	return []string{
-		"relayhost=[" + relayHost + "]:25",
+		"relayhost=",
+		"relay_transport=smtp:[" + relayHost + "]:25",
 		"relay_domains=" + strings.Join(sorted, ", "),
 		"mydestination=localhost.localdomain, localhost",
 		"inet_interfaces=all",
-		"mynetworks=127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128",
+		"mynetworks=127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128 " + relayHost + "/32",
 		"smtpd_relay_restrictions=permit_mynetworks, reject_unauth_destination",
 		"smtpd_recipient_restrictions=permit_mynetworks, reject_unauth_destination",
 		"maximal_queue_lifetime=5d",

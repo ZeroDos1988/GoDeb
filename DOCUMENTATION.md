@@ -477,7 +477,7 @@ Ein vollständiger Mailserver nach dem Vorbild von HestiaCP: Maildomains, Postf�
 
 Der Hetzner-V-Server nimmt Post für eingetragene Domains an und gibt sie über den WireGuard-Tunnel an den Homeserver weiter. Postfix ist der Store-and-Forward-Puffer: ist `10.8.0.x:25` nicht erreichbar, bleibt die Post in der Queue und geht nach dem Reconnect mit `postqueue -f` oder dem normalen Queue-Lauf hinaus.
 
-Es ist kein offenes Relay. `mynetworks` bleibt lokal, `smtpd_relay_restrictions` endet auf `reject_unauth_destination`, und `relay_domains` enthält nur Domains aus der Oberfläche. Der nächste Hop muss im Tunnelnetz `10.8.0.0/24` liegen. Der private DKIM-Schlüssel steht mit Modus `0600` unter `/etc/opendkim/keys/` und nicht in SQLite. Die Datenbank hält Domain, Selector, Relay-Ziel, den öffentlichen DKIM-Teil und die Queue-Historie.
+Es ist kein offenes Relay. `smtpd_relay_restrictions` endet auf `reject_unauth_destination`, und `relay_domains` enthält nur Domains aus der Oberfläche. Eingehende Post für diese Domains geht über `relay_transport` an den Mailserver im Tunnel (der nächste Hop muss im Tunnelnetz `10.8.0.0/24` liegen); sonstige Post verschickt das Gateway direkt (`relayhost` leer). **Ausgang:** `mynetworks` enthält außer Loopback nur die Tunnel-Adresse dieses Mailservers (`/32`, WireGuard bindet sie an seinen Schlüssel). So verschickt der Mailserver zu Hause über den VPS, mit dessen IP im SPF, und OpenDKIM signiert für die eingetragenen Domains. Der private DKIM-Schlüssel steht mit Modus `0600` unter `/etc/opendkim/keys/` und nicht in SQLite. Die Datenbank hält Domain, Selector, Relay-Ziel, den öffentlichen DKIM-Teil und die Queue-Historie.
 
 `postconf -e` ändert einzelne Schlüssel in `/etc/postfix/main.cf`. Die übrige Postfix-Konfiguration bleibt stehen. OpenDKIM signiert auf `127.0.0.1:8891`, bevor Postfix an den Tunnel übergibt. TLS zum Homeserver ist opportunistisch (`smtp_tls_security_level = may`).
 
@@ -766,7 +766,7 @@ Queue und Signatur von Hand prüfen:
 ```sh
 mailq
 sudo postqueue -f
-sudo postconf -h relayhost
+sudo postconf -h relay_transport mynetworks
 sudo opendkim-testkey -d example.org -s godeb -vvv
 ```
 

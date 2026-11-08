@@ -59,7 +59,7 @@ func handleStatus(w http.ResponseWriter, r *http.Request) {
 	if domains == nil {
 		domains = []storedDomain{}
 	}
-	probe := runCommand(r.Context(), "postconf", "-h", "relayhost")
+	probe := runCommand(r.Context(), "postconf", "-h", "relay_transport")
 	env := core.CommandEnvelope{Command: probe.Command}
 	if probe.Err != nil {
 		env.Mocked = true
