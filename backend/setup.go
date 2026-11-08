@@ -20,6 +20,7 @@ import (
 	"godeb/backend/firstrun"
 	"godeb/backend/pluginmgr"
 	"godeb/plugins/mail"
+	"godeb/plugins/sites"
 	"godeb/plugins/wireguard"
 )
 
@@ -290,13 +291,18 @@ func (s *setup) runNone(ctx context.Context) error {
 }
 
 // runPeer sets up a host behind a GoDeb hub (the home VM): admin, wg0 from
-// the hub's client file, firewall. Clients are created on the hub.
+// the hub's client file, firewall. Clients are created on the hub. When the
+// join code carries a profile (setup script of the hub), every question
+// after the administrator takes its default and the profile is set up.
 func (s *setup) runPeer(ctx context.Context) error {
-	s.steps = 4
-	fmt.Fprintln(s.out, "GoDeb Ersteinrichtung als Peer eines Hubs: Administrator, Tunnel zum Hub, Firewall, Trusted Endpoint.")
+	s.steps = 5
+	fmt.Fprintln(s.out, "GoDeb Ersteinrichtung als Peer eines Hubs: Administrator, Tunnel zum Hub, Trusted Endpoint, Firewall, Profil des Hubs.")
 	fmt.Fprintln(s.out, "Danach ist die Web-UI nur über den Tunnel und lokal erreichbar.")
 
 	s.step(1, "Administrator")
+	if s.profiled() && !s.opt.Yes {
+		s.opt.Admin = s.ask("Benutzername des Administrators", s.opt.Admin)
+	}
 	if err := s.admin(); err != nil {
 		return err
 	}
@@ -304,6 +310,13 @@ func (s *setup) runPeer(ctx context.Context) error {
 	s.step(2, "Tunnel zum Hub (wg0)")
 	if err := s.join(ctx); err != nil {
 		return err
+	}
+	if role, err := wireguard.CurrentRole(); err == nil && role.Role == wireguard.RolePeer {
+		s.peer = role
+	}
+	if s.peer.Profile.Kind != "" {
+		fmt.Fprintf(s.out, "  Profil vom Hub: %s. Die weiteren Schritte nehmen die Vorgaben.\n", profileTitle(s.peer.Profile.Kind))
+		s.opt.Yes = true
 	}
 
 	s.step(3, "Trusted Endpoint im Heimnetz")
@@ -314,8 +327,76 @@ func (s *setup) runPeer(ctx context.Context) error {
 		return err
 	}
 
+	s.step(5, "Profil des Hubs")
+	if err := s.home(ctx); err != nil {
+		return err
+	}
+
 	fmt.Fprintf(s.out, "\nFertig. Web-UI dieses Servers: http://%s:%d\n", s.peer.Address, s.opt.UIPort)
 	fmt.Fprintln(s.out, "Vom Handy aus über den Hub erreichbar, wenn der Peer dort als Standort angelegt ist (godeb site add).")
+	return nil
+}
+
+// profiled reports whether --join carries a site profile, before joining.
+func (s *setup) profiled() bool {
+	if s.opt.Join == "" || s.opt.Join == "-" {
+		return false
+	}
+	content, err := s.joinInput()
+	return err == nil && wireguard.JoinProfile(content).Kind != ""
+}
+
+func profileTitle(kind string) string {
+	switch kind {
+	case wireguard.ProfileHome:
+		return "Heim-Server (Postfächer und schwere Dienste)"
+	case wireguard.ProfilePlay:
+		return "GoDeb Play"
+	}
+	return kind
+}
+
+// home sets up the home server profile through firstrun.SetupHomeServer,
+// the same function as the wizard: the mail server behind the hub with a
+// postmaster mailbox per domain.
+func (s *setup) home(ctx context.Context) error {
+	if s.peer.Profile.Kind != wireguard.ProfileHome {
+		fmt.Fprintln(s.out, "  Kein Profil, nichts weiter einzurichten.")
+		return nil
+	}
+	if s.peer.Profile.MailHost != "" {
+		root, err := core.RepoRoot()
+		if err != nil {
+			return err
+		}
+		pluginmgr.SetDir(filepath.Join(root, "plugins"))
+		fmt.Fprintf(s.out, "  Mailserver für %s (%s) hinter dem Hub einrichten, das dauert ein paar Minuten …\n",
+			strings.Join(s.peer.Profile.MailDomains, ", "), s.peer.Profile.MailHost)
+	}
+	res, err := firstrun.SetupHomeServer(ctx)
+	for _, n := range res.Notes {
+		fmt.Fprintf(s.out, "  Hinweis: %s\n", n)
+	}
+	if err != nil {
+		return err
+	}
+	if res.MailHost == "" {
+		return nil
+	}
+	fmt.Fprintf(s.out, "  Mailserver eingerichtet. Mailprogramme: Server %s, IMAP 993 (SSL/TLS), SMTP 465 (SSL/TLS), nur über den Tunnel.\n", res.MailHost)
+	for _, m := range res.Mailboxes {
+		fmt.Fprintf(s.out, "  Postfach %s (Aliasse %s), Passwort: %s\n", m.Address, strings.Join(m.Aliases, ", "), m.Password)
+	}
+	if len(res.Mailboxes) > 0 {
+		fmt.Fprintln(s.out, "  Die Passwörter werden nur jetzt angezeigt; ändern unter E-Mail.")
+	}
+	c, cancel := context.WithTimeout(ctx, time.Minute)
+	defer cancel()
+	if err := sites.FetchCertificate(c); err != nil {
+		fmt.Fprintf(s.out, "  Zertifikat vom Hub noch nicht da (%v); GoDeb holt es automatisch, sobald der Hub es hat.\n", err)
+	} else {
+		fmt.Fprintln(s.out, "  Zertifikat vom Hub übernommen.")
+	}
 	return nil
 }
 

@@ -132,3 +132,17 @@ func profileFrom(content string) SiteProfile {
 	}
 	return clean
 }
+
+// JoinProfile reads the profile of a client file or join code without
+// joining; the zero profile when there is none or the input is invalid.
+func JoinProfile(input string) SiteProfile {
+	content, err := decodeJoinInput(input)
+	if err != nil {
+		return SiteProfile{}
+	}
+	jc, _, err := parseJoinConfig(content)
+	if err != nil {
+		return SiteProfile{}
+	}
+	return jc.Profile
+}

@@ -10,6 +10,7 @@ import (
 
 	"godeb/backend/core"
 	"godeb/plugins/domains"
+	"godeb/plugins/mail"
 	"godeb/plugins/wireguard"
 )
 
@@ -129,10 +130,9 @@ func needs() ([]domains.Need, error) {
 }
 
 // run renews the certificates on the hub and fetches the own one on a home
-// server, once a few minutes after the start and then every six hours.
+// server: a few minutes after the start, then every six hours. A home
+// server without a certificate from the hub yet retries every 15 minutes.
 func run(ctx context.Context) {
-	t := time.NewTicker(6 * time.Hour)
-	defer t.Stop()
 	wait := 2 * time.Minute
 	for {
 		select {
@@ -140,7 +140,7 @@ func run(ctx context.Context) {
 			return
 		case <-time.After(wait):
 		}
-		wait = 0
+		wait = 6 * time.Hour
 		role, err := currentRole()
 		switch {
 		case err != nil:
@@ -150,13 +150,11 @@ func run(ctx context.Context) {
 			c, cancel := context.WithTimeout(ctx, time.Minute)
 			if err := FetchCertificate(c); err != nil {
 				slog.Warn("Heim-Server: Zertifikat vom Hub nicht übernommen", "fehler", err)
+				if !mail.HubCertificateInstalled() {
+					wait = 15 * time.Minute
+				}
 			}
 			cancel()
-		}
-		select {
-		case <-ctx.Done():
-			return
-		case <-t.C:
 		}
 	}
 }

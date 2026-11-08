@@ -373,3 +373,10 @@ func InstallHubCertificate(ctx context.Context, certPEM, keyPEM []byte) error {
 	slog.Info("Mailserver: Zertifikat vom Hub übernommen", "name", s.Hostname, "gültig_bis", leaf.NotAfter.UTC().Format(time.RFC3339))
 	return nil
 }
+
+// HubCertificateInstalled reports whether the mail server uses a
+// certificate from the hub (and not the self-signed one).
+func HubCertificateInstalled() bool {
+	s, ok, err := loadSettings()
+	return err == nil && ok && s.CertFile == hubCertFile
+}
