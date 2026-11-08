@@ -93,11 +93,11 @@ func TestIssueWritesFilesAndOpensPort(t *testing.T) {
 		return nil
 	}
 	certPEM, keyPEM := selfSigned(t, "godeb.example.com", time.Now().Add(90*24*time.Hour))
-	obtainCert = func(_ context.Context, host, account string) (issued, error) {
+	obtainCert = func(_ context.Context, host, account string) (domains.Certificate, error) {
 		if host != "godeb.example.com" || !strings.Contains(account, "PRIVATE KEY") {
 			t.Fatalf("obtain(%q, %q)", host, account)
 		}
-		return issued{CertPEM: certPEM, KeyPEM: keyPEM, NotAfter: time.Now().Add(90 * 24 * time.Hour)}, nil
+		return domains.Certificate{CertPEM: certPEM, KeyPEM: keyPEM, NotAfter: time.Now().Add(90 * 24 * time.Hour)}, nil
 	}
 	if _, err := update(func(r *settingsRow) {
 		r.Label, r.Zone, r.Host, r.Enabled = "godeb", "example.com", "godeb.example.com", true

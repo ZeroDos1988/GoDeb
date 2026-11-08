@@ -17,6 +17,12 @@ import (
 
 const base = "/api/plugins/apphttps"
 
+// Hooks for tests.
+var (
+	obtainCert = domains.ObtainCertificate
+	publishA   = domains.Publish
+)
+
 // renewBefore: Let's Encrypt certificates last 90 days; renew in the last 30.
 const renewBefore = 30 * 24 * time.Hour
 
@@ -234,7 +240,7 @@ func issue(ctx context.Context) error {
 		return fmt.Errorf("A-Eintrag: %w", err)
 	}
 	if row.AccountKey == "" {
-		_, pemKey, err := accountKey("")
+		_, pemKey, err := domains.ACMEAccountKey("")
 		if err != nil {
 			return err
 		}

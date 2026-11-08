@@ -1,4 +1,4 @@
-package apphttps
+package domains
 
 import (
 	"context"
@@ -18,15 +18,14 @@ import (
 	"time"
 
 	"golang.org/x/crypto/acme"
-
-	"godeb/plugins/domains"
 )
+
+// Let's Encrypt by DNS-01 over the Hetzner API. App access and the
+// certificates the hub issues for its sites share this code.
 
 // Hooks for tests.
 var (
-	obtainCert   = obtain
-	publishA     = domains.Publish
-	setChallenge = domains.SetACMEChallenge
+	setChallenge = SetACMEChallenge
 	waitTXT      = waitAuthoritative
 )
 
@@ -39,61 +38,61 @@ func directoryURL() string {
 	return acme.LetsEncryptURL
 }
 
-// issued is the result of one ACME order.
-type issued struct {
+// Certificate is the result of one ACME order.
+type Certificate struct {
 	AccountPEM string
 	CertPEM    string
 	KeyPEM     string
 	NotAfter   time.Time
 }
 
-// obtain gets a certificate for host by DNS-01. accountPEM is the stored
-// account key; a new one is created when it is empty.
-func obtain(ctx context.Context, host, accountPEM string) (issued, error) {
-	key, accountPEM, err := accountKey(accountPEM)
+// ObtainCertificate gets a certificate for host by DNS-01. accountPEM is
+// the stored account key; a new one is created when it is empty.
+func ObtainCertificate(ctx context.Context, host, accountPEM string) (Certificate, error) {
+	key, accountPEM, err := ACMEAccountKey(accountPEM)
 	if err != nil {
-		return issued{}, err
+		return Certificate{}, err
 	}
 	client := &acme.Client{Key: key, DirectoryURL: directoryURL(), UserAgent: "godeb"}
 	if _, err := client.Register(ctx, &acme.Account{}, acme.AcceptTOS); err != nil && !errors.Is(err, acme.ErrAccountAlreadyExists) {
-		return issued{}, fmt.Errorf("ACME-Konto: %w", err)
+		return Certificate{}, fmt.Errorf("ACME-Konto: %w", err)
 	}
 	order, err := client.AuthorizeOrder(ctx, acme.DomainIDs(host))
 	if err != nil {
-		return issued{}, fmt.Errorf("ACME-Auftrag: %w", err)
+		return Certificate{}, fmt.Errorf("ACME-Auftrag: %w", err)
 	}
 	for _, u := range order.AuthzURLs {
 		if err := authorize(ctx, client, host, u); err != nil {
-			return issued{}, err
+			return Certificate{}, err
 		}
 	}
 	if order, err = client.WaitOrder(ctx, order.URI); err != nil {
-		return issued{}, fmt.Errorf("ACME-Auftrag: %w", err)
+		return Certificate{}, fmt.Errorf("ACME-Auftrag: %w", err)
 	}
 	certKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
-		return issued{}, err
+		return Certificate{}, err
 	}
 	csr, err := x509.CreateCertificateRequest(rand.Reader, &x509.CertificateRequest{
 		Subject:  pkix.Name{CommonName: host},
 		DNSNames: []string{host},
 	}, certKey)
 	if err != nil {
-		return issued{}, err
+		return Certificate{}, err
 	}
 	der, _, err := client.CreateOrderCert(ctx, order.FinalizeURL, csr, true)
 	if err != nil {
-		return issued{}, fmt.Errorf("Zertifikat: %w", err)
+		return Certificate{}, fmt.Errorf("Zertifikat: %w", err)
 	}
 	if len(der) == 0 {
-		return issued{}, errors.New("Zertifikat: leere Antwort")
+		return Certificate{}, errors.New("Zertifikat: leere Antwort")
 	}
 	leaf, err := x509.ParseCertificate(der[0])
 	if err != nil {
-		return issued{}, err
+		return Certificate{}, err
 	}
 	if err := leaf.VerifyHostname(host); err != nil {
-		return issued{}, fmt.Errorf("Zertifikat passt nicht zu %s: %w", host, err)
+		return Certificate{}, fmt.Errorf("Zertifikat passt nicht zu %s: %w", host, err)
 	}
 	var chain []byte
 	for _, d := range der {
@@ -101,9 +100,9 @@ func obtain(ctx context.Context, host, accountPEM string) (issued, error) {
 	}
 	keyDER, err := x509.MarshalPKCS8PrivateKey(certKey)
 	if err != nil {
-		return issued{}, err
+		return Certificate{}, err
 	}
-	return issued{
+	return Certificate{
 		AccountPEM: accountPEM,
 		CertPEM:    string(chain),
 		KeyPEM:     string(pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: keyDER})),
@@ -155,7 +154,9 @@ func authorize(ctx context.Context, client *acme.Client, host, url string) error
 	return nil
 }
 
-func accountKey(stored string) (crypto.Signer, string, error) {
+// ACMEAccountKey parses a stored ACME account key, or creates one when
+// stored is empty, and returns it with its PEM form.
+func ACMEAccountKey(stored string) (crypto.Signer, string, error) {
 	if stored != "" {
 		block, _ := pem.Decode([]byte(stored))
 		if block == nil {
