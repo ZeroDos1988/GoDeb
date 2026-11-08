@@ -64,6 +64,12 @@ type Settings struct {
 // ViaHub reports whether the mail server sits behind the hub's gateway.
 func (s Settings) ViaHub() bool { return s.Hub != "" }
 
+// BehindHub reports whether the installed mail server runs behind a hub.
+func BehindHub() bool {
+	s, ok, err := loadSettings()
+	return err == nil && ok && s.ViaHub()
+}
+
 // NormalizeHub checks the hub's tunnel address: a private IPv4 address.
 func NormalizeHub(v string) (string, error) {
 	a, err := netip.ParseAddr(strings.TrimSpace(v))

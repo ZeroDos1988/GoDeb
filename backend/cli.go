@@ -23,7 +23,7 @@ const usage = `Aufruf:
   godeb setup [--role hub|peer|none] [--access tunnel|lan|local]
                                  Ersteinrichtung ohne Browser: Admin, Rolle, Firewall, Erreichbarkeit
   godeb setup --join DATEI       Ersteinrichtung als Peer eines GoDeb-Hubs (Heim-VM hinter dem VPS)
-  godeb site add <name> [--address 10.8.0.2] [--endpoint HOST]
+  godeb site add <name> [--address 10.8.0.2] [--endpoint HOST] [--profile home|play]
                                  Auf dem Hub: Peer für einen Standort mit GoDeb anlegen
   godeb site sync                Auf dem Hub: Weiterleitungen und Trusted Endpoints der Standorte abgleichen
   godeb trust enable [--address IP] [--port 8787] | disable | show

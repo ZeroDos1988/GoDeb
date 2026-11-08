@@ -48,6 +48,7 @@ var criticalPrefixes = []string{
 	"/api/plugins/mail/certificate", // opens port 80 for certbot
 	"/api/plugins/cron/",            // scheduled jobs run as root
 	"/api/plugins/websites/",        // nginx and PHP, opens ports 80/443
+	"/api/plugins/sites",            // a new site is a new way into the network, and it rewrites the mail gateway
 }
 
 // criticalExact always needs a fresh code.

@@ -120,6 +120,8 @@ func useTestRoot(t *testing.T) {
 	t.Setenv("GODEB_AGENT_DB", filepath.Join(dir, "agent.db"))
 	t.Setenv("GODEB_AGENT_MASTER_KEY", filepath.Join(dir, "agent.key"))
 	admin = func(context.Context, string, ...string) core.CommandResult { return core.CommandResult{} }
-	adminTimeout = func(context.Context, time.Duration, string, ...string) core.CommandResult { return core.CommandResult{} }
+	adminTimeout = func(context.Context, time.Duration, string, ...string) core.CommandResult {
+		return core.CommandResult{}
+	}
 	t.Cleanup(func() { admin, adminTimeout = core.RunAdmin, core.RunAdminTimeout })
 }

@@ -297,6 +297,8 @@ func TestRequireSessionPathsAndOrigin(t *testing.T) {
 		"/api/plugins/wireguard/trust/info":  http.StatusNoContent,
 		"/api/plugins/monitor/site":          http.StatusNoContent,
 		"/api/plugins/monitor/sites":         http.StatusUnauthorized,
+		"/api/plugins/sites/cert":            http.StatusNoContent,
+		"/api/plugins/sites":                 http.StatusUnauthorized,
 		"/api/plugins/monitor/summary":       http.StatusUnauthorized,
 		"/api/plugins/wireguard/trust":       http.StatusUnauthorized,
 		"/api/plugins/wireguard/android":     http.StatusNoContent,

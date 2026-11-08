@@ -418,3 +418,41 @@ func Domains() ([]string, error) {
 	}
 	return out, nil
 }
+
+// SetRelay points every relay domain to host, the mail server in the
+// tunnel (a home server joining the hub), and rewrites main.cf. DKIM keys
+// and selectors stay as they are.
+func SetRelay(ctx context.Context, host string) error {
+	relay, err := normalizeRelay(host)
+	if err != nil {
+		return err
+	}
+	if MailServerPresent() {
+		return errors.New("Auf diesem Server läuft der Mailserver (Plugin E-Mail); das Mail-Gateway ist nicht in Betrieb")
+	}
+	conn, err := openStore()
+	if err != nil {
+		return err
+	}
+	list, err := listDomains(conn)
+	if err != nil {
+		return err
+	}
+	if len(list) == 0 {
+		return errors.New("Im Mail-Gateway ist noch keine Domain eingetragen")
+	}
+	names := make([]string, 0, len(list))
+	for _, d := range list {
+		names = append(names, d.Domain)
+	}
+	if res := runCommand(ctx, "postconf", append([]string{"-e"}, postfixSettings(relay, names)...)...); res.Err != nil {
+		return errors.New(res.Detail())
+	}
+	if err := saveRelay(conn, relay); err != nil {
+		return err
+	}
+	if res := runCommand(ctx, "systemctl", "reload", "postfix"); res.Err != nil {
+		return errors.New(res.Detail())
+	}
+	return nil
+}

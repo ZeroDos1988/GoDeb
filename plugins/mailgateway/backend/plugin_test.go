@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"godeb/backend/core"
 )
 
 func TestNormalizeRelayAndDomain(t *testing.T) {
@@ -168,4 +170,47 @@ func (f fakeResolver) LookupTXT(_ context.Context, name string) ([]string, error
 
 func (f fakeResolver) LookupAddr(context.Context, string) ([]string, error) {
 	return f.ptr, nil
+}
+
+func TestSetRelayKeepsDKIM(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("GODEB_DB", filepath.Join(dir, "godeb.db"))
+	t.Setenv("GODEB_AGENT_DB", filepath.Join(dir, "agent.db"))
+	t.Setenv("GODEB_MAIL_ROOT", dir)
+	var calls []string
+	old := runCommand
+	runCommand = func(_ context.Context, name string, args ...string) core.CommandResult {
+		calls = append(calls, name+" "+strings.Join(args, " "))
+		return core.CommandResult{}
+	}
+	t.Cleanup(func() { runCommand = old })
+	if err := SetRelay(t.Context(), "10.8.0.3"); err == nil {
+		t.Fatal("relay without domains accepted")
+	}
+	conn, err := openStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := saveDomain(conn, storedDomain{Domain: "example.com", Selector: "s2024", DKIMPublic: "PUB"}); err != nil {
+		t.Fatal(err)
+	}
+	for _, bad := range []string{"8.8.8.8", "10.9.0.2", "mail.example.com"} {
+		if err := SetRelay(t.Context(), bad); err == nil {
+			t.Errorf("relay %q accepted", bad)
+		}
+	}
+	if err := SetRelay(t.Context(), "10.8.0.3"); err != nil {
+		t.Fatal(err)
+	}
+	joined := strings.Join(calls, "\n")
+	if !strings.Contains(joined, "relay_transport=smtp:[10.8.0.3]:25") || !strings.Contains(joined, "10.8.0.3/32") {
+		t.Fatalf("postconf calls:\n%s", joined)
+	}
+	d, _, err := findDomain(conn, "example.com")
+	if err != nil || d.Selector != "s2024" || d.DKIMPublic != "PUB" {
+		t.Fatalf("DKIM changed: %+v %v", d, err)
+	}
+	if relay, _ := loadRelay(conn); relay != "10.8.0.3" {
+		t.Fatalf("relay %q", relay)
+	}
 }

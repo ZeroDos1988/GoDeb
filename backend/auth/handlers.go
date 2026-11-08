@@ -379,6 +379,13 @@ func protected(raw string) bool {
 	if p == "/api/plugins/monitor/site" {
 		return false
 	}
+	// sites/cert: certificate of a home server's mail host for that home
+	// server, which has no account on the hub. The agent answers only the
+	// tunnel address of the site the name is assigned to (from the
+	// connection, bound to the site's WireGuard key); everyone else gets 404.
+	if p == "/api/plugins/sites/cert" {
+		return false
+	}
 	if strings.HasPrefix(p, "/api/auth/oidc/") && (strings.HasSuffix(p, "/start") || strings.HasSuffix(p, "/callback")) {
 		return false
 	}

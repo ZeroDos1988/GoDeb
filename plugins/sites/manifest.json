@@ -1,0 +1,8 @@
+{
+  "id": "sites",
+  "name": "Standorte",
+  "description": "Heim-Server und GoDeb Play mit einem Skript an den Hub anbinden",
+  "icon": "network",
+  "group": "network",
+  "order": 51
+}

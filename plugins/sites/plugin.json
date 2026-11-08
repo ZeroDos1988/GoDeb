@@ -1,0 +1,6 @@
+{
+  "id": "sites",
+  "name": "Standorte",
+  "apt_dependencies": [],
+  "systemd_services": []
+}

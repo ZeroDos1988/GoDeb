@@ -8,10 +8,12 @@ import (
 	"io"
 	"net"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
 	"godeb/backend/core"
+	"godeb/plugins/sites"
 	"godeb/plugins/wireguard"
 )
 
@@ -52,8 +54,20 @@ func siteAdd(ctx context.Context, name string, args []string, stdout, stderr io.
 	fs.SetOutput(stderr)
 	address := fs.String("address", "", "feste Tunnel-Adresse des Standorts (leer = 10.8.0.2, sonst die nächste freie)")
 	endpoint := fs.String("endpoint", "", "öffentlicher Host oder IP dieses Hubs (Standard: Adresse der Default-Route)")
+	profile := fs.String("profile", "", "home (Heim-Server: Mail und schwere Dienste) oder play (GoDeb Play): erzeugt ein Einrichtungsskript")
 	if err := fs.Parse(args); err != nil {
 		return 2
+	}
+	if *profile != "" {
+		if *address != "" {
+			fmt.Fprintln(stderr, "--address und --profile zusammen gehen nicht; die Adresse vergibt der Hub")
+			return 2
+		}
+		host := *endpoint
+		if host == "" {
+			host = detectHost()
+		}
+		return siteAddProfile(ctx, name, *profile, host, stdout, stderr)
 	}
 	role, err := wireguard.CurrentRole()
 	if err != nil {
@@ -120,4 +134,58 @@ func stripMask(cidr string) string {
 		return ip.String()
 	}
 	return cidr
+}
+
+// siteAddProfile creates a site with a profile through sites.Add, the same
+// function as the web UI, and writes the setup script into the current
+// directory. It belongs to the account that called sudo, so it can be
+// copied with scp right away; it carries the site's private key (0600).
+func siteAddProfile(ctx context.Context, name, profile, endpoint string, stdout, stderr io.Writer) int {
+	res, err := sites.Add(ctx, sites.AddRequest{Name: name, Profile: profile, Endpoint: endpoint})
+	var reqErr *wireguard.RequestError
+	if errors.As(err, &reqErr) {
+		fmt.Fprintln(stderr, reqErr.Msg)
+		return 1
+	}
+	if err != nil {
+		fmt.Fprintf(stderr, "Standort anlegen: %v\n", err)
+		return 1
+	}
+	path, err := filepath.Abs(res.ScriptName)
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 1
+	}
+	if err := os.WriteFile(path, []byte(res.Script), 0o600); err != nil {
+		fmt.Fprintf(stderr, "Skript nicht geschrieben: %v\n", err)
+		return 1
+	}
+	if uid, gid, ok := sudoOwner(); ok {
+		_ = os.Chown(path, uid, gid)
+	}
+	fmt.Fprintf(stdout, "Standort %s angelegt: %s (Profil %s)\n", res.Site.Name, res.Site.Address, profile)
+	for _, n := range res.Notes {
+		fmt.Fprintf(stdout, "  %s\n", n)
+	}
+	fmt.Fprintf(stdout, `
+Einrichtungsskript: %s
+Es enthält den privaten WireGuard-Schlüssel des Standorts. Auf den neuen
+Rechner (Debian 13) kopieren und dort ausführen; danach löscht es sich:
+
+  scp %s <konto>@<neuer-rechner>:
+  ssh <konto>@<neuer-rechner> sudo sh %s
+
+Web-UI des Standorts danach über den Tunnel: %s
+`, path, path, res.ScriptName, res.Site.WebUI)
+	return 0
+}
+
+// sudoOwner is the account that called sudo (SUDO_UID/SUDO_GID).
+func sudoOwner() (int, int, bool) {
+	uid, err1 := strconv.Atoi(os.Getenv("SUDO_UID"))
+	gid, err2 := strconv.Atoi(os.Getenv("SUDO_GID"))
+	if err1 != nil || err2 != nil || uid <= 0 {
+		return 0, 0, false
+	}
+	return uid, gid, true
 }

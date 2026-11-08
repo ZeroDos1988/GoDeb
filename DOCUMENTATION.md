@@ -382,6 +382,15 @@ Der Server bleibt in `wg0.conf`. Neue Peers bekommen die nächste freie Adresse 
 
 Rollen: Ein Hub hat `ListenPort` und Clients als Peers. Ein Peer-Host (Zeile `# GoDeb-Role: peer` in `wg0.conf`, oder genau ein Peer mit Endpoint und kein `ListenPort`) hängt an einem anderen GoDeb und legt selbst keine Clients an. Client-Dateien von Standorten tragen `# GoDeb-Role: site`. Für jeden Standort hält der Hub eine `ufw route`-Regel mit dem Kommentar `GoDeb-Hub <name>` (`godeb site sync` setzt sie neu).
 
+### Standorte mit Profil (Plugin Standorte)
+
+Der Hub legt Heim-Server und GoDeb Play mit einem Skript an. Aufteilung: **VPS** = WireGuard-Hub, Domains/DNS, Zertifikate, Mail-Ein- und Ausgang mit DKIM, Portweiterleitung, Überwachung. **Heim-Server** = Postfächer, Spamfilter, Virenscanner, Webseiten, Datenbanken. **GoDeb Play** = Spielserver.
+
+- **Anlegen:** Seite „Standorte“ oder `sudo godeb site add <name> --profile home|play`. Beides ruft `sites.Add`: Standort-Peer über `wireguard.CreatePeer` mit Profil (Kommentare `GoDeb-Profile`, `GoDeb-Mail-Host`, `GoDeb-Mail-Domains` in der Client-Datei und damit im Beitrittscode; der Standort prüft sie beim Beitritt und behält sie in seiner `wg0.conf`).
+- **Heim-Server mit Mail:** Gibt es Domains im Mail-Gateway, bekommt der Heim-Server den Mail-Host `postfach.<erste Domain>` und alle Gateway-Domains. Der Hub stellt das Gateway auf seine Tunnel-Adresse um (`mailgateway.SetRelay`, DKIM bleibt), legt mit Hetzner-Token den A-Eintrag `postfach.<domain>` → Tunnel-Adresse an und holt das Zertifikat per DNS-01. Ohne Token: A-Eintrag von Hand, kein Zertifikat (der Heim-Server bleibt beim selbstsignierten).
+- **Zertifikat:** Liegt in der Agent-Datenbank des Hubs (`sites_certs`, Schlüssel versiegelt), wird 30 Tage vor Ablauf erneuert, nach einem Fehler höchstens einmal am Tag neu versucht. Der Heim-Server holt es alle 6 Stunden über `GET http://<hub>:8080/api/plugins/sites/cert?host=<name>` und gibt es an den Mailserver (`mail.InstallHubCertificate`). Der Hub antwortet nur der Tunnel-Adresse des Standorts, dem der Name gehört (aus der Verbindung, WireGuard bindet sie an dessen Schlüssel), allen anderen `404`.
+- **Skript** `godeb-<profil>-<name>.sh` (0600, gehört dem Konto, das sudo aufgerufen hat): prüft Debian 13 und dass noch kein Tunnel besteht, schreibt Schlüssel und Quellen des APT-Repos (gleicher Inhalt wie im Paket, also keine Rückfrage zur conffile), installiert `godeb` bzw. `godeb-play` und ruft `setup --join` mit dem Beitrittscode aus einer temporären Datei auf. Gefragt wird nur der Administrator. Danach löscht es sich. Der Beitrittscode enthält den privaten WireGuard-Schlüssel: Skript nicht weitergeben.
+
 ### Trusted Endpoint
 
 Damit die GoDeb-Tunnel-App den Tunnel im Heim-WLAN abschaltet und außerhalb wieder einschaltet. Die App fragt den Heimserver über das WLAN an, am Tunnel vorbei, und schickt eine Zufallszahl mit. Der Server signiert sie mit seinem Schlüssel `/etc/godeb/trust.key` (ECDSA P-256, `0600`). Die App vertraut dem Netz nur, wenn die Signatur zu dem Schlüssel passt, der in ihrer Tunnel-Konfiguration gepinnt ist. Ein fremdes WLAN kann das nicht nachmachen, auch wenn es unter derselben Adresse antwortet. Die frühere Prüfung (`/api/trusted`, nur ein Header) ist deshalb entfernt.
@@ -615,6 +624,10 @@ Alle außer `status` antworten nach dem Abschluss mit `410`.
 | GET, POST | `/api/plugins/monitor/alerts` (`enabled`, `email`, `ntfy`, `level`, `resolved`) |
 | POST | `/api/plugins/monitor/alerts/test` |
 | GET | `/api/plugins/monitor/sites` (Hub) |
+| GET | `/api/plugins/sites` (Hub: Standorte mit Profil und Zertifikat, Gateway-Domains, Hetzner-Token vorhanden) |
+| POST | `/api/plugins/sites` (`name`, `profile` home oder play, optional `endpoint`; Antwort einmalig mit Beitrittscode und Skript; Passwort und frischer 2FA-Code) |
+| POST | `/api/plugins/sites/{name}/certificate` (Zertifikat des Mail-Hosts neu holen) |
+| GET | `/api/plugins/sites/cert` (ohne Login, nur von der Tunnel-Adresse des Standorts, dem `host` gehört) |
 | GET | `/api/plugins/monitor/site` (ohne Login, nur von der Tunnel-Adresse des Hubs) |
 | GET | `/api/plugins/logs/entries?source=all\|web\|agent&level=error\|warning\|info\|debug&since=15m\|1h\|24h\|7d\|all&lines=&q=` |
 
