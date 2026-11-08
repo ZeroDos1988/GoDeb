@@ -4,6 +4,9 @@ import (
 	"bufio"
 	"context"
 	"errors"
+	"fmt"
+	"net"
+	"net/netip"
 	"os"
 	"strconv"
 	"strings"
@@ -26,6 +29,9 @@ type HomeMailbox struct {
 
 // HomeResult is what SetupHomeServer did.
 type HomeResult struct {
+	// Router is the static route the home router needs for the gateway,
+	// empty when the gateway could not be switched on.
+	Router    string        `json:"router,omitempty"`
 	MailHost  string        `json:"mailHost"`
 	ClamAV    bool          `json:"clamav"`
 	Mailboxes []HomeMailbox `json:"mailboxes"`
@@ -40,6 +46,7 @@ var (
 	waitMail       = WaitMailJob
 	addMailDomain  = mail.AddDomain
 	memTotalKB     = readMemTotalKB
+	applyGateway   = wireguard.ApplyGateway
 )
 
 // SetupHomeServer sets up what the hub assigned to this home server in its
@@ -57,6 +64,13 @@ func SetupHomeServer(ctx context.Context) (HomeResult, error) {
 		return HomeResult{}, errors.New("Dieser Server ist kein Heim-Server eines Hubs")
 	}
 	res := HomeResult{MailHost: p.MailHost, Mailboxes: []HomeMailbox{}, Notes: []string{}}
+	// Devices at home reach the tunnel addresses through this host once
+	// the router has the route; switching it on alone changes nothing else.
+	if gw, err := applyGateway(ctx, true); err != nil {
+		res.Notes = append(res.Notes, "Heimnetz-Gateway nicht eingeschaltet: "+err.Error())
+	} else {
+		res.Router = RouterRoute(gw)
+	}
 	if p.MailHost == "" {
 		res.Notes = append(res.Notes, "Der Hub hat keinen Mailserver vorgesehen (keine Domains im Mail-Gateway).")
 		return res, nil
@@ -115,4 +129,14 @@ func readMemTotalKB() int {
 		}
 	}
 	return 0
+}
+
+// RouterRoute describes the static route for the home router.
+func RouterRoute(gw wireguard.GatewayInfo) string {
+	tunnel, err := netip.ParsePrefix(gw.Tunnel)
+	if err != nil || gw.Address == "" {
+		return ""
+	}
+	mask := net.CIDRMask(tunnel.Bits(), 32)
+	return fmt.Sprintf("Netz %s, Maske %d.%d.%d.%d, Gateway %s", tunnel.Addr(), mask[0], mask[1], mask[2], mask[3], gw.Address)
 }

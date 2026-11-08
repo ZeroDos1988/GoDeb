@@ -1,0 +1,18 @@
+[Unit]
+Description=GoDeb Heimnetz-Gateway (nftables NAT from the home network into WireGuard)
+# Written by the WireGuard home gateway option; absent until enabled.
+ConditionPathExists=/etc/godeb/gateway.nft
+After=network-pre.target
+Wants=network-pre.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/sbin/nft -f /etc/godeb/gateway.nft
+ExecStop=-/usr/sbin/nft delete table ip godeb_gateway
+ProtectHome=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=multi-user.target

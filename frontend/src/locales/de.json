@@ -729,7 +729,16 @@
     "trustPeerHint": "Der Hub übernimmt Adresse und Schlüssel automatisch in neue Handy-Konfigurationen. Vorhandene: auf dem Hub „Client-Dateien aktualisieren“, dann QR-Code neu scannen.",
     "codeAction": "Code",
     "codeTitle": "Beitrittscode · {{name}}",
-    "peers": "Geräte und Standorte"
+    "peers": "Geräte und Standorte",
+    "gatewayTitle": "Heimnetz-Gateway",
+    "gatewayText": "Geräte im Heimnetz erreichen die Tunnel-Adressen (Hub, Postfach, andere Standorte) über diesen Server, auch wenn das Handy zu Hause den Tunnel abschaltet. Alle internen Namen zeigen immer auf Tunnel-Adressen; kein zweiter DNS nötig.",
+    "gatewayRoute": "Dafür im Router einmal diese statische Route eintragen (Netz / Maske → Gateway):",
+    "gatewayFritz": "FRITZ!Box: Heimnetz → Netzwerk → Netzwerkeinstellungen, Bereich IPv4-Routen (je nach FRITZ!OS leicht anders benannt).",
+    "gatewayActive": "Aktiv",
+    "gatewayInactive": "Aus",
+    "gatewayEnable": "Einschalten",
+    "gatewayDisable": "Ausschalten",
+    "gatewayFailed": "Gateway nicht umgeschaltet."
   },
   "enroll": {
     "title": "Zwei-Faktor-Authentifizierung einrichten",

@@ -224,6 +224,7 @@ export default function Panel() {
               </p>
             </section>
           ) : null}
+          {isPeer ? <GatewayCard /> : null}
 
           <SectionHeader title={t("wg.peers")}>
             {!isPeer ? (
@@ -536,6 +537,62 @@ function TrustCard({ hub, hasSites }: { hub: boolean; hasSites: boolean }) {
         {error ? <p className="text-debian">{error}</p> : null}
         <p className="text-xs text-white/50">{hub ? t("wg.trustHubHint") : t("wg.trustPeerHint")}</p>
       </div>
+    </section>
+  );
+}
+
+type Gateway = { available: boolean; enabled: boolean; lanIf?: string; lan?: string; address?: string; tunnel?: string; detail?: string };
+
+// routeText spells out the router's static route for the tunnel network.
+function routeText(g: Gateway): string {
+  if (!g.tunnel || !g.address) return "";
+  const [net, bits] = g.tunnel.split("/");
+  const n = Number(bits);
+  const mask = [0, 1, 2, 3].map((i) => (n >= (i + 1) * 8 ? 255 : n <= i * 8 ? 0 : 256 - 2 ** (8 - (n - i * 8)))).join(".");
+  return `${net} / ${mask} → ${g.address}`;
+}
+
+function GatewayCard() {
+  const { t } = useTranslation();
+  const gw = useGet<Gateway>("/api/plugins/wireguard/gateway");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const g = gw.data;
+  if (!g) return null;
+
+  async function setEnabled(next: boolean) {
+    setBusy(true);
+    setError("");
+    try {
+      await api("/api/plugins/wireguard/gateway", { method: "POST", body: JSON.stringify({ enabled: next }) });
+      gw.reload();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : t("wg.gatewayFailed"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="mb-6 rounded-2xl border border-white/10 bg-slate-900/60 px-4 py-3 text-sm text-white backdrop-blur-xl">
+      <h2 className="font-medium">{t("wg.gatewayTitle")}</h2>
+      <p className="mt-1 text-white/70">{t("wg.gatewayText")}</p>
+      {g.available ? (
+        <>
+          <p className="mt-2 text-white/70">{t("wg.gatewayRoute")}</p>
+          <p className="mt-1 rounded-xl bg-black/20 px-3 py-2 font-mono text-xs break-all">{routeText(g)}</p>
+          <p className="mt-1 text-xs text-white/50">{t("wg.gatewayFritz")}</p>
+        </>
+      ) : (
+        <p className="mt-2 text-xs text-amber-200/90">{g.detail}</p>
+      )}
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <span className={g.enabled ? "text-emerald-300" : "text-white/50"}>{g.enabled ? t("wg.gatewayActive") : t("wg.gatewayInactive")}</span>
+        <button type="button" disabled={busy || !g.available} onClick={() => void setEnabled(!g.enabled)} className={buttonClass}>
+          {g.enabled ? t("wg.gatewayDisable") : t("wg.gatewayEnable")}
+        </button>
+      </div>
+      {error ? <p className="mt-2 text-debian">{error}</p> : null}
     </section>
   );
 }

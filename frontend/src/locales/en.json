@@ -729,7 +729,16 @@
     "trustPeerHint": "The hub copies address and key into new phone configurations automatically. Existing ones: “Update client files” on the hub, then re-scan the QR code.",
     "codeAction": "Code",
     "codeTitle": "Join code · {{name}}",
-    "peers": "Devices and sites"
+    "peers": "Devices and sites",
+    "gatewayTitle": "Home network gateway",
+    "gatewayText": "Devices in the home network reach the tunnel addresses (hub, mailbox, other sites) through this server, also when the phone switches the tunnel off at home. All internal names always point to tunnel addresses; no second DNS needed.",
+    "gatewayRoute": "For this, add this static route to the router once (network / mask → gateway):",
+    "gatewayFritz": "FRITZ!Box: Home Network → Network → Network Settings, IPv4 routes (named slightly differently depending on FRITZ!OS).",
+    "gatewayActive": "Active",
+    "gatewayInactive": "Off",
+    "gatewayEnable": "Switch on",
+    "gatewayDisable": "Switch off",
+    "gatewayFailed": "Gateway not switched."
   },
   "enroll": {
     "title": "Set up two-factor authentication",

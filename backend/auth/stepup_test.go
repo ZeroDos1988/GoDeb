@@ -78,6 +78,7 @@ func TestStepUpLevels(t *testing.T) {
 		{"GET", "/api/plugins/wireguard/peers/heim-vm/code", stepUpWindow},
 		{"POST", "/api/plugins/apt/upgrade", stepUpFresh},
 		{"POST", "/api/plugins/sites", stepUpFresh},
+		{"POST", "/api/plugins/wireguard/gateway", stepUpFresh},
 		{"POST", "/api/plugins/sites/heim/certificate", stepUpFresh},
 		{"GET", "/api/plugins/sites/cert", stepUpNone},
 		{"POST", "/api/plugins/domains/token", stepUpFresh},

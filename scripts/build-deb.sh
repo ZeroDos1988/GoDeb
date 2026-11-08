@@ -109,6 +109,7 @@ for want in \
 	"-rw-r--r-- ./lib/systemd/system/godeb-agent.service" \
 	"-rw-r--r-- ./lib/systemd/system/godeb-portforward.service" \
 	"-rw-r--r-- ./lib/systemd/system/godeb-volltunnel.service" \
+	"-rw-r--r-- ./lib/systemd/system/godeb-gateway.service" \
 	"-rw-r--r-- ./usr/share/godeb/plugins/portforward/plugin.json" \
 	"-rw-r--r-- ./usr/share/godeb/frontend/dist/index.html" \
 	"-rw-r--r-- ./usr/share/godeb/plugins/wireguard/manifest.json" \

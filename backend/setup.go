@@ -420,6 +420,11 @@ func (s *setup) home(ctx context.Context) error {
 	for _, n := range res.Notes {
 		fmt.Fprintf(s.out, "  Hinweis: %s\n", n)
 	}
+	if res.Router != "" {
+		fmt.Fprintln(s.out, "  Heimnetz-Gateway ist an. Damit Handy und PC zu Hause die Tunnel-Adressen ohne Tunnel erreichen,")
+		fmt.Fprintf(s.out, "  im Router eine statische Route eintragen: %s\n", res.Router)
+		fmt.Fprintln(s.out, "  (FRITZ!Box: Heimnetz → Netzwerk → Netzwerkeinstellungen, Bereich IPv4-Routen; je nach FRITZ!OS leicht anders benannt)")
+	}
 	if err != nil {
 		return err
 	}

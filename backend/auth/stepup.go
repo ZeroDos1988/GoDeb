@@ -57,6 +57,7 @@ var criticalExact = map[string]bool{
 	"/api/plugins/wireguard/join":       true, // replaces how this host reaches the tunnel
 	"/api/plugins/wireguard/trust":      true, // decides where phones switch their tunnel off
 	"/api/plugins/wireguard/volltunnel": true, // NAT: client internet egress through the hub
+	"/api/plugins/wireguard/gateway":    true, // NAT: the home network into the tunnel
 	"/api/plugins/apt/upgrade":          true, // installs every pending update, GoDeb included
 	"/api/plugins/domains/token":        true, // Cloud-API token that can change every DNS zone
 	"/api/plugins/apphttps/enable":      true, // public DNS record and a firewall port on wg0

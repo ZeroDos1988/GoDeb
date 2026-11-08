@@ -39,6 +39,12 @@ func fakeHome(t *testing.T, profile wireguard.SiteProfile, memKB int) *[]string 
 		return mail.DomainSetup{Postmaster: "postmaster@" + d, Password: "pw", Aliases: []string{"abuse"}}, nil
 	}
 	memTotalKB = func() int { return memKB }
+	oldGW := applyGateway
+	t.Cleanup(func() { applyGateway = oldGW })
+	applyGateway = func(context.Context, bool) (wireguard.GatewayInfo, error) {
+		calls = append(calls, "gateway")
+		return wireguard.GatewayInfo{Available: true, Enabled: true, Tunnel: "10.8.0.0/24", Address: "192.168.178.20"}, nil
+	}
 	return &calls
 }
 
@@ -52,9 +58,12 @@ func TestSetupHomeServer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := "start postfach.example.com 10.8.0.1 clamav|wait|domain example.com|domain example.org"
+	want := "gateway|start postfach.example.com 10.8.0.1 clamav|wait|domain example.com|domain example.org"
 	if got := strings.Join(*calls, "|"); got != want {
 		t.Fatalf("calls %s", got)
+	}
+	if res.Router != "Netz 10.8.0.0, Maske 255.255.255.0, Gateway 192.168.178.20" {
+		t.Fatalf("router %q", res.Router)
 	}
 	if len(res.Mailboxes) != 1 || res.Mailboxes[0].Address != "postmaster@example.com" || !res.ClamAV {
 		t.Fatalf("result %+v", res)
@@ -69,7 +78,7 @@ func TestSetupHomeServerSmallAndWithoutMail(t *testing.T) {
 		t.Fatalf("small host: %+v %v %v", res, err, *calls)
 	}
 	calls = fakeHome(t, wireguard.SiteProfile{Kind: "home"}, 8<<20)
-	if res, err := SetupHomeServer(t.Context()); err != nil || len(*calls) != 0 || len(res.Notes) == 0 {
+	if res, err := SetupHomeServer(t.Context()); err != nil || strings.Join(*calls, "|") != "gateway" || len(res.Notes) == 0 {
 		t.Fatalf("no mail host: %+v %v %v", res, err, *calls)
 	}
 	fakeHome(t, wireguard.SiteProfile{Kind: "play"}, 8<<20)
