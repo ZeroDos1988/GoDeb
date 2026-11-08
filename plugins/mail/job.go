@@ -186,25 +186,38 @@ func install(ctx context.Context, s Settings) error {
 	}
 
 	jobs.logf("==> Firewall: Mail-Ports öffnen")
-	if err := openPorts(ctx); err != nil {
+	if err := openPorts(ctx, s.ViaHub()); err != nil {
 		jobs.logf("  %s", err)
 	}
 	return nil
 }
 
-// openPorts allows 25, 465, 587 and 993 in ufw. Rules added while ufw is
-// still off (setup wizard: the firewall is switched on in its last step)
-// take effect when it is enabled.
-func openPorts(ctx context.Context) error {
+// openPorts allows 25, 465, 587 and 993 in ufw, behind a hub only on wg0
+// (mail from the gateway and mail programs in the tunnel). Rules added
+// while ufw is still off (setup wizard: the firewall is switched on in its
+// last step) take effect when it is enabled.
+func openPorts(ctx context.Context, tunnelOnly bool) error {
 	if st := core.RunAdmin(ctx, "ufw", "status"); st.Err != nil {
 		return errors.New("ufw fehlt; die Ports 25, 465, 587 und 993/tcp bitte selbst freigeben")
 	}
-	for _, p := range mailPorts {
-		if err := run(ctx, time.Minute, "ufw", "allow", p+"/tcp", "comment", "GoDeb-Mail"); err != nil {
+	for _, args := range portRules(tunnelOnly) {
+		if err := run(ctx, time.Minute, "ufw", args...); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func portRules(tunnelOnly bool) [][]string {
+	out := make([][]string, 0, len(mailPorts))
+	for _, p := range mailPorts {
+		if tunnelOnly {
+			out = append(out, []string{"allow", "in", "on", "wg0", "to", "any", "port", p, "proto", "tcp", "comment", "GoDeb-Mail"})
+		} else {
+			out = append(out, []string{"allow", p + "/tcp", "comment", "GoDeb-Mail"})
+		}
+	}
+	return out
 }
 
 // enableClamAV installs and starts ClamAV, then switches Rspamd's

@@ -93,5 +93,7 @@ echo "==> Rspamd"
 rm -f "$R"/etc/rspamd/local.d/*
 cp "$T"/out/etc/rspamd/local.d/* "$R/etc/rspamd/local.d/"
 run /usr/bin/rspamadm configtest | grep -q "syntax OK"
-echo "    configtest: syntax OK"
+cp "$T"/out/hub/etc/rspamd/local.d/* "$R/etc/rspamd/local.d/"
+run /usr/bin/rspamadm configtest | grep -q "syntax OK"
+echo "    configtest: syntax OK (auch hinter dem Hub)"
 echo "Alles in Ordnung."

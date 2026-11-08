@@ -47,6 +47,12 @@ func TestDumpConfig(t *testing.T) {
 	for p, body := range rspamdFiles(s, domains) {
 		write(p, body)
 	}
+	// The same Rspamd overrides for a home server behind the hub.
+	hub := s
+	hub.Hub = "10.8.0.1"
+	for p, body := range rspamdFiles(hub, domains) {
+		write(filepath.Join("hub", p), body)
+	}
 	write(fail2banJail, fail2banConfig)
 }
 

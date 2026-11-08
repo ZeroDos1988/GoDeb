@@ -43,7 +43,7 @@ func postfixMain(s Settings) []string {
 		"mydestination=localhost",
 		"mynetworks=127.0.0.0/8 [::1]/128",
 		"inet_interfaces=all",
-		"relayhost=",
+		relayhost(s),
 		"relay_domains=",
 		"smtpd_banner=$myhostname ESMTP",
 		"biff=no",
@@ -442,8 +442,21 @@ if header :contains "X-Spam" "Yes" {
 }
 `
 
+// relayhost sends outgoing mail through the hub's gateway when the server
+// runs behind it, otherwise directly.
+func relayhost(s Settings) string {
+	if s.ViaHub() {
+		return "relayhost=[" + s.Hub + "]:25"
+	}
+	return "relayhost="
+}
+
 // rspamdFiles are the local.d overrides. DKIM keys live in dkimDir as
-// <domain>.<selector>.key; a domain without key is not signed.
+// <domain>.<selector>.key; a domain without key is not signed. Behind the
+// hub the gateway signs, so Rspamd signs nothing (two keys under the same
+// selector would break DKIM), and external_relay takes the sender's address
+// from the gateway's Received header, or SPF and greylisting would judge
+// every message by the hub.
 func rspamdFiles(s Settings, domains []Domain) map[string]string {
 	var dkim strings.Builder
 	dkim.WriteString(header + `enabled = true;
@@ -494,6 +507,19 @@ authenticated_headers = ["authentication-results"];
 `
 	}
 	files[rspamdLocal+"/antivirus.conf"] = av
+	files[rspamdLocal+"/external_relay.conf"] = header + "# Not behind a hub.\n"
+	if s.ViaHub() {
+		off := header + "# The hub's mail gateway signs.\nenabled = false;\n"
+		files[rspamdLocal+"/dkim_signing.conf"] = off
+		files[rspamdLocal+"/arc.conf"] = off
+		files[rspamdLocal+"/external_relay.conf"] = header + fmt.Sprintf(`rules {
+  GODEB_HUB {
+    strategy = "ip_map";
+    ip_map = [%q];
+  }
+}
+`, s.Hub)
+	}
 	return files
 }
 

@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"net/mail"
+	"net/netip"
 	"regexp"
 	"strings"
 )
@@ -54,6 +55,22 @@ type Settings struct {
 	// CertFile/KeyFile: Let's Encrypt once issued, the snakeoil pair before.
 	CertFile string `json:"certFile"`
 	KeyFile  string `json:"keyFile"`
+	// Hub is the tunnel address of the GoDeb hub when this mail server runs
+	// behind its mail gateway (home server): the hub receives and sends,
+	// signs with DKIM, keeps DNS and issues the certificate.
+	Hub string `json:"hub,omitempty"`
+}
+
+// ViaHub reports whether the mail server sits behind the hub's gateway.
+func (s Settings) ViaHub() bool { return s.Hub != "" }
+
+// NormalizeHub checks the hub's tunnel address: a private IPv4 address.
+func NormalizeHub(v string) (string, error) {
+	a, err := netip.ParseAddr(strings.TrimSpace(v))
+	if err != nil || !a.Is4() || !a.IsPrivate() {
+		return "", errors.New("Hub-Adresse muss eine private IPv4-Adresse im Tunnel sein")
+	}
+	return a.String(), nil
 }
 
 const (

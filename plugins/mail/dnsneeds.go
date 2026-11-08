@@ -20,6 +20,10 @@ func dnsNeeds() ([]domains.Need, error) {
 	if err != nil || !ok {
 		return nil, err
 	}
+	// Behind a hub the hub publishes MX, SPF, DKIM and the mail host.
+	if s.ViaHub() {
+		return nil, nil
+	}
 	list, accounts, err := loadAll()
 	if err != nil {
 		return nil, err

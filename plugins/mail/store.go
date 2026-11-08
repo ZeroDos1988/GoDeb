@@ -19,6 +19,7 @@ type settingsRow struct {
 	ClamAV   bool
 	CertFile string
 	KeyFile  string
+	Hub      string
 }
 
 func (settingsRow) TableName() string { return "mailserver_settings" }
@@ -91,7 +92,7 @@ func loadSettings() (Settings, bool, error) {
 	if res.RowsAffected == 0 || row.Hostname == "" {
 		return Settings{CertFile: snakeoilCert, KeyFile: snakeoilKey}, false, nil
 	}
-	s := Settings{Hostname: row.Hostname, ClamAV: row.ClamAV, CertFile: row.CertFile, KeyFile: row.KeyFile}
+	s := Settings{Hostname: row.Hostname, ClamAV: row.ClamAV, CertFile: row.CertFile, KeyFile: row.KeyFile, Hub: row.Hub}
 	if s.CertFile == "" || s.KeyFile == "" {
 		s.CertFile, s.KeyFile = snakeoilCert, snakeoilKey
 	}
@@ -103,7 +104,7 @@ func saveSettings(s Settings) error {
 	if err != nil {
 		return err
 	}
-	return gdb.Save(&settingsRow{ID: 1, Hostname: s.Hostname, ClamAV: s.ClamAV, CertFile: s.CertFile, KeyFile: s.KeyFile}).Error
+	return gdb.Save(&settingsRow{ID: 1, Hostname: s.Hostname, ClamAV: s.ClamAV, CertFile: s.CertFile, KeyFile: s.KeyFile, Hub: s.Hub}).Error
 }
 
 func loadAll() ([]Domain, []Account, error) {

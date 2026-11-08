@@ -1,11 +1,16 @@
 package mail
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
+	"crypto/tls"
+	"crypto/x509"
 	"errors"
+	"fmt"
 	"log/slog"
 	"math/big"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -38,6 +43,22 @@ func JobState() *Job { return jobs.snapshot() }
 // StartInstall installs Postfix, Dovecot, Rspamd and Redis in the
 // background. The plugin view and the setup wizard use it.
 func StartInstall(hostname string, clamav bool) error {
+	return startInstall(hostname, "", clamav)
+}
+
+// StartInstallBehindHub installs the mail server of a home server behind
+// the hub's mail gateway at hub (its tunnel address): mail comes in and
+// goes out through the hub, the ports are open on wg0 only, and the hub
+// supplies DNS, DKIM and the certificate (InstallHubCertificate).
+func StartInstallBehindHub(hostname, hub string, clamav bool) error {
+	h, err := NormalizeHub(hub)
+	if err != nil {
+		return err
+	}
+	return startInstall(hostname, h, clamav)
+}
+
+func startInstall(hostname, hub string, clamav bool) error {
 	host, err := NormalizeHostname(hostname)
 	if err != nil {
 		return err
@@ -49,19 +70,26 @@ func StartInstall(hostname string, clamav bool) error {
 	if err != nil {
 		return err
 	}
-	s.Hostname, s.ClamAV = host, clamav
+	s.Hostname, s.ClamAV, s.Hub = host, clamav, hub
 	if err := jobs.start("install", func(ctx context.Context) error { return install(ctx, s) }); err != nil {
 		return err
 	}
-	slog.Info("Mailserver-Einrichtung gestartet", "hostname", host, "clamav", clamav)
+	slog.Info("Mailserver-Einrichtung gestartet", "hostname", host, "clamav", clamav, "hub", hub)
 	return nil
 }
 
 // StartCertificate requests the Let's Encrypt certificate for the host name
 // in the background.
 func StartCertificate(email string) error {
-	if !Installed() {
+	s, ok, err := loadSettings()
+	if err != nil {
+		return err
+	}
+	if !ok {
 		return errors.New("Der Mailserver ist noch nicht eingerichtet")
+	}
+	if s.ViaHub() {
+		return errors.New("Das Zertifikat holt der Hub; es kommt automatisch über den Tunnel")
 	}
 	return jobs.start("certificate", func(ctx context.Context) error { return certificate(ctx, email) })
 }
@@ -288,4 +316,60 @@ func dmarcReports(domain string, accounts []Account) string {
 		return addr
 	}
 	return ""
+}
+
+// Files of the certificate the hub issues for a mail server behind it.
+const (
+	hubCertFile = "/etc/godeb/mail-tls/fullchain.pem"
+	hubKeyFile  = "/etc/godeb/mail-tls/privkey.pem"
+)
+
+// InstallHubCertificate takes over the certificate the hub issued for the
+// mail host: it must be valid for the host name and match the key. Postfix
+// and Dovecot read the key as root. Unchanged files are left alone.
+func InstallHubCertificate(ctx context.Context, certPEM, keyPEM []byte) error {
+	s, ok, err := loadSettings()
+	if err != nil {
+		return err
+	}
+	if !ok || !s.ViaHub() {
+		return errors.New("Kein Mailserver hinter dem Hub eingerichtet")
+	}
+	pair, err := tls.X509KeyPair(certPEM, keyPEM)
+	if err != nil {
+		return fmt.Errorf("Zertifikat vom Hub: %w", err)
+	}
+	leaf, err := x509.ParseCertificate(pair.Certificate[0])
+	if err != nil {
+		return fmt.Errorf("Zertifikat vom Hub: %w", err)
+	}
+	if err := leaf.VerifyHostname(s.Hostname); err != nil {
+		return fmt.Errorf("Zertifikat vom Hub passt nicht zu %s", s.Hostname)
+	}
+	if time.Now().After(leaf.NotAfter) {
+		return errors.New("Zertifikat vom Hub ist abgelaufen")
+	}
+	old, _ := os.ReadFile(root(hubCertFile))
+	if bytes.Equal(old, certPEM) && s.CertFile == hubCertFile {
+		return nil
+	}
+	if err := writeFile(hubKeyFile, string(keyPEM)); err != nil {
+		return err
+	}
+	if err := writeFile(hubCertFile, string(certPEM)); err != nil {
+		return err
+	}
+	s.CertFile, s.KeyFile = hubCertFile, hubKeyFile
+	if err := saveSettings(s); err != nil {
+		return err
+	}
+	log, err := apply(ctx)
+	if err != nil {
+		return err
+	}
+	if len(log) > 0 {
+		slog.Warn("Mailserver: Zertifikat vom Hub übernommen, mit Hinweisen", "hinweise", strings.Join(log, "; "))
+	}
+	slog.Info("Mailserver: Zertifikat vom Hub übernommen", "name", s.Hostname, "gültig_bis", leaf.NotAfter.UTC().Format(time.RFC3339))
+	return nil
 }

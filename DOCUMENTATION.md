@@ -473,6 +473,8 @@ Ein vollständiger Mailserver nach dem Vorbild von HestiaCP: Maildomains, Postf�
 
 **Prüfen ohne Server:** `scripts/check-mail-config.sh` erzeugt die Konfiguration für ein Beispiel und prüft sie mit den echten Werkzeugen aus Debian 13 (`postconf`, `postmap`, `doveconf`, `sievec`, `doveadm pw`, `rspamadm configtest`). Die Pakete werden nur entpackt und in einem User-Namespace ausgeführt, ohne root.
 
+**Hinter dem Hub (Heim-Server):** `mail.StartInstallBehindHub(host, hub, clamav)` richtet den Mailserver für ein Mail-Gateway auf dem Hub ein. Postfix verschickt über `relayhost=[<hub>]:25`, die Mail-Ports sind nur auf `wg0` offen (`ufw allow in on wg0 …`), Rspamd signiert nicht (DKIM und ARC aus, das Gateway signiert) und übernimmt mit `external_relay` (Strategie `ip_map`, nur die Hub-Adresse) die Absender-IP aus dem `Received`-Header des Gateways, damit SPF und Greylisting den echten Absender bewerten. Die DNS-Einträge meldet der Hub, nicht dieser Server. Das Zertifikat für den Mail-Host kommt vom Hub (`mail.InstallHubCertificate`: passt zum Hostnamen und zum Schlüssel, liegt in `/etc/godeb/mail-tls/`, Schlüssel `0600`); certbot läuft hier nicht. Ob Rspamd die Absender-IP auf dem echten Server übernimmt, ist noch nicht geprüft (`rspamadm configtest` prüft nur die Syntax).
+
 ### Mail-Gateway
 
 Der Hetzner-V-Server nimmt Post für eingetragene Domains an und gibt sie über den WireGuard-Tunnel an den Homeserver weiter. Postfix ist der Store-and-Forward-Puffer: ist `10.8.0.x:25` nicht erreichbar, bleibt die Post in der Queue und geht nach dem Reconnect mit `postqueue -f` oder dem normalen Queue-Lauf hinaus.

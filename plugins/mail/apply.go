@@ -48,6 +48,9 @@ var allowed = map[string]fileSpec{
 	rspamdLocal + "/redis.conf":            {0o644, ""},
 	rspamdLocal + "/classifier-bayes.conf": {0o644, ""},
 	rspamdLocal + "/antivirus.conf":        {0o644, ""},
+	rspamdLocal + "/external_relay.conf":   {0o644, ""},
+	hubCertFile:                            {0o644, ""},
+	hubKeyFile:                             {0o600, ""},
 	rspamdCtrlConf:                         {0o644, ""},
 }
 
