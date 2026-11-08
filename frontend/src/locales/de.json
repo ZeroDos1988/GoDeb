@@ -1165,7 +1165,7 @@
     "tunnelAddress": "Tunnel-Adresse",
     "wgPort": "WireGuard-Port (UDP)",
     "fullTunnel": "Volltunnel (Internet über diesen Server)",
-    "fullTunnelHint": "Optional. Clients schicken dann allen Verkehr über den Hub (NAT). Kostet Bandbreite; bei Tunnelausfall kein Fallback. Standorte bleiben ohne Volltunnel.",
+    "fullTunnelHint": "Empfohlen. Handy und Laptop schicken unterwegs allen Verkehr über diesen Server (NAT), zu Hause schaltet die GoDeb-Tunnel-App ab. Kostet Bandbreite; bei Tunnelausfall kein Fallback. Standorte bleiben ohne Volltunnel.",
     "joinFile": "Beitrittscode oder Client-Datei",
     "joinHint": "Den Beitrittscode vom Hub einfügen (beginnt mit godeb-join:) oder die Datei hochladen. Er steht im Assistenten des Hubs, unter WireGuard → Standort → Code oder in der Ausgabe von „sudo godeb site add“.",
     "hubDone": "WireGuard-Server läuft.",
@@ -1255,7 +1255,9 @@
     "rolesToMailboxHint": "Alles landet zentral in deinem Postfach, kein eigenes Postmaster-Postfach. In derselben Domain als Aliasse, bei den anderen Domains als Weiterleitung.",
     "yourAddress": "deine Adresse",
     "personalCreated": "Postfach {{address}} angelegt.",
-    "rolesRouted": "{{aliases}} → {{target}}"
+    "rolesRouted": "{{aliases}} → {{target}}",
+    "sitesTitle": "Als Nächstes: Heim-Server und GoDeb Play",
+    "sitesText": "Unter Netzwerk → Standorte legst du den Heim-Server (Postfächer, Spamfilter, Virenscanner) und GoDeb Play (Spielserver) an. Jeder bekommt ein Skript, das du auf dem neuen Rechner nur noch ausführst."
   },
   "clients": {
     "title": "Geräte und Standorte",

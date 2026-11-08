@@ -20,6 +20,7 @@ import (
 	"godeb/backend/firstrun"
 	"godeb/backend/pluginmgr"
 	"godeb/plugins/mail"
+	mailgateway "godeb/plugins/mailgateway/backend"
 	"godeb/plugins/sites"
 	"godeb/plugins/wireguard"
 )
@@ -46,6 +47,8 @@ type setupOptions struct {
 	OwnPM      bool
 	Domains    string
 	NoDefaults bool
+	Home       string
+	Play       string
 	Yes        bool
 }
 
@@ -75,6 +78,8 @@ func runSetup(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	fs.BoolVar(&opt.OwnPM, "separate-postmaster", false, "mit --mailbox: eigenes Postfach postmaster@ statt postmaster, abuse, dmarc und tls-reports an --mailbox")
 	fs.StringVar(&opt.Domains, "domains", "", "Domains, durch Komma getrennt; mit GODEB_HETZNER_TOKEN legt GoDeb die DNS-Einträge bei Hetzner an")
 	fs.BoolVar(&opt.NoDefaults, "no-dns-defaults", false, "keine Standardeinträge (Web, www, mail, webmail, MX, SPF, DMARC) für --domains")
+	fs.StringVar(&opt.Home, "home", "", "Hub: Heim-Server mit diesem Namen anlegen und sein Einrichtungsskript schreiben (Mail und schwere Dienste zu Hause)")
+	fs.StringVar(&opt.Play, "play", "", "Hub: GoDeb Play mit diesem Namen anlegen und sein Einrichtungsskript schreiben")
 	fs.BoolVar(&opt.Yes, "yes", false, "keine Rückfragen, Standardwerte nehmen")
 	if err := fs.Parse(args); err != nil {
 		return 2
@@ -142,8 +147,11 @@ func (s *setup) run(ctx context.Context) error {
 	default:
 		return fmt.Errorf("unbekannte Rolle %q", s.opt.Role)
 	}
-	s.steps = 6
-	fmt.Fprintln(s.out, "GoDeb Ersteinrichtung als WireGuard-Server: Administrator, Tunnel, Volltunnel, Mail und Domains, Firewall, erster Client.")
+	s.steps = 7
+	fmt.Fprintln(s.out, "GoDeb Ersteinrichtung als WireGuard-Server: Administrator, Tunnel, Volltunnel, Mail und Domains, Firewall, erster Client, Standorte.")
+	fmt.Fprintln(s.out, "Empfohlene Aufteilung: Dieser VPS = Tunnel, Domains/DNS, Zertifikate, Mail-Ein- und Ausgang, Portweiterleitung.")
+	fmt.Fprintln(s.out, "Heim-Server = Postfächer, Spamfilter, Virenscanner, Webseiten, Datenbanken. GoDeb Play = Spielserver.")
+	fmt.Fprintln(s.out, "Die Vorgaben unten folgen dieser Aufteilung; Heim-Server und GoDeb Play bekommen am Ende je ein Einrichtungsskript.")
 
 	s.step(1, "Administrator")
 	if err := s.admin(); err != nil {
@@ -172,7 +180,42 @@ func (s *setup) run(ctx context.Context) error {
 	}
 
 	s.step(6, "Erster Client")
-	return s.client(ctx, prefix)
+	if err := s.client(ctx, prefix); err != nil {
+		return err
+	}
+
+	s.step(7, "Heim-Server und GoDeb Play (optional)")
+	s.sites(ctx)
+	s.finish(prefix)
+	return nil
+}
+
+// sites creates the home server and GoDeb Play through sites.Add, the same
+// function as the Sites page, and writes their setup scripts.
+func (s *setup) sites(ctx context.Context) {
+	home, play := s.opt.Home, s.opt.Play
+	if home == "" && !s.opt.Yes {
+		if domains, err := mailgateway.Domains(); err == nil && len(domains) > 0 {
+			fmt.Fprintf(s.out, "  Der Heim-Server bekommt die Postfächer für %s; Post kommt und geht über diesen VPS.\n", strings.Join(domains, ", "))
+		}
+		home = s.ask("Heim-Server jetzt anlegen? Name (leer = später unter Standorte)", "heim")
+	}
+	if play == "" && !s.opt.Yes {
+		play = s.ask("GoDeb Play für Spielserver anlegen? Name (leer = nein)", "")
+	}
+	if home == "" && play == "" {
+		fmt.Fprintln(s.out, "  Übersprungen. Später unter Standorte oder mit sudo godeb site add <name> --profile home|play.")
+		return
+	}
+	endpoint := s.opt.Endpoint
+	if endpoint == "" {
+		endpoint = wireguard.DefaultEndpoint()
+	}
+	for _, site := range []struct{ name, profile string }{{home, wireguard.ProfileHome}, {play, wireguard.ProfilePlay}} {
+		if site.name != "" {
+			siteAddProfile(ctx, site.name, site.profile, endpoint, s.out, s.out)
+		}
+	}
 }
 
 // services installs the mail gateway or the mail server and enters
@@ -190,9 +233,9 @@ func (s *setup) services(ctx context.Context) error {
 		return errors.New("--mail-relay und --mail-server schließen sich aus")
 	}
 	if !relay && server == "" && !s.opt.Yes {
-		fmt.Fprintln(s.out, "  E-Mail: relay = Post annehmen und durch den Tunnel an den Mailserver zu Hause (10.8.0.2)")
-		fmt.Fprintln(s.out, "  weitergeben; server = vollständiger Mailserver mit Postfächern auf diesem Server.")
-		switch strings.ToLower(s.ask("E-Mail: relay, server oder keine", "keine")) {
+		fmt.Fprintln(s.out, "  E-Mail: relay (empfohlen) = dieser VPS nimmt Post an, verschickt mit DKIM und gibt sie durch den")
+		fmt.Fprintln(s.out, "  Tunnel an die Postfächer auf dem Heim-Server; server = alles auf diesem VPS; keine = ohne Mail.")
+		switch strings.ToLower(s.ask("E-Mail: relay, server oder keine", "relay")) {
 		case "relay":
 			relay = true
 		case "server":
@@ -562,7 +605,9 @@ func (s *setup) enableTunnel(ctx context.Context) error {
 }
 
 // volltunnel optionally enables NAT so tunnel clients can send all traffic
-// through this hub. Off by default; --full-tunnel or an explicit yes turns it on.
+// through this hub. Asked with yes as the default, so the first phone or
+// laptop gets a full tunnel (at home the trusted endpoint switches it off);
+// with --yes only --full-tunnel turns it on.
 func (s *setup) volltunnel(ctx context.Context) error {
 	if wireguard.VolltunnelEnabled() {
 		fmt.Fprintln(s.out, "  Volltunnel ist bereits aktiv (IP-Forwarding und NAT).")
@@ -571,10 +616,10 @@ func (s *setup) volltunnel(ctx context.Context) error {
 	}
 	enable := s.opt.FullTunnel
 	if !s.opt.Yes && !s.opt.FullTunnel {
-		fmt.Fprintln(s.out, "  Clients können dann ihren gesamten Internetverkehr über diesen Server schicken")
-		fmt.Fprintln(s.out, "  (AllowedIPs 0.0.0.0/0). Kostet Bandbreite und Traffic; bei Ausfall des Tunnels")
-		fmt.Fprintln(s.out, "  haben solche Clients keinen Ausweichweg. Standorte (Heim-VM) bleiben ohne Volltunnel.")
-		answer := strings.ToLower(s.ask("Volltunnel einschalten? (j/N)", "n"))
+		fmt.Fprintln(s.out, "  Empfohlen: Handy und Laptop schicken unterwegs ihren gesamten Internetverkehr über diesen")
+		fmt.Fprintln(s.out, "  Server (AllowedIPs 0.0.0.0/0), zu Hause schaltet die GoDeb-Tunnel-App ab. Kostet Bandbreite")
+		fmt.Fprintln(s.out, "  und Traffic; bei Ausfall des Tunnels haben sie keinen Ausweichweg. Standorte bleiben ohne Volltunnel.")
+		answer := strings.ToLower(s.ask("Volltunnel einschalten? (J/n)", "j"))
 		enable = strings.HasPrefix(answer, "j") || strings.HasPrefix(answer, "y")
 	}
 	if !enable {
@@ -664,9 +709,8 @@ func (s *setup) client(ctx context.Context, prefix netip.Prefix) error {
 		endpoint = net.JoinHostPort(endpoint, strconv.Itoa(s.opt.Port))
 	}
 	name := s.ask("Name des ersten Clients", s.opt.Client)
-	site := false
 	for name != "" {
-		res, err := firstrun.AddClient(ctx, firstrun.ClientSpec{Name: name, Site: site, Endpoint: endpoint, FullTunnel: !site && s.opt.FullTunnel})
+		res, err := firstrun.AddClient(ctx, firstrun.ClientSpec{Name: name, Endpoint: endpoint, FullTunnel: s.opt.FullTunnel})
 		var reqErr *wireguard.RequestError
 		switch {
 		case errors.As(err, &reqErr) && reqErr.Status == 409:
@@ -679,13 +723,8 @@ func (s *setup) client(ctx context.Context, prefix netip.Prefix) error {
 		if s.opt.Yes {
 			break
 		}
-		name = s.ask("Weiteres Gerät oder weiteren GoDeb-Server anlegen? Name (leer = fertig)", "")
-		if name != "" {
-			answer := strings.ToLower(s.ask("Ist "+name+" ein GoDeb-Server, z. B. die Heim-VM? (j/N)", "n"))
-			site = strings.HasPrefix(answer, "j") || strings.HasPrefix(answer, "y")
-		}
+		name = s.ask("Weiteres Gerät (Handy, Laptop) anlegen? Name (leer = weiter)", "")
 	}
-	s.finish(prefix)
 	return nil
 }
 

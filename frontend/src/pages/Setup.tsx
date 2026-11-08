@@ -189,7 +189,9 @@ function RoleStep({ info, role, setRole, onNext }: { info: SetupInfo; role: Role
   const [address, setAddress] = useState("10.8.0.1/24");
   const [port, setPort] = useState(51820);
   const [client, setClient] = useState("admin-handy");
-  const [fullTunnel, setFullTunnel] = useState(false);
+  // Recommended: the first phone or laptop sends everything through the
+  // hub on the road; at home the trusted endpoint switches the tunnel off.
+  const [fullTunnel, setFullTunnel] = useState(true);
   const [config, setConfig] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -759,6 +761,12 @@ function DoneStep({ result, info, onDone }: { result: FinishResult | null; info:
       <p className="mt-3 rounded-2xl border border-white/10 bg-black/20 px-3 py-2 font-mono text-sm break-all">{next}</p>
       {result?.log.length ? <pre className="mt-3 overflow-auto rounded-2xl bg-slate-950/50 p-3 text-[11px] whitespace-pre-wrap text-white/70">{result.log.join("\n")}</pre> : null}
       {onSetupListener ? <p className="mt-3 text-xs text-amber-200">{t("setup.listenerClosed")}</p> : null}
+      {result?.summary?.role === "hub" ? (
+        <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-3 text-sm">
+          <p className="font-medium">{t("setup.sitesTitle")}</p>
+          <p className="mt-1 text-white/70">{t("setup.sitesText")}</p>
+        </div>
+      ) : null}
       {result?.summary ? (
         <div className="mt-6">
           <p className="mb-3 text-sm text-white/70">{t("setup.summaryHint")}</p>

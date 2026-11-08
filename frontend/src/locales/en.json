@@ -1165,7 +1165,7 @@
     "tunnelAddress": "Tunnel address",
     "wgPort": "WireGuard port (UDP)",
     "fullTunnel": "Full tunnel (internet through this server)",
-    "fullTunnelHint": "Optional. Clients then send all traffic through the hub (NAT). Uses bandwidth; no fallback if the tunnel drops. Sites stay without a full tunnel.",
+    "fullTunnelHint": "Recommended. Phone and laptop send all traffic through this server on the road (NAT); at home the GoDeb Tunnel app switches off. Costs bandwidth; no fallback if the tunnel fails. Sites stay without full tunnel.",
     "joinFile": "Join code or client file",
     "joinHint": "Paste the join code from the hub (starts with godeb-join:) or upload the file. It is shown in the hub's wizard, under WireGuard → site → Code, or by \"sudo godeb site add\".",
     "hubDone": "WireGuard server is running.",
@@ -1255,7 +1255,9 @@
     "rolesToMailboxHint": "Everything arrives in your mailbox, no postmaster mailbox of its own. Aliases in the same domain, forwards for the other domains.",
     "yourAddress": "your address",
     "personalCreated": "Mailbox {{address}} created.",
-    "rolesRouted": "{{aliases}} → {{target}}"
+    "rolesRouted": "{{aliases}} → {{target}}",
+    "sitesTitle": "Next: home server and GoDeb Play",
+    "sitesText": "Under Network → Sites you create the home server (mailboxes, spam filter, virus scanner) and GoDeb Play (game servers). Each gets a script you only have to run on the new machine."
   },
   "clients": {
     "title": "Devices and sites",
