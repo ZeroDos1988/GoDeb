@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { DiagnosisDialog } from "@/components/DiagnosisDialog.tsx";
 import { formatBytes } from "@/components/Metrics.tsx";
 import { Help } from "@/components/Help.tsx";
 import { PluginIcon } from "@/components/Icons.tsx";
@@ -72,6 +73,7 @@ export function Overview() {
     return () => window.clearInterval(id);
   }, [reloadSystem, reloadHealth]);
 
+  const [diagnosisOpen, setDiagnosisOpen] = useState(false);
   const reloadDoctor = doctor.reload;
   const refresh = () => {
     reloadDoctor();
@@ -127,7 +129,7 @@ export function Overview() {
       <article className={`${ui.card} mt-5`}>
         <div className="flex flex-wrap items-center gap-3">
           <span className={`h-3 w-3 shrink-0 rounded-full ${dot[status]}`} aria-hidden="true" />
-          <p className="flex min-w-0 flex-1 items-center gap-2 text-lg font-semibold">
+          <p className="flex min-w-48 flex-1 items-center gap-2 text-lg font-semibold">
             {issueCount === 0
               ? doctor.loading && !doctor.data
                 ? t("common.loading")
@@ -135,18 +137,23 @@ export function Overview() {
               : t("overview.attention", { count: issueCount })}
             <Help>{t("overview.doctorHint")}</Help>
           </p>
-          <button
-            type="button"
-            className={`${ui.button} w-11 px-0 text-lg md:w-10`}
-            disabled={doctor.loading}
-            title={t("overview.doctorOpen")}
-            aria-label={t("overview.doctorOpen")}
-            onClick={refresh}
-          >
-            <span aria-hidden className={doctor.loading ? "animate-spin" : ""}>
-              ↻
-            </span>
-          </button>
+          <div className="ms-auto flex gap-2">
+            <button type="button" className={ui.button} onClick={() => setDiagnosisOpen(true)}>
+              {t("diagnosis.open")}
+            </button>
+            <button
+              type="button"
+              className={`${ui.button} w-11 px-0 text-lg md:w-10`}
+              disabled={doctor.loading}
+              title={t("overview.doctorOpen")}
+              aria-label={t("overview.doctorOpen")}
+              onClick={refresh}
+            >
+              <span aria-hidden className={doctor.loading ? "animate-spin" : ""}>
+                ↻
+              </span>
+            </button>
+          </div>
         </div>
         {issueCount > 0 ? (
           <ul className="mt-4 divide-y divide-white/10 border-t border-white/10 text-sm">
@@ -300,6 +307,8 @@ export function Overview() {
         ) : null}
 
       </div>
+
+      {diagnosisOpen ? <DiagnosisDialog onClose={() => setDiagnosisOpen(false)} /> : null}
 
       {info?.mocked ? (
         <p className="mt-4 rounded-2xl border border-amber-300/20 bg-amber-950/30 px-4 py-3 text-sm text-amber-100">

@@ -350,6 +350,10 @@ sudo godeb user passwd admin
 
 `sudo godeb doctor` prüft den Server nur lesend und gibt einen Bericht zum Weitergeben aus (ohne Passwörter, Tokens oder private Schlüssel, öffentliche WireGuard-Schlüssel auf 8 Zeichen gekürzt). Er umfasst: Version und verfügbares Paket-Update, `godeb`/`godeb-agent` und fehlgeschlagene Units, Ports außerhalb von Loopback (Warnung bei GoDeb auf allen Adressen und bei Datenbank-, Redis-, Rspamd- oder HTTP-Ports außerhalb des Tunnels), ufw, WireGuard-Handshakes, Let's-Encrypt-Zertifikate (Warnung unter 14 Tagen), die DNS-Einträge aus dem Domains-Plugin, Fehler im Journal seit dem Start, ausstehende (Sicherheits-)Updates und „Neustart nötig“ die Belegung von `/` und die SQLite-Datenbanken (`PRAGMA quick_check`: Agent-Datenbank und Messwerte; die Web-Datenbank prüft die Weboberfläche selbst und hängt das Ergebnis an `/api/doctor` an, weil root keine Dateien von `godeb` öffnen soll). Eine beschädigte Datenbank ist `FAIL`: Server aus dem letzten Snapshot zurückholen (siehe „Notfall“). Exit-Code 1, wenn ein Befund `FAIL` ist.
 
+Der Bereich **Installation** prüft, was das Paket einrichtet: Benutzer `godeb` ohne Login-Shell, Modus und Besitzer von `/var/lib/godeb`, `/etc/godeb`, `/etc/wireguard`, `/var/log/godeb`, Agent-Socket und Programm, geheime Dateien nur für ihren Besitzer lesbar, in `/var/lib/godeb` keine Symlinks oder fremden Besitzer, Weboberfläche als `godeb` ohne Capabilities und Agent als root, die fail2ban-Jails `godeb` und `sshd` sowie veränderte Paketdateien (`dpkg --verify`). Ohne Benutzer `godeb` (Entwicklung) wird er übersprungen.
+
+**Diagnosebericht:** `sudo godeb doctor --report [--redact]` und der Knopf „Diagnosebericht“ in der Übersicht geben dieselben Befunde mit Kopf (Host, Version, System, Kernel, Architektur, Rolle, Stand der Einrichtung) als Text aus, zum Kopieren oder Herunterladen. Schwärzen ersetzt öffentliche IP-Adressen sowie Host-, Domain- und Hub-Namen durch Platzhalter (`<ip-1>`, `<name-1>`; gleicher Wert, gleicher Platzhalter); private, Tunnel- und Loopback-Adressen bleiben. „Fehler auf GitHub melden“ öffnet im Browser ein vorausgefülltes Issue mit der geschwärzten Kurzfassung (nur Fehler und Warnungen). GoDeb selbst sendet nichts und hält keinen GitHub-Token: Das Repository ist öffentlich, ein Token auf jedem Server wäre missbrauchbar.
+
 Das Passwort muss 12 bis 72 Zeichen lang sein. `sudo` ist nötig: Nur root darf 2FA zurücksetzen oder freigeben, die Weboberfläche kann es nicht.
 
 ### Fail2ban
@@ -525,6 +529,7 @@ Alle außer `status` antworten nach dem Abschluss mit `410`.
 | GET | `/api/health` | öffentlich, Dienst lebt |
 | GET | `/api/system` | Hostname, OS, Kernel, CPU, RAM, Platte |
 | GET | `/api/doctor` | Server-Diagnose wie `godeb doctor` (nur lesen; mit Agent über `/internal/doctor`, Ausgabe ohne Geheimnisse) |
+| GET | `/api/doctor/report?redact=1` | Diagnosebericht als Text wie `godeb doctor --report` plus Kurzfassung für ein GitHub-Issue (immer geschwärzt); mit Agent über `/internal/doctor/full` |
 | GET | `/api/plugins` | Navigations-Metadaten |
 | POST | `/api/auth/identify` | Schritt 1: Benutzername; gleiche Antwort für jeden Namen, unbekannte zählen als Fehlversuch |
 | POST | `/api/auth/login` | Passwort, setzt Pending-Cookie |

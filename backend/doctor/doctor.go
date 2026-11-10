@@ -71,6 +71,13 @@ type Env struct {
 	// PRAGMA quick_check on one (found=false for a missing file).
 	Databases []DBFile
 	CheckDB   func(ctx context.Context, path string) (found bool, err error)
+	// Installation check (root only; nil skips it): Lstat with owner names,
+	// a walk below a directory, the login shell of a user and the name of
+	// a uid.
+	Stat       func(path string) (FileStat, error)
+	Walk       func(root string, fn func(path string, st FileStat)) error
+	LookupUser func(name string) (shell string, ok bool)
+	UserOf     func(uid int) string
 }
 
 // DBFile is one SQLite database for checkDatabases.
@@ -88,10 +95,13 @@ func Default(version string) Env {
 			_, err := os.Stat(p)
 			return err == nil
 		},
-		Disk:    diskUsage,
-		IfaceOf: ifaceOf,
-		Now:     time.Now,
-		Version: version,
+		Disk:       diskUsage,
+		Stat:       statFile,
+		Walk:       walkFiles,
+		LookupUser: lookupUser,
+		IfaceOf:    ifaceOf,
+		Now:        time.Now,
+		Version:    version,
 	}
 }
 
@@ -124,7 +134,7 @@ func Check(ctx context.Context, env Env) []Finding {
 	var out []Finding
 	for _, c := range []func(context.Context, Env) []Finding{
 		checkVersion, checkServices, checkPorts, checkFirewall, checkRegistered, checkWireGuard,
-		checkCerts, checkDNS, checkJournal, checkUpdates, checkReboot, checkDisk, CheckDatabases, checkHardening,
+		checkCerts, checkDNS, checkJournal, checkUpdates, checkReboot, checkDisk, CheckDatabases, checkHardening, checkInstall,
 	} {
 		out = append(out, c(ctx, env)...)
 	}

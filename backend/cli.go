@@ -20,6 +20,7 @@ const usage = `Aufruf:
   godeb setup-url                Link zur Ersteinrichtung im Browser (mit Einmal-Token)
   godeb summary                  Übersicht: Adressen, Tunnel, Zugang, Firewall
   godeb doctor                   Gesundheitscheck (nur lesend, Ausgabe ohne Geheimnisse zum Weitergeben)
+  godeb doctor --report [--redact]  Diagnosebericht wie in der Übersicht; --redact schwärzt IPs, Host- und Domainnamen
   godeb setup [--role hub|peer|none] [--access tunnel|lan|local]
                                  Ersteinrichtung ohne Browser: Admin, Rolle, Firewall, Erreichbarkeit
   godeb setup --join DATEI       Ersteinrichtung als Peer eines GoDeb-Hubs (Heim-VM hinter dem VPS)
@@ -52,6 +53,8 @@ func runCLI(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return runSummary(stdout, stderr)
 	case len(args) == 1 && args[0] == "doctor":
 		return runDoctor(stdout, stderr)
+	case len(args) >= 2 && args[0] == "doctor" && args[1] == "--report":
+		return runDoctorText(args[2:], stdout, stderr)
 	case len(args) >= 1 && args[0] == "setup":
 		return runSetup(args[1:], stdin, stdout, stderr)
 	case len(args) >= 1 && args[0] == "trust":

@@ -23,6 +23,11 @@ func mountAgentInternal(mux *http.ServeMux) {
 		w.Header().Set("Cache-Control", "no-store")
 		core.WriteJSON(w, http.StatusOK, runDoctorReport(r.Context()))
 	})
+	// Same plus the report head and the names to redact (domains, hub).
+	mux.HandleFunc("GET /internal/doctor/full", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
+		core.WriteJSON(w, http.StatusOK, runFullDoctorReport(r.Context()))
+	})
 	mux.HandleFunc("GET /internal/plugins/disabled", func(w http.ResponseWriter, r *http.Request) {
 		ids, err := pluginmgr.DisabledIDs()
 		if err != nil {

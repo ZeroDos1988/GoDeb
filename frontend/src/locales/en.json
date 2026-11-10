@@ -1465,5 +1465,22 @@
     "detailMail": "The mail gateway hands incoming mail to the home server's tunnel address and sends its mail with this VPS's IP (SPF) and DKIM.",
     "detailCert": "This VPS gets the certificates for the mail host via DNS at Hetzner and renews them 30 days before they end. Only the matching site may fetch them through the tunnel.",
     "detailScript": "The script adds the APT repository, installs the package, joins with the join code and sets up the profile."
+  },
+  "diagnosis": {
+    "open": "Diagnosis report",
+    "title": "Diagnosis report",
+    "hint": "All checks of sudo godeb doctor --report as text, without keys or passwords. GoDeb sends nothing – you decide what to pass on.",
+    "redact": "Redact IP addresses, host and domain names",
+    "loading": "Checking the server … (up to a minute)",
+    "copy": "Copy",
+    "copied": "Copied",
+    "download": "Download",
+    "refresh": "Check again",
+    "issue": "Report a bug on GitHub",
+    "issueHint": "Opens a new issue with the redacted summary (failures and warnings only). The repository is public: read it before submitting and attach the full report only if needed.",
+    "issueTitle": "Bug report GoDeb {{version}}",
+    "issueIntro": "<!-- What happened, what did you expect? -->",
+    "issueSummary": "Diagnosis (redacted)",
+    "issueAttach": "<!-- If needed, drag the full report (Download, redaction on) in here as a file. -->"
   }
 }

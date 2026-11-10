@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"net"
 	"net/http"
 	"time"
 
@@ -9,8 +10,10 @@ import (
 	"godeb/backend/core"
 	"godeb/backend/db"
 	"godeb/backend/doctor"
+	"godeb/backend/firstrun"
 	"godeb/backend/metrics"
 	"godeb/plugins/domains"
+	"godeb/plugins/wireguard"
 )
 
 // doctorEnv is the host Env used by the CLI and the agent internal route.
@@ -69,6 +72,53 @@ func runDoctorReport(ctx context.Context) doctor.Report {
 	return doctor.NewReport(doctor.Check(ctx, doctorEnv()), time.Now())
 }
 
+// runFullDoctorReport adds the report head and the names a redacted report
+// hides. Runs in the agent (root) or the CLI; same code for both.
+func runFullDoctorReport(ctx context.Context) doctor.FullReport {
+	env := doctorEnv()
+	full := doctor.FullReport{Report: runDoctorReport(ctx), Meta: doctor.CollectMeta(ctx, env)}
+	full.Meta.Setup = "abgeschlossen"
+	if firstrun.Required() {
+		full.Meta.Setup = "offen"
+	}
+	full.Sensitive = append(full.Sensitive, full.Meta.Hostname, full.Meta.FQDN)
+	if role, err := wireguard.CurrentRole(); err == nil {
+		full.Meta.Role = string(role.Role)
+		if host, _, err := net.SplitHostPort(role.Hub); err == nil {
+			full.Sensitive = append(full.Sensitive, host)
+		}
+	}
+	full.Sensitive = append(full.Sensitive, domains.Names()...)
+	return full
+}
+
+// doctorText is the response of GET /api/doctor/report: the full text
+// (redacted on request) and the short summary for a GitHub issue, which is
+// always redacted because the repository is public.
+type doctorText struct {
+	Text     string `json:"text"`
+	Summary  string `json:"summary"`
+	Version  string `json:"version"`
+	Redacted bool   `json:"redacted"`
+	Fails    int    `json:"fails"`
+	Warns    int    `json:"warns"`
+}
+
+func renderDoctorText(full doctor.FullReport, redact bool, at time.Time) doctorText {
+	text := doctor.Text(full.Meta, full.Report, at)
+	if redact {
+		text = doctor.Redact(text, full.Sensitive)
+	}
+	return doctorText{
+		Text:     text,
+		Summary:  doctor.Redact(doctor.Summary(full.Meta, full.Report), full.Sensitive),
+		Version:  full.Meta.Version,
+		Redacted: redact,
+		Fails:    full.Report.Fails,
+		Warns:    full.Report.Warns,
+	}
+}
+
 // mountDoctorAPI exposes GET /api/doctor for the overview. With an agent the
 // web process only forwards; without one it runs the checks itself (dev).
 func mountDoctorAPI(mux *http.ServeMux, client *agent.Client) {
@@ -85,5 +135,22 @@ func mountDoctorAPI(mux *http.ServeMux, client *agent.Client) {
 			return
 		}
 		core.WriteJSON(w, http.StatusOK, runDoctorReport(r.Context()))
+	})
+	// The diagnosis report as text for copying, downloading or a GitHub
+	// issue. Read-only; nothing leaves the server unless the admin sends it.
+	mux.HandleFunc("GET /api/doctor/report", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
+		redact := r.URL.Query().Get("redact") == "1"
+		var full doctor.FullReport
+		if client != nil {
+			if err := client.Call(r.Context(), http.MethodGet, "/internal/doctor/full", nil, &full); err != nil {
+				core.WriteError(w, http.StatusBadGateway, err.Error())
+				return
+			}
+			full.Report.Add(webDatabaseFindings(r.Context()))
+		} else {
+			full = runFullDoctorReport(r.Context())
+		}
+		core.WriteJSON(w, http.StatusOK, renderDoctorText(full, redact, time.Now()))
 	})
 }

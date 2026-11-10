@@ -1465,5 +1465,22 @@
     "detailMail": "Das Mail-Gateway gibt eingehende Post an die Tunnel-Adresse des Heim-Servers weiter und verschickt dessen Post mit der IP dieses VPS (SPF) und DKIM.",
     "detailCert": "Zertifikate für den Mail-Host holt dieser VPS per DNS bei Hetzner und erneuert sie 30 Tage vor Ablauf. Nur der zugehörige Standort darf sie über den Tunnel abrufen.",
     "detailScript": "Das Skript bindet das APT-Repository ein, installiert das Paket, tritt mit dem Beitrittscode bei und richtet das Profil ein."
+  },
+  "diagnosis": {
+    "open": "Diagnosebericht",
+    "title": "Diagnosebericht",
+    "hint": "Alle Prüfungen von sudo godeb doctor --report als Text, ohne Schlüssel und Passwörter. GoDeb sendet nichts – du entscheidest, was du weitergibst.",
+    "redact": "IP-Adressen, Host- und Domainnamen schwärzen",
+    "loading": "Prüfe den Server … (bis zu einer Minute)",
+    "copy": "Kopieren",
+    "copied": "Kopiert",
+    "download": "Herunterladen",
+    "refresh": "Neu prüfen",
+    "issue": "Fehler auf GitHub melden",
+    "issueHint": "Öffnet ein neues Issue mit der geschwärzten Zusammenfassung (nur Fehler und Warnungen). Das Repository ist öffentlich: vor dem Absenden lesen, den vollen Bericht nur bei Bedarf anhängen.",
+    "issueTitle": "Fehlerbericht GoDeb {{version}}",
+    "issueIntro": "<!-- Was ist passiert, was hast du erwartet? -->",
+    "issueSummary": "Diagnose (geschwärzt)",
+    "issueAttach": "<!-- Den vollen Bericht (Herunterladen, Schwärzen an) bei Bedarf als Datei hier hineinziehen. -->"
   }
 }

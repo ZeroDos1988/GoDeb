@@ -32,3 +32,25 @@ func hostname() string {
 	}
 	return h
 }
+
+// runDoctorText prints the diagnosis report as on the overview; with
+// --redact public addresses, host and domain names are replaced.
+func runDoctorText(args []string, stdout, stderr io.Writer) int {
+	redact := false
+	for _, a := range args {
+		if a != "--redact" {
+			fmt.Fprintln(stderr, "Aufruf: godeb doctor --report [--redact]")
+			return 2
+		}
+		redact = true
+	}
+	if os.Geteuid() != 0 {
+		fmt.Fprintln(stderr, "godeb doctor muss als root laufen: sudo godeb doctor --report")
+		return 1
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+	out := renderDoctorText(runFullDoctorReport(ctx), redact, time.Now())
+	fmt.Fprint(stdout, out.Text)
+	return 0
+}

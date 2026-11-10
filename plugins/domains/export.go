@@ -108,3 +108,22 @@ func SetACMEChallenge(ctx context.Context, host, value string) (string, func(con
 	}
 	return zone.Name, cleanup, nil
 }
+
+// Names lists the domain names GoDeb knows (own domains and the zones and
+// host names other plugins need), for redacting the diagnosis report.
+func Names() []string {
+	var out []string
+	if list, err := listDomains(); err == nil {
+		for _, d := range list {
+			out = append(out, d.Name)
+		}
+	}
+	if needs, err := allNeeds(); err == nil {
+		for _, n := range needs {
+			if n.Zone != "" {
+				out = append(out, n.Zone, n.Name)
+			}
+		}
+	}
+	return out
+}
