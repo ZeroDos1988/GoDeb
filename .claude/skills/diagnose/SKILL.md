@@ -37,6 +37,12 @@ Du hast keinen Zugang zu den Servern. Bitte den Nutzer, auf jedem Server Folgend
 sudo godeb doctor; sudo godeb summary
 ```
 
+Ausführlicher (Paket, Rechte, Sandbox, Listener, Firewall, WireGuard, fail2ban, Mail, Journal; read-only, ohne Geheimnisse, Bericht nach `/root/godeb-check-*.txt`):
+
+```sh
+curl -fsSLO https://raw.githubusercontent.com/ZeroDos1988/GoDeb/main/scripts/server-check.sh && sudo bash server-check.sh
+```
+
 Ältere Versionen ohne `doctor`:
 
 ```sh
