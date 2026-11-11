@@ -60,8 +60,8 @@ func TestCheckInstall(t *testing.T) {
 		"/var/lib/godeb":              {Mode: fs.ModeDir | 0o700, Owner: "godeb", Group: "godeb"},
 		"/etc/godeb":                  {Mode: fs.ModeDir | 0o700, Owner: "root", Group: "root"},
 		"/etc/wireguard":              {Mode: fs.ModeDir | 0o755, Owner: "root", Group: "root"}, // wrong
-		"/var/log/godeb":              {Mode: fs.ModeDir | 0o750, Owner: "godeb", Group: "adm"},
-		"/var/log/godeb/auth.log":     {Mode: 0o640, Owner: "godeb", Group: "adm"},
+		"/var/log/godeb":              {Mode: fs.ModeDir | 0o750, Owner: "godeb", Group: "godeb"},
+		"/var/log/godeb/auth.log":     {Mode: 0o640, Owner: "godeb", Group: "godeb"},
 		"/usr/bin/godeb":              {Mode: 0o755, Owner: "root", Group: "root"},
 		"/run/godeb-agent/agent.sock": {Mode: fs.ModeSocket | 0o660, Owner: "root", Group: "godeb"},
 		"/etc/godeb/master.key":       {Mode: 0o644, Owner: "root", Group: "root"}, // wrong

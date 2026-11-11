@@ -382,11 +382,14 @@ func parseSS(out string, ifaceOf func(net.IP) string) []Listener {
 		if err != nil {
 			continue
 		}
-		host := strings.Trim(local[:i], "[]")
+		// ss writes "[fe80::1]%eth0" as well as "[fe80::1%eth0]": cut the
+		// zone first, then the brackets.
+		host := local[:i]
 		iface := ""
 		if h, z, ok := strings.Cut(host, "%"); ok {
-			host, iface = h, z
+			host, iface = h, strings.Trim(z, "[]")
 		}
+		host = strings.Trim(host, "[]")
 		ip := net.ParseIP(host)
 		if iface == "lo" || (ip != nil && ip.IsLoopback()) {
 			continue
@@ -405,7 +408,9 @@ func parseSS(out string, ifaceOf func(net.IP) string) []Listener {
 				scope = host
 			}
 		}
-		proc := "?"
+		// Run as root, ss names the process of every user-space socket;
+		// sockets without one belong to the kernel (WireGuard's UDP port).
+		proc := "Kernel"
 		if len(f) > 6 {
 			if _, rest, ok := strings.Cut(strings.Join(f[6:], " "), `(("`); ok {
 				proc, _, _ = strings.Cut(rest, `"`)

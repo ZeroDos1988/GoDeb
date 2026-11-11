@@ -127,8 +127,8 @@ check_perm /var/lib/godeb 700 godeb:godeb
 check_perm /etc/godeb 700 root:root
 check_perm /etc/wireguard 700 root:root
 check_perm /etc/wireguard/clients 700 root:root optional
-check_perm /var/log/godeb 750 godeb:adm
-check_perm /var/log/godeb/auth.log 640 godeb:adm
+check_perm /var/log/godeb 750 godeb:godeb
+check_perm /var/log/godeb/auth.log 640 godeb:godeb
 check_perm /usr/bin/godeb 755 root:root
 check_secret /var/lib/godeb/master.key godeb:godeb
 check_secret /etc/godeb/master.key root:root

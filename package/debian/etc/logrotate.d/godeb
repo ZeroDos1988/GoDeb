@@ -5,5 +5,5 @@
 	delaycompress
 	missingok
 	notifempty
-	create 0640 godeb adm
+	create 0640 godeb godeb
 }

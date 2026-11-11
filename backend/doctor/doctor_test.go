@@ -28,6 +28,7 @@ tcp   LISTEN 0      128          0.0.0.0:22         0.0.0.0:*    users:(("sshd",
 tcp   LISTEN 0      128             [::]:22            [::]:*    users:(("sshd",pid=1,fd=4))
 tcp   LISTEN 0      128            [::1]:25            [::]:*    users:(("master",pid=9,fd=13))
 tcp   LISTEN 0      100     203.0.113.5:11334       0.0.0.0:*    users:(("rspamd",pid=7,fd=9))
+udp   UNCONN 0      0      [fe80::da3b:55ae:4754:b85c]%enp1s0:546 [::]:*  users:(("dhcpcd",pid=5,fd=6))
 `
 
 func iface(ip net.IP) string {
@@ -45,9 +46,10 @@ func TestParseSS(t *testing.T) {
 	}
 	want := []string{
 		"tcp alle Adressen sshd",
+		"udp fe80::da3b:55ae:4754:b85c dhcpcd",
 		"tcp Tunnel 10.8.0.1 godeb",
 		"tcp 203.0.113.5 rspamd",
-		"udp alle Adressen ?",
+		"udp alle Adressen Kernel",
 	}
 	if strings.Join(desc, "|") != strings.Join(want, "|") {
 		t.Fatalf("got %q", desc)

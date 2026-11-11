@@ -99,8 +99,10 @@ var installPaths = []wantPath{
 	{Path: "/var/lib/godeb", Mode: 0o700, Owner: "godeb", Group: "godeb"},
 	{Path: "/etc/godeb", Mode: 0o700, Owner: "root", Group: "root"},
 	{Path: "/etc/wireguard", Mode: 0o700, Owner: "root", Group: "root"},
-	{Path: "/var/log/godeb", Mode: 0o750, Owner: "godeb", Group: "adm"},
-	{Path: "/var/log/godeb/auth.log", Mode: 0o640, Owner: "godeb", Group: "adm"},
+	// LogsDirectory= in godeb.service hands the directory and its files to
+	// User/Group of the unit on every start, so the group is godeb.
+	{Path: "/var/log/godeb", Mode: 0o750, Owner: "godeb", Group: "godeb"},
+	{Path: "/var/log/godeb/auth.log", Mode: 0o640, Owner: "godeb", Group: "godeb"},
 	{Path: "/usr/bin/godeb", Mode: 0o755, Owner: "root", Group: "root"},
 	{Path: "/run/godeb-agent/agent.sock", Mode: 0o660, Owner: "root", Group: "godeb"},
 }

@@ -44,9 +44,11 @@ done
 chown -R godeb:godeb /var/lib/godeb
 chmod 0700 /var/lib/godeb
 
-install -d -o godeb -g adm -m 0750 /var/log/godeb
-[ -e /var/log/godeb/auth.log ] || install -o godeb -g adm -m 0640 /dev/null /var/log/godeb/auth.log
-chown godeb:adm /var/log/godeb/auth.log
+# Group godeb like LogsDirectory= in godeb.service, which re-owns the
+# directory on every start anyway.
+install -d -o godeb -g godeb -m 0750 /var/log/godeb
+[ -e /var/log/godeb/auth.log ] || install -o godeb -g godeb -m 0640 /dev/null /var/log/godeb/auth.log
+chown godeb:godeb /var/log/godeb/auth.log
 
 if ! /usr/share/godeb/scripts/setup-fail2ban.sh; then
 	echo "godeb: fail2ban-Einrichtung fehlgeschlagen; später erneut: /usr/share/godeb/scripts/setup-fail2ban.sh" >&2
