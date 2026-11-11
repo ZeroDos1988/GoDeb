@@ -14,8 +14,9 @@ type OIDCProvider = {
 
 // Three steps like most sign-in pages: name, password, second factor.
 // The name step answers the same for every name (see auth.identify), so
-// the page never tells whether an account exists.
-type Step = "user" | "password" | "code" | "enroll";
+// the page never tells whether an account exists. After the code comes
+// "Angemeldet bleiben?" as in Microsoft 365 (see auth.remember).
+type Step = "user" | "password" | "code" | "enroll" | "remember";
 
 const input = ui.input;
 const primary = `${ui.primary} w-full`;
@@ -29,6 +30,7 @@ export function Login2FA({ onAuthenticated }: { onAuthenticated: (username: stri
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [providers, setProviders] = useState<OIDCProvider[]>([]);
+  const [remember, setRemember] = useState(false);
 
   useEffect(() => {
     api<{ providers: OIDCProvider[] }>("/api/auth/oidc/providers")
@@ -79,7 +81,7 @@ export function Login2FA({ onAuthenticated }: { onAuthenticated: (username: stri
     void run(async () => {
       try {
         const session = await authApi.authenticate(code.trim());
-        onAuthenticated(session.username);
+        signedIn(session.username, session.remember_offer !== false);
       } catch (err) {
         setCode("");
         if (err instanceof ApiError && err.status === 429) {
@@ -91,6 +93,31 @@ export function Login2FA({ onAuthenticated }: { onAuthenticated: (username: stri
     }, t("login.badCode"));
   }
 
+  // signedIn asks "Angemeldet bleiben?" where the server offers it.
+  function signedIn(name: string, offer: boolean) {
+    setUsername(name);
+    setCode("");
+    if (offer) {
+      setStep("remember");
+    } else {
+      onAuthenticated(name);
+    }
+  }
+
+  function submitRemember(event: FormEvent) {
+    event.preventDefault();
+    void run(async () => {
+      if (remember) {
+        try {
+          await authApi.remember();
+        } catch {
+          // Signed in anyway; the device is just not remembered.
+        }
+      }
+      onAuthenticated(username);
+    }, t("login.failed"));
+  }
+
   function restart() {
     setStep("user");
     setPassword("");
@@ -99,7 +126,14 @@ export function Login2FA({ onAuthenticated }: { onAuthenticated: (username: stri
   }
 
   const stepNumber = step === "user" ? 1 : step === "password" ? 2 : 3;
-  const title = step === "user" ? t("login.stepUser") : step === "password" ? t("login.stepPassword") : t("login.stepCode");
+  const title =
+    step === "user"
+      ? t("login.stepUser")
+      : step === "password"
+        ? t("login.stepPassword")
+        : step === "remember"
+          ? t("login.stepRemember")
+          : t("login.stepCode");
 
   return (
     <div className="grid min-h-screen place-items-center bg-paper px-4 py-8 text-ink">
@@ -110,10 +144,12 @@ export function Login2FA({ onAuthenticated }: { onAuthenticated: (username: stri
         </div>
 
         <div className="rounded-3xl border border-white/10 bg-slate-900/60 px-5 py-5 text-white shadow-xl backdrop-blur-xl transition-all duration-200 ease-in-out">
-          <p className="text-[11px] tracking-wide text-white/50 uppercase">{t("login.step", { step: stepNumber })}</p>
+          {step !== "remember" ? (
+            <p className="text-[11px] tracking-wide text-white/50 uppercase">{t("login.step", { step: stepNumber })}</p>
+          ) : null}
           <h1 className="mt-1 mb-4 text-lg font-semibold tracking-tight">{title}</h1>
 
-          {step !== "user" ? (
+          {step !== "user" && step !== "remember" ? (
             <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm">
               <span className="min-w-0 truncate">{username}</span>
               <button type="button" onClick={restart} className="shrink-0 text-xs text-white/60 transition-all duration-200 ease-in-out hover:text-white">
@@ -187,6 +223,26 @@ export function Login2FA({ onAuthenticated }: { onAuthenticated: (username: stri
             </form>
           ) : null}
 
+          {step === "remember" ? (
+            <form onSubmit={submitRemember} className="space-y-4">
+              <p className="text-sm text-white/70">{t("login.rememberHint")}</p>
+              <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-sm">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-debian"
+                  checked={remember}
+                  onChange={(event) => setRemember(event.target.checked)}
+                  autoFocus
+                />
+                <span>{t("login.rememberLabel")}</span>
+              </label>
+              <p className="text-xs text-white/50">{t("login.rememberNote")}</p>
+              <button type="submit" disabled={busy} className={primary}>
+                {busy ? t("login.checking") : t("login.next")}
+              </button>
+            </form>
+          ) : null}
+
           {error ? (
             <p role="alert" className="mt-4 text-sm text-debian">
               {error}
@@ -209,7 +265,7 @@ export function Login2FA({ onAuthenticated }: { onAuthenticated: (username: stri
         </div>
       </div>
 
-      {step === "enroll" ? <TwoFAEnrollment onComplete={onAuthenticated} onCancel={restart} /> : null}
+      {step === "enroll" ? <TwoFAEnrollment onComplete={signedIn} onCancel={restart} /> : null}
     </div>
   );
 }

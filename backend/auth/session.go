@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
@@ -21,6 +22,12 @@ const (
 
 	sessionTTL = 12 * time.Hour
 	pendingTTL = 5 * time.Minute
+	// rememberTTL is how long a session lives after "Angemeldet bleiben".
+	// Changes still need a code, so a stolen device can only read.
+	rememberTTL = 30 * 24 * time.Hour
+	// rememberWindow: the question comes right after the login; later the
+	// session cannot be extended (a stolen cookie must not prolong itself).
+	rememberWindow = 10 * time.Minute
 
 	stageFull    = "full"
 	stagePending = "pending"
@@ -182,16 +189,36 @@ func SessionUser(r *http.Request) (string, error) {
 	return s.Username, nil
 }
 
+// setCookie sets an HttpOnly cookie. ttl 0 makes a browser-session cookie
+// that is gone when the browser closes; the server-side expiry stays.
 func setCookie(w http.ResponseWriter, r *http.Request, name, value, path string, ttl time.Duration) {
-	http.SetCookie(w, &http.Cookie{
+	c := &http.Cookie{
 		Name:     name,
 		Value:    value,
 		Path:     path,
-		MaxAge:   int(ttl.Seconds()),
 		HttpOnly: true,
 		Secure:   secureCookies(r),
 		SameSite: http.SameSiteStrictMode,
+	}
+	if ttl > 0 {
+		c.MaxAge = int(ttl.Seconds())
+	}
+	http.SetCookie(w, c)
+}
+
+type noRememberKey struct{}
+
+// NoRemember marks requests of a listener where GoDeb never keeps a device
+// signed in: the first-run setup and the temporary remote access on the
+// public address. Both are meant for a short time only.
+func NoRemember(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), noRememberKey{}, true)))
 	})
+}
+
+func rememberAllowed(r *http.Request) bool {
+	return r.Context().Value(noRememberKey{}) == nil
 }
 
 func clearCookie(w http.ResponseWriter, r *http.Request, name, path string) {

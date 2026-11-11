@@ -78,7 +78,11 @@
     "stepUser": "Sign in",
     "stepPassword": "Enter password",
     "stepCode": "Enter code",
-    "change": "Change"
+    "change": "Change",
+    "stepRemember": "Stay signed in?",
+    "rememberHint": "GoDeb then opens on this device for 30 days without signing in again. Without the tick, the sign-in ends when you close the browser, after 12 hours at the latest.",
+    "rememberLabel": "Remember this device (30 days)",
+    "rememberNote": "Only on your own devices. Changes to the system still need a code. Remembered devices are listed and ended under “Sessions”."
   },
   "theme": {
     "title": "Appearance",
@@ -1111,7 +1115,8 @@
     "endOthers_other": "End {{count}} other sessions",
     "since": "Signed in {{created}} · last active {{seen}}",
     "unknownClient": "Unknown client",
-    "failed": "Action failed"
+    "failed": "Action failed",
+    "remembered": "remembered until {{date}}"
   },
   "pf": {
     "title": "Port forwarding",
@@ -1482,5 +1487,8 @@
     "issueIntro": "<!-- What happened, what did you expect? -->",
     "issueSummary": "Diagnosis (redacted)",
     "issueAttach": "<!-- If needed, drag the full report (Download, redaction on) in here as a file. -->"
+  },
+  "shell": {
+    "version": "GoDeb {{version}}"
   }
 }

@@ -6,7 +6,7 @@ import { copyText } from "@/lib/clipboard.ts";
 import * as ui from "@/components/ui.ts";
 
 type Props = {
-  onComplete: (username: string) => void;
+  onComplete: (username: string, rememberOffer: boolean) => void;
   onCancel: () => void;
 };
 
@@ -40,7 +40,7 @@ export function TwoFAEnrollment({ onComplete, onCancel }: Props) {
     setError("");
     try {
       const session = await authApi.verify(code.trim());
-      onComplete(session.username);
+      onComplete(session.username, session.remember_offer !== false);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : t("enroll.badCode"));
       setCode("");

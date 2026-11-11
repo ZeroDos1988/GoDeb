@@ -38,6 +38,7 @@ func Mount(mux *http.ServeMux, fail FailureFunc) {
 	mux.HandleFunc("POST /api/auth/2fa/enroll", h.enroll)
 	mux.HandleFunc("POST /api/auth/2fa/verify", h.verify)
 	mux.HandleFunc("POST /api/auth/2fa/authenticate", h.authenticate)
+	mux.HandleFunc("POST /api/auth/remember", h.remember)
 	mux.HandleFunc("POST /api/auth/logout", h.logout)
 	mux.HandleFunc("GET /api/auth/me", h.me)
 	mux.HandleFunc("GET /api/auth/sessions", h.listSessions)
@@ -231,9 +232,59 @@ func (h handlers) finish(w http.ResponseWriter, r *http.Request, check func(user
 	}
 	_ = deleteSession(pending.ID)
 	clearCookie(w, r, PendingCookie, pendingPath)
-	setCookie(w, r, SessionCookie, token, "/", sessionTTL)
+	// Without "Angemeldet bleiben" the cookie ends with the browser.
+	setCookie(w, r, SessionCookie, token, "/", 0)
 	slog.Info("Anmeldung erfolgreich", "benutzer", username, "ip", core.ClientIP(r))
-	core.WriteJSON(w, http.StatusOK, map[string]any{"ok": true, "username": username})
+	core.WriteJSON(w, http.StatusOK, map[string]any{"ok": true, "username": username, "remember_offer": rememberAllowed(r)})
+}
+
+// remember answers "Angemeldet bleiben?" right after the login: the session
+// then lives rememberTTL and its cookie survives closing the browser. It is
+// still bound to password and 2FA secret, listed under "Sitzungen" and ended
+// by `godeb sessions revoke`; every change still needs a code (the step-up
+// window from the login covers this request itself).
+func (h handlers) remember(w http.ResponseWriter, r *http.Request) {
+	noStore(w)
+	s, err := currentSession(r)
+	if err != nil {
+		core.WriteError(w, http.StatusUnauthorized, "Anmeldung erforderlich")
+		return
+	}
+	if !rememberAllowed(r) {
+		core.WriteError(w, http.StatusForbidden, "Über diesen Zugang merkt sich GoDeb keine Geräte")
+		return
+	}
+	if s.Remembered {
+		core.WriteJSON(w, http.StatusOK, map[string]any{"ok": true, "expires_at": s.ExpiresAt})
+		return
+	}
+	if now().Sub(s.CreatedAt) > rememberWindow {
+		core.WriteError(w, http.StatusConflict, "Nur direkt nach der Anmeldung möglich")
+		return
+	}
+	cookie, err := r.Cookie(SessionCookie)
+	if err != nil {
+		core.WriteError(w, http.StatusUnauthorized, "Anmeldung erforderlich")
+		return
+	}
+	c, err := parse(cookie.Value, stageFull)
+	if err != nil {
+		core.WriteError(w, http.StatusUnauthorized, "Anmeldung erforderlich")
+		return
+	}
+	until := now().Add(rememberTTL)
+	token, err := issue(s.Username, stageFull, c.Version, c.ID, rememberTTL)
+	if err != nil {
+		core.WriteError(w, http.StatusInternalServerError, "Sitzung konnte nicht verlängert werden")
+		return
+	}
+	if err := rememberSession(s.ID, until); err != nil {
+		core.WriteError(w, http.StatusInternalServerError, "Sitzung konnte nicht verlängert werden")
+		return
+	}
+	setCookie(w, r, SessionCookie, token, "/", rememberTTL)
+	slog.Info("Gerät gemerkt", "benutzer", s.Username, "ip", core.ClientIP(r), "bis", until.UTC().Format(time.RFC3339))
+	core.WriteJSON(w, http.StatusOK, map[string]any{"ok": true, "expires_at": until.UTC()})
 }
 
 func (h handlers) logout(w http.ResponseWriter, r *http.Request) {

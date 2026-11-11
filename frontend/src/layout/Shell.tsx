@@ -163,6 +163,11 @@ export function Shell({ plugins, pluginsError, route, username, onLogout, childr
         ) : (
           <main className="min-w-0">{children}</main>
         )}
+        {health.data?.version ? (
+          <footer className="mt-8 border-t border-white/10 pt-3 text-center font-mono text-[11px] text-white/40">
+            {t("shell.version", { version: health.data.version })}
+          </footer>
+        ) : null}
       </div>
 
       {themeOpen ? <ThemeSettings onClose={() => setThemeOpen(false)} /> : null}

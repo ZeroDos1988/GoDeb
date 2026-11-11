@@ -66,4 +66,9 @@ var migrations = [][]string{
 		)`,
 		`CREATE INDEX sessions_username ON sessions(username)`,
 	},
+	{
+		// "Stay signed in": the session lives rememberTTL instead of
+		// sessionTTL and its cookie survives closing the browser.
+		`ALTER TABLE sessions ADD COLUMN remembered INTEGER NOT NULL DEFAULT 0`,
+	},
 }

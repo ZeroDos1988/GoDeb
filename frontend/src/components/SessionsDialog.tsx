@@ -10,6 +10,7 @@ type SessionInfo = {
   last_seen: string;
   expires_at: string;
   elevated_until?: string;
+  remembered?: boolean;
   ip: string;
   user_agent: string;
 };
@@ -76,6 +77,11 @@ export function SessionsDialog({ onClose, onSignedOut }: { onClose: () => void; 
                 <div className="flex flex-wrap items-center gap-2">
                   {session.current ? (
                     <span className="rounded-2xl bg-emerald-500/20 px-2 py-0.5 text-xs text-emerald-200">{t("sessions.current")}</span>
+                  ) : null}
+                  {session.remembered ? (
+                    <span className="rounded-2xl bg-sky-500/20 px-2 py-0.5 text-xs text-sky-200">
+                      {t("sessions.remembered", { date: new Date(session.expires_at).toLocaleDateString(i18n.language) })}
+                    </span>
                   ) : null}
                   {session.elevated_until ? (
                     <span className="rounded-2xl bg-amber-500/20 px-2 py-0.5 text-xs text-amber-200">{t("sessions.elevated")}</span>

@@ -34,6 +34,7 @@ type session struct {
 	LastSeen      time.Time
 	ElevatedUntil time.Time
 	Failures      int
+	Remembered    bool
 	IP            string
 	UserAgent     string
 }
@@ -46,6 +47,7 @@ type SessionInfo struct {
 	LastSeen      time.Time `json:"last_seen"`
 	ExpiresAt     time.Time `json:"expires_at"`
 	ElevatedUntil time.Time `json:"elevated_until,omitempty"`
+	Remembered    bool      `json:"remembered"`
 	IP            string    `json:"ip"`
 	UserAgent     string    `json:"user_agent"`
 }
@@ -101,10 +103,10 @@ func loadSession(tokenID, stage string) (session, error) {
 	}
 	var created, expires, seen, elevated int64
 	err = conn.QueryRow(
-		`SELECT id, username, stage, created_at, expires_at, last_seen, elevated_until, failures, ip, user_agent
+		`SELECT id, username, stage, created_at, expires_at, last_seen, elevated_until, failures, remembered, ip, user_agent
 		 FROM sessions WHERE id = ?`,
 		sessionKey(tokenID),
-	).Scan(&s.ID, &s.Username, &s.Stage, &created, &expires, &seen, &elevated, &s.Failures, &s.IP, &s.UserAgent)
+	).Scan(&s.ID, &s.Username, &s.Stage, &created, &expires, &seen, &elevated, &s.Failures, &s.Remembered, &s.IP, &s.UserAgent)
 	if errors.Is(err, sql.ErrNoRows) {
 		return session{}, errSession
 	}
@@ -167,6 +169,16 @@ func recordFailure(id string) (int, error) {
 	return maxCodeAttempts - failures, nil
 }
 
+// rememberSession extends a session to until and marks it as remembered.
+func rememberSession(id string, until time.Time) error {
+	conn, err := ready()
+	if err != nil {
+		return err
+	}
+	_, err = conn.Exec(`UPDATE sessions SET expires_at = ?, remembered = 1 WHERE id = ?`, until.Unix(), id)
+	return err
+}
+
 // elevate resets the failure counter and opens the step-up window.
 func elevate(id string, until time.Time) error {
 	conn, err := ready()
@@ -184,7 +196,7 @@ func ListSessions(username, currentID string) ([]SessionInfo, error) {
 		return nil, err
 	}
 	rows, err := conn.Query(
-		`SELECT id, created_at, last_seen, expires_at, elevated_until, ip, user_agent FROM sessions
+		`SELECT id, created_at, last_seen, expires_at, elevated_until, remembered, ip, user_agent FROM sessions
 		 WHERE username = ? AND stage = ? AND expires_at > ? ORDER BY created_at DESC`,
 		username, stageFull, now().Unix(),
 	)
@@ -196,7 +208,7 @@ func ListSessions(username, currentID string) ([]SessionInfo, error) {
 	for rows.Next() {
 		var info SessionInfo
 		var created, seen, expires, elevated int64
-		if err := rows.Scan(&info.ID, &created, &seen, &expires, &elevated, &info.IP, &info.UserAgent); err != nil {
+		if err := rows.Scan(&info.ID, &created, &seen, &expires, &elevated, &info.Remembered, &info.IP, &info.UserAgent); err != nil {
 			return nil, err
 		}
 		info.Current = info.ID == currentID

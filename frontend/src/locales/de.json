@@ -78,7 +78,11 @@
     "stepUser": "Anmelden",
     "stepPassword": "Passwort eingeben",
     "stepCode": "Code eingeben",
-    "change": "Ändern"
+    "change": "Ändern",
+    "stepRemember": "Angemeldet bleiben?",
+    "rememberHint": "Dann öffnet sich GoDeb auf diesem Gerät 30 Tage lang ohne neue Anmeldung. Ohne Haken endet die Anmeldung, wenn du den Browser schließt, spätestens nach 12 Stunden.",
+    "rememberLabel": "Dieses Gerät merken (30 Tage)",
+    "rememberNote": "Nur auf eigenen Geräten. Änderungen am System brauchen weiterhin einen Code. Gemerkte Geräte siehst und beendest du unter „Sitzungen“."
   },
   "theme": {
     "title": "Darstellung",
@@ -1111,7 +1115,8 @@
     "endOthers_other": "{{count}} andere Sitzungen beenden",
     "since": "Angemeldet {{created}} · zuletzt aktiv {{seen}}",
     "unknownClient": "Unbekannter Client",
-    "failed": "Aktion fehlgeschlagen"
+    "failed": "Aktion fehlgeschlagen",
+    "remembered": "gemerkt bis {{date}}"
   },
   "pf": {
     "title": "Portweiterleitung",
@@ -1482,5 +1487,8 @@
     "issueIntro": "<!-- Was ist passiert, was hast du erwartet? -->",
     "issueSummary": "Diagnose (geschwärzt)",
     "issueAttach": "<!-- Den vollen Bericht (Herunterladen, Schwärzen an) bei Bedarf als Datei hier hineinziehen. -->"
+  },
+  "shell": {
+    "version": "GoDeb {{version}}"
   }
 }

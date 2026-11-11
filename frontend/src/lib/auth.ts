@@ -15,6 +15,8 @@ export type Enrollment = {
 export type SessionResponse = {
   ok: boolean;
   username: string;
+  // false on the setup listener and the temporary remote access
+  remember_offer?: boolean;
 };
 
 function post<T>(path: string, body?: unknown): Promise<T> {
@@ -33,5 +35,6 @@ export const authApi = {
   verify: (code: string) => post<SessionResponse>("/api/auth/2fa/verify", { code }),
   authenticate: (code: string) =>
     post<SessionResponse>("/api/auth/2fa/authenticate", { code }),
+  remember: () => post<{ ok: boolean; expires_at: string }>("/api/auth/remember"),
   logout: () => post<{ ok: boolean }>("/api/auth/logout"),
 };

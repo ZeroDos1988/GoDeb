@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"godeb/backend/auth"
 	"godeb/backend/firstrun"
 	"godeb/backend/remoteaccess"
 )
@@ -85,8 +86,13 @@ func (t *tlsListeners) open(addr, kind string) {
 		slog.Warn("HTTPS noch nicht möglich", "adresse", addr, "fehler", err)
 		return
 	}
+	handler := t.handler
+	if kind == "setup" || kind == "remote" {
+		// Short-lived access: never keep a device signed in through it.
+		handler = auth.NoRemember(handler)
+	}
 	srv := &http.Server{
-		Handler:           t.handler,
+		Handler:           handler,
 		ReadHeaderTimeout: 5 * time.Second,
 		TLSConfig:         &tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS12},
 	}

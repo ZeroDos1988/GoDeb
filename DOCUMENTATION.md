@@ -256,11 +256,12 @@ Von außen (ohne Tunnel) müssen `curl -m 5 http://<server-ip>:8080` und `curl -
 
 ## Sicherheitskonzept
 
-Die Anmeldung hat drei Schritte, jeder auf einer eigenen Seite.
+Die Anmeldung hat drei Schritte, jeder auf einer eigenen Seite, danach die Frage „Angemeldet bleiben?“.
 
 1. **Benutzername:** `POST /api/auth/identify` prüft, ob es das Konto gibt. Ein unbekannter Name zählt sofort als Fehlversuch (`FAILED_LOGIN`, fail2ban), die Antwort ist aber für jeden Namen gleich (`{"ok":true}`, mindestens 300 ms). Sonst ließen sich gültige Namen sammeln, und ein Angreifer müsste nur noch Passwörter raten.
 2. **Passwort:** `POST /api/auth/login` prüft Name und bcrypt-Passwort (unbekannte Namen laufen gegen einen Platzhalter-Hash, gleiche Dauer). Bei Erfolg setzt der Daemon das Cookie `godeb_pending` (fünf Minuten, Pfad `/api/auth/2fa`). Ein falsches Passwort zählt als Fehlversuch.
-3. **2FA:** `POST /api/auth/2fa/authenticate` prüft das TOTP oder einen Backup-Code. Danach gilt `godeb_session` zwölf Stunden. Ein falscher Code zählt als Fehlversuch; nach fünf falschen Codes ist die Anmeldung verworfen.
+3. **2FA:** `POST /api/auth/2fa/authenticate` prüft das TOTP oder einen Backup-Code. Danach gilt `godeb_session` bis zum Schließen des Browsers, höchstens zwölf Stunden. Ein falscher Code zählt als Fehlversuch; nach fünf falschen Codes ist die Anmeldung verworfen.
+4. **Angemeldet bleiben?** (wie bei Microsoft 365): Mit Haken bei „Dieses Gerät merken“ ruft die Seite `POST /api/auth/remember` auf. Die Sitzung gilt dann 30 Tage, das Cookie überlebt das Schließen des Browsers, und GoDeb öffnet sich auf dem Gerät ohne Anmeldung. Grenzen: nur in den ersten zehn Minuten nach der Anmeldung (ein gestohlenes Cookie kann sich nicht selbst verlängern), nie über die Ersteinrichtung oder den Fernzugang auf Zeit (`auth.NoRemember` am Listener, die Antwort der Anmeldung meldet dann `remember_offer: false`), die Sitzung bleibt an Passwort und 2FA-Geheimnis gebunden. Jede Änderung braucht weiterhin einen Code, ein gemerktes Gerät kann also nur lesen, bis jemand den Code eingibt.
 
 Die Anmeldeseite zeigt nur Logo, Schritt und Eingabefeld; die Sprache kommt aus dem Browser.
 
@@ -270,15 +271,15 @@ Alle `/api`-Routen außer Gesundheit, Login, Logout, 2FA und den öffentlichen O
 
 ### Benutzermenü und Sprache
 
-Alles, was das eigene Konto betrifft, liegt hinter dem Avatar oben rechts: Sprache, Darstellung, Sitzungen, Einrichtungsübersicht, Abmelden und die Version. Auf dem Handy sitzt der Avatar in der Kopfzeile neben dem Logo, die Seiten selbst bleiben frei davon.
+Alles, was das eigene Konto betrifft, liegt hinter dem Avatar oben rechts: Sprache, Darstellung, Sitzungen, Einrichtungsübersicht, Abmelden und die Version. Die Version steht zusätzlich am Fuß jeder Seite (aus `GET /api/health`). Auf dem Handy sitzt der Avatar in der Kopfzeile neben dem Logo, die Seiten selbst bleiben frei davon.
 
 Die Sprache folgt standardmäßig dem Browser (erste unterstützte Sprache aus `navigator.languages`, sonst Englisch). Wer eine Sprache wählt, legt sie im Browser (`localStorage`) und im Konto (`/api/user/settings`) ab; „Auto“ kehrt zum Browser zurück. Die Anmeldung hat keine eigene Auswahl mehr und folgt dem Browser bzw. der zuletzt gewählten Sprache; die Ersteinrichtung hat oben rechts eine Auswahl, die nur im Browser gilt. Nach der Anmeldung gewinnt eine im Konto gespeicherte Sprache.
 
-**Cookies:** GoDeb setzt nur technisch nötige Cookies: `godeb_pending` (zwischen Passwort und 2FA, fünf Minuten) und `godeb_session` (die Anmeldung), beide `HttpOnly` und `SameSite=Strict`. Dazu kommen im `localStorage` die selbst gewählte Sprache und Darstellung. Es gibt keine Analyse, keine Werbung und keine Dienste Dritter. Ein Cookie-Banner ist dafür nicht nötig: Unbedingt erforderliche Speicherungen brauchen keine Einwilligung (§ 25 Abs. 2 Nr. 2 TDDDG, Art. 5 Abs. 3 ePrivacy-Richtlinie).
+**Cookies:** GoDeb setzt nur technisch nötige Cookies: `godeb_pending` (zwischen Passwort und 2FA, fünf Minuten) und `godeb_session` (die Anmeldung; ohne „Angemeldet bleiben“ bis zum Schließen des Browsers, sonst 30 Tage), beide `HttpOnly` und `SameSite=Strict`. Dazu kommen im `localStorage` die selbst gewählte Sprache und Darstellung. Es gibt keine Analyse, keine Werbung und keine Dienste Dritter. Ein Cookie-Banner ist dafür nicht nötig: Unbedingt erforderliche Speicherungen brauchen keine Einwilligung (§ 25 Abs. 2 Nr. 2 TDDDG, Art. 5 Abs. 3 ePrivacy-Richtlinie).
 
 ### Sitzungen
 
-Jede Anmeldung ist eine Zeile in der SQLite-Tabelle `sessions`. Gespeichert wird nur der SHA-256 der Token-ID aus dem signierten Cookie; ein Datenbankleck liefert also keine verwendbaren Cookies. Logout löscht die Zeile. Unter „Sitzungen“ im Benutzermenü (Avatar oben rechts) stehen alle eigenen Anmeldungen mit Gerät, IP und letzter Aktivität; einzelne oder alle anderen lassen sich beenden. Ein neues Passwort oder ein neues 2FA-Geheimnis beendet alle Sitzungen. Pro Login-Versuch und pro Sitzung sind fünf falsche Codes erlaubt; danach ist die Anmeldung verworfen.
+Jede Anmeldung ist eine Zeile in der SQLite-Tabelle `sessions`. Gespeichert wird nur der SHA-256 der Token-ID aus dem signierten Cookie; ein Datenbankleck liefert also keine verwendbaren Cookies. Logout löscht die Zeile. Unter „Sitzungen“ im Benutzermenü (Avatar oben rechts) stehen alle eigenen Anmeldungen mit Gerät, IP und letzter Aktivität; einzelne oder alle anderen lassen sich beenden. Gemerkte Geräte tragen „gemerkt bis …“ (Spalte `remembered`); Beenden vergisst das Gerät. Ein neues Passwort oder ein neues 2FA-Geheimnis beendet alle Sitzungen. Pro Login-Versuch und pro Sitzung sind fünf falsche Codes erlaubt; danach ist die Anmeldung verworfen.
 
 Ohne Web-UI, per SSH:
 
@@ -536,6 +537,7 @@ Alle außer `status` antworten nach dem Abschluss mit `410`.
 | POST | `/api/auth/2fa/enroll` | TOTP anlegen |
 | POST | `/api/auth/2fa/verify` | Einrichtung bestätigen |
 | POST | `/api/auth/2fa/authenticate` | TOTP oder Backup-Code |
+| POST | `/api/auth/remember` | „Angemeldet bleiben“: Sitzung direkt nach der Anmeldung auf 30 Tage verlängern |
 | POST | `/api/auth/logout` | Sitzung beenden |
 | GET | `/api/auth/me` | aktueller Benutzer |
 | GET | `/api/auth/sessions` | eigene Sitzungen mit Gerät, IP, letzter Aktivität |
