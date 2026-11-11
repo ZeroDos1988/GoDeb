@@ -135,6 +135,8 @@ func TestApplyZoneCreatesUpdatesAndSkipsForeign(t *testing.T) {
 		"_dmarc/TXT": {Name: "_dmarc", Type: "TXT", Labels: map[string]string{}, Records: []hzRecord{{Value: `"v=DMARC1; p=none"`}}},
 		// managed and current (chunked differently): no write
 		"mail/A": {Name: "mail", Type: "A", Labels: map[string]string{godebLabel: godebLabelOK}, Records: []hzRecord{{Value: "203.0.113.10"}}},
+		// set by hand with the right value: ok, untouched, not managed
+		"www/A": {Name: "www", Type: "A", Labels: map[string]string{}, Records: []hzRecord{{Value: "203.0.113.10"}}},
 	}}
 	useFake(t, f)
 	needs := []Need{
@@ -142,6 +144,7 @@ func TestApplyZoneCreatesUpdatesAndSkipsForeign(t *testing.T) {
 		{Zone: "example.com", Name: "example.com", Type: "TXT", Value: "v=spf1 mx -all", Kind: "spf"},
 		{Zone: "example.com", Name: "_dmarc.example.com", Type: "TXT", Value: "v=DMARC1; p=quarantine", Kind: "dmarc"},
 		{Zone: "example.com", Name: "mail.example.com", Type: "A", Value: "203.0.113.10", Kind: "a"},
+		{Zone: "example.com", Name: "www.example.com", Type: "A", Value: "203.0.113.10", Kind: "a"},
 	}
 	recs, err := applyZone(context.Background(), "tok", "example.com", needs, 0)
 	if err != nil {
@@ -149,6 +152,9 @@ func TestApplyZoneCreatesUpdatesAndSkipsForeign(t *testing.T) {
 	}
 	want := map[string]string{"mx": "ok", "spf": "ok", "dmarc": "conflict", "a": "ok"}
 	for _, r := range recs {
+		if r.Name == "www.example.com" && r.Managed {
+			t.Errorf("hand-made record reported as managed")
+		}
 		if r.Status != want[r.Kind] {
 			t.Errorf("%s: status %q (%s), want %q", r.Kind, r.Status, r.Found, want[r.Kind])
 		}

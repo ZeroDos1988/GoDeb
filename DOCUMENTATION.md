@@ -456,9 +456,11 @@ Damit sich die Oberfläche auf dem Handy als App installieren lässt, braucht si
 Domains werden einmal in GoDeb eingetragen. Andere Plugins (zuerst Mail) melden die DNS-Einträge, die sie brauchen. Pro Domain gibt es zwei Betriebsarten:
 
 - **Manuell:** GoDeb zeigt die Einträge zum Kopieren und prüft sie live (wie der DNS-Reiter im Mail-Plugin).
-- **Hetzner Cloud-API:** Ein API-Token (im Agenten versiegelt, Projekt mit den Zonen) legt fehlende RRSets an und ändert nur Einträge mit Label `godeb=1`. Fremde Einträge bleiben unberührt und erscheinen als Konflikt. Reverse-DNS (PTR) setzt GoDeb über `change_dns_ptr` am Cloud-Server mit derselben öffentlichen IP.
+- **Hetzner Cloud-API:** Ein API-Token (im Agenten versiegelt, Projekt mit den Zonen) legt fehlende RRSets an und ändert nur Einträge mit Label `godeb=1`. Fremde Einträge bleiben unberührt; mit dem richtigen Wert gelten sie als erledigt, mit einem anderen erscheinen sie als Konflikt. Reverse-DNS (PTR) setzt GoDeb über `change_dns_ptr` am Cloud-Server mit derselben öffentlichen IP.
 
 **Standardeinträge** (Schalter pro Domain, im Assistenten an): Domain und `www`, `mail` und `webmail` als A-Eintrag auf die öffentliche IP dieses Servers, dazu `MX 10 mail.<domain>.`, SPF `v=spf1 mx -all` und DMARC. Meldet ein Plugin einen Eintrag mit demselben Namen und Typ (MX des Mailservers, A-Eintrag einer Webseite, SPF des Mail-Gateways), gilt der des Plugins. DKIM kommt immer vom Mail-Plugin bzw. Mail-Gateway, weil dort der Schlüssel liegt. Das Mail-Gateway meldet pro Domain MX, `mail.<domain>`, SPF mit der IP des VPS, DKIM und DMARC.
+
+**Prüfung:** GoDeb fragt die autoritativen Nameserver der Zone direkt (NS-Abfrage, dann Port 53 dort), nicht den lokalen Resolver. Der hält ein „gibt es nicht“ bis zur negativen TTL der Zone (Hetzner: eine Stunde) fest, so dass frisch angelegte Einträge sonst noch so lange als fehlend erschienen. Antworten die Nameserver nicht, prüft GoDeb über den lokalen Resolver. PTR läuft immer über den lokalen Resolver.
 
 Kein eigener Port 53 auf dem VPS. Die alte DNS-API unter `dns.hetzner.com` wird nicht genutzt.
 

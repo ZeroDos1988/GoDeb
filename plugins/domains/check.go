@@ -17,11 +17,100 @@ type resolver interface {
 
 var dnsResolver resolver = net.DefaultResolver
 
+// zoneResolver asks the zone's authoritative name servers directly. Right
+// after a record was created, the local resolver may still cache "does not
+// exist" for up to the SOA minimum TTL (Hetzner: one hour), so the check
+// reported records as missing that were already published. Falls back to
+// dnsResolver when the name servers cannot be found, and in tests that
+// replace dnsResolver.
+func zoneResolver(ctx context.Context, zone string, cache map[string]resolver) resolver {
+	if def, ok := dnsResolver.(*net.Resolver); !ok || def != net.DefaultResolver || zone == "" {
+		return dnsResolver
+	}
+	if r, ok := cache[zone]; ok {
+		return r
+	}
+	cache[zone] = dnsResolver
+	nss, err := net.DefaultResolver.LookupNS(ctx, zone)
+	if err != nil {
+		return dnsResolver
+	}
+	var addrs []string
+	for _, ns := range nss {
+		ips, err := net.DefaultResolver.LookupHost(ctx, ns.Host)
+		if err != nil {
+			continue
+		}
+		for _, ip := range ips {
+			if net.ParseIP(ip).To4() != nil {
+				addrs = append(addrs, net.JoinHostPort(ip, "53"))
+				break
+			}
+		}
+	}
+	if len(addrs) == 0 {
+		return dnsResolver
+	}
+	r := &authResolver{auth: &net.Resolver{PreferGo: true, Dial: func(ctx context.Context, network, _ string) (net.Conn, error) {
+		var d net.Dialer
+		var last error
+		for _, a := range addrs {
+			c, err := d.DialContext(ctx, network, a)
+			if err == nil {
+				return c, nil
+			}
+			last = err
+		}
+		return nil, last
+	}}}
+	cache[zone] = r
+	return r
+}
+
+// authResolver asks the authoritative servers and falls back to the local
+// resolver when they do not answer (blocked port 53, timeout).
+type authResolver struct{ auth *net.Resolver }
+
+func fallback(err error) bool {
+	var dnsErr *net.DNSError
+	return err != nil && !(errors.As(err, &dnsErr) && dnsErr.IsNotFound)
+}
+
+func (a *authResolver) LookupMX(ctx context.Context, name string) ([]*net.MX, error) {
+	v, err := a.auth.LookupMX(ctx, name)
+	if fallback(err) {
+		return dnsResolver.LookupMX(ctx, name)
+	}
+	return v, err
+}
+
+func (a *authResolver) LookupTXT(ctx context.Context, name string) ([]string, error) {
+	v, err := a.auth.LookupTXT(ctx, name)
+	if fallback(err) {
+		return dnsResolver.LookupTXT(ctx, name)
+	}
+	return v, err
+}
+
+func (a *authResolver) LookupHost(ctx context.Context, host string) ([]string, error) {
+	v, err := a.auth.LookupHost(ctx, host)
+	if fallback(err) {
+		return dnsResolver.LookupHost(ctx, host)
+	}
+	return v, err
+}
+
+func (a *authResolver) LookupAddr(ctx context.Context, addr string) ([]string, error) {
+	return dnsResolver.LookupAddr(ctx, addr)
+}
+
 func recordsFor(ctx context.Context, needs []Need) []Record {
 	ctx, cancel := context.WithTimeout(ctx, 8*time.Second)
 	defer cancel()
 	out := make([]Record, 0, len(needs))
+	cache := map[string]resolver{}
 	for _, n := range needs {
+		res := zoneResolver(ctx, n.Zone, cache)
 		r := Record{Need: n, Status: "unknown"}
 		v := n.Value
 		if n.Type == "TXT" {
@@ -30,13 +119,13 @@ func recordsFor(ctx context.Context, needs []Need) []Record {
 		r.ZoneLine = n.Name + ". IN " + n.Type + " " + v
 		switch n.Kind {
 		case "mx":
-			checkMX(ctx, &r)
+			checkMX(ctx, res, &r)
 		case "spf", "dkim", "dmarc", "mtasts", "tlsrpt":
-			checkTXT(ctx, &r)
+			checkTXT(ctx, res, &r)
 		case "a", "mtasts-host", "autoconfig", "autodiscover":
-			checkA(ctx, &r)
+			checkA(ctx, res, &r)
 		case "ptr":
-			checkPTR(ctx, &r)
+			checkPTR(ctx, res, &r)
 		default:
 			r.Status = "unknown"
 		}
@@ -45,8 +134,8 @@ func recordsFor(ctx context.Context, needs []Need) []Record {
 	return out
 }
 
-func checkMX(ctx context.Context, r *Record) {
-	mxs, err := dnsResolver.LookupMX(ctx, r.Name)
+func checkMX(ctx context.Context, res resolver, r *Record) {
+	mxs, err := res.LookupMX(ctx, r.Name)
 	want := strings.TrimSuffix(strings.Fields(r.Value)[1], ".")
 	found := []string{}
 	r.Status = statusFrom(err)
@@ -63,8 +152,8 @@ func checkMX(ctx context.Context, r *Record) {
 	r.Found = strings.Join(found, ", ")
 }
 
-func checkTXT(ctx context.Context, r *Record) {
-	txts, err := dnsResolver.LookupTXT(ctx, r.Name)
+func checkTXT(ctx context.Context, res resolver, r *Record) {
+	txts, err := res.LookupTXT(ctx, r.Name)
 	r.Status = statusFrom(err)
 	prefix := map[string]string{
 		"spf": "v=spf1", "dkim": "v=DKIM1", "dmarc": "v=DMARC1",
@@ -82,8 +171,8 @@ func checkTXT(ctx context.Context, r *Record) {
 	}
 }
 
-func checkA(ctx context.Context, r *Record) {
-	ips, err := dnsResolver.LookupHost(ctx, r.Name)
+func checkA(ctx context.Context, res resolver, r *Record) {
+	ips, err := res.LookupHost(ctx, r.Name)
 	r.Status = statusFrom(err)
 	r.Found = strings.Join(ips, ", ")
 	for _, ip := range ips {
@@ -96,8 +185,8 @@ func checkA(ctx context.Context, r *Record) {
 	}
 }
 
-func checkPTR(ctx context.Context, r *Record) {
-	names, err := dnsResolver.LookupAddr(ctx, r.Name)
+func checkPTR(ctx context.Context, res resolver, r *Record) {
+	names, err := res.LookupAddr(ctx, r.Name)
 	r.Status = statusFrom(err)
 	r.Found = strings.Join(names, ", ")
 	want := strings.TrimSuffix(r.Value, ".")

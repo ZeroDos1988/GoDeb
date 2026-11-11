@@ -34,6 +34,13 @@ func applyZone(ctx context.Context, token string, zoneName string, needs []Need,
 			out = append(out, rec)
 			continue
 		}
+		// A record set by hand with the right value is fine; GoDeb just
+		// does not own it. Only a different value is a conflict.
+		if exists && !isManaged(cur) && valuesMatch(cur, value) {
+			rec.Status, rec.Found = "ok", valuesOf(cur)
+			out = append(out, rec)
+			continue
+		}
 		if exists && !isManaged(cur) {
 			rec.Status, rec.Found = "conflict", valuesOf(cur)
 			out = append(out, rec)
